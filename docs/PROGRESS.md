@@ -5,14 +5,14 @@
 ## 当前状态
 
 - 阶段：2 — 用户已确认先实施 M0，本地开发先行，云端接入分别验证
-- 当前里程碑：M0（`m0-foundation`；实现与验收中）
+- 当前里程碑：M0（`m0-foundation`；本地实现与完整验收通过，云端数据库接入待授权）
 - 累计估算花费：AUD ≈ 3 / 150（阶段 1 仅主会话阅读与写文档；未派子 agent）
 
 ## 里程碑
 
 | 里程碑 | 状态 | 审查轮次 | 估算花费 | 备注 |
 |---|---|---|---|---|
-| M0 仓库、CI、基础设施接入 | 实现与验收中 | 自检中 | 当前实际费用不可查询 | 本地优先；云端数据库 CLI 未登录，仓库尚无迁移 secrets |
+| M0 仓库、CI、基础设施接入 | 本地完成；云端接入待完成 | 实现自检通过；PR #1 草稿 | 当前实际费用不可查询 | db reset、verify、集成测试、E2E 均通过；云端数据库 CLI 未登录，仓库尚无迁移 secrets |
 | M1 数据基础 | 待开始 | — | 预估 20–28 | 前置：Adzuna key、JSA 许可确认、Vault 密钥 |
 | M2 公开盘面 | 待开始 | — | 预估 20–28 | |
 | M3 账号、onboarding、watchlist | 待开始 | — | 预估 12–16 | 前置：Resend、Google OAuth |
@@ -41,6 +41,9 @@
 | 10 | 其余 PRD Q2/Q3/Q4/Q5/Q7/Q8 | PRD | 按 PRD 建议默认执行（见架构 §12） | 默认通过 |
 
 ## 日志
+
+- 2026-09-22：本地完整验收通过：`pnpm db:reset`、`pnpm verify`（lint/typecheck、7 单测、13 pgTAP 权限测试、standalone build）、真实数据库 health 集成测试、桌面/手机 2 个 Playwright + axe 用例。生产依赖审计无已知漏洞。草稿 PR：https://github.com/plcme/skill-market/pull/1 。
+- 2026-09-22：本机首次全栈启动资源超时，关闭本阶段不用的 Storage/Studio/Realtime/Edge Runtime/Analytics 后通过；生成 types 来自真实本地数据库。Vercel 初次作者识别失败及静态输出目录误配置均已修正，最新预览由远端检查验收。尚未合并 dev/main，未启动 M1，未写云端数据库。未执行独立模型审查，本轮为实现自检；实际费用未获取，不新增估算为实测。
 
 - 2026-09-22：用户授权先做 M0；M1 许可核实与合成 fixtures 开发并行，真实采集不提前开启。保留原 `APP_NAME` 环境变量和命名，用服务端常量传入页面，不改为 `NEXT_PUBLIC_APP_NAME`。
 - 2026-09-22：M0 采用 SQL migration 启用 pg_cron/pg_net；系统字体避免构建时联网取字体。生产迁移改为手动触发且默认禁用，待云端凭据与审批保护核实后启用。Supabase 开发项目尚未实证确认。
