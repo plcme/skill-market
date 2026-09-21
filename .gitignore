@@ -1,0 +1,24 @@
+# deps / build
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+
+# platform
+.vercel/
+supabase/.temp/
+supabase/.branches/
+
+# os / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
