@@ -1,0 +1,1 @@
+-- M0 intentionally has no production seed users or business data.

@@ -22,3 +22,5 @@ supabase/.branches/
 *.log
 .idea/
 .vscode/
+playwright-report/
+test-results/
