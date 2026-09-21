@@ -40,7 +40,7 @@ pnpm test:e2e
 
 本阶段只创建 `profiles` 业务表。认证用户可读本人资料及修改普通字段；`is_admin`、用户 ID、删除标记等由列权限保护，用户元数据不会用于授予管理员权限。管理员函数使用固定空 `search_path`。服务端高权限客户端带 `server-only` 标记。
 
-本地配置关闭 M0 不使用的 Realtime、Edge Runtime 和 Analytics，减少内存占用。`pg_cron` 与 `pg_net` 通过 SQL migration 启用，而不是虚构 `config.toml` 扩展字段。首页使用系统字体，构建不依赖外部字体下载。
+本地配置关闭 M0 不使用的 Realtime、Edge Runtime、Analytics、Storage 和 Studio，减少内存占用。需要 Storage/Studio 时在 `supabase/config.toml` 开启并重启本地服务。`pg_cron` 与 `pg_net` 通过 SQL migration 启用，而不是虚构 `config.toml` 扩展字段。首页使用系统字体，构建不依赖外部字体下载。
 
 Supabase 客户端与 session 刷新遵循 [官方 SSR 指南](https://supabase.com/docs/guides/auth/server-side/creating-a-client?framework=nextjs)。UI 基础采用 [shadcn/ui](https://ui.shadcn.com/) 的本地组件方式、Radix Slot 与 Tailwind CSS；M0 没有业务表单或市场页面。
 
