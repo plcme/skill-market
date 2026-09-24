@@ -1,0 +1,277 @@
+{
+  "Filter": {
+    "readback": {
+      "showing": "Showing {rules}",
+      "ruleAllModes": "all roles in {places}",
+      "ruleModes": "{modes} roles in {places}",
+      "joinRules": ", plus ",
+      "or": " or ",
+      "modes": { "onsite": "on-site", "hybrid": "hybrid", "remote": "remote" },
+      "seniority": { "all": "All levels", "entry": "Entry-level only", "graduate": "Graduate roles only" },
+      "workRights": { "all": "", "no_pr_required": "No PR or citizenship requirement stated" },
+      "separator": " · "
+    },
+    "title": "Filter",
+    "edit": "Edit filter",
+    "apply": "Apply",
+    "reset": "Reset",
+    "close": "Close",
+    "ruleLabel": "Rule {n}",
+    "ruleHint": "A rule is one way of working in one or more places.",
+    "addRule": "Add another rule",
+    "addRuleHint": "e.g. on-site in Sydney, plus remote anywhere in Australia",
+    "removeRule": "Remove rule {n}",
+    "unionNote": "Rules are combined — an ad counts if it matches any rule.",
+    "workMode": "Work mode",
+    "modes": { "onsite": "On-site", "hybrid": "Hybrid", "remote": "Remote" },
+    "places": "Places",
+    "addPlace": "Add a place",
+    "searchPlaces": "Search a city, state or region",
+    "removePlace": "Remove {place}",
+    "noPlaces": "No matching places",
+    "levels": { "country": "Country", "state": "State", "city": "City", "region": "Region" },
+    "seniority": "Level",
+    "seniorityOptions": { "all": "All levels", "entry": "Entry-level", "graduate": "Graduate" },
+    "seniorityHint": "Entry-level includes graduate, junior and intern ads.",
+    "workRights": "Work rights",
+    "workRightsOptions": { "all": "Any", "no_pr_required": "No PR or citizenship stated" },
+    "workRightsHint": "Detected from ad text. \"Not stated\" does not guarantee you can apply.",
+    "modeRequired": "Pick at least one work mode.",
+    "placeRequired": "Pick at least one place.",
+    "maxRules": "You can combine up to {max} rules.",
+    "currentlyShowing": "Currently showing"
+  },
+  "Metrics": {
+    "switcher": "Measure",
+    "switcherHint": "Only measures that make sense for this type are listed.",
+    "groupDefault": "Default",
+    "groupCommon": "Common",
+    "groupAdvanced": "Advanced",
+    "showAdvanced": "More measures",
+    "hideAdvanced": "Fewer measures",
+    "info": "What does {metric} mean?",
+    "fields": {
+      "definition": "Definition",
+      "unit": "Unit",
+      "denominator": "Out of",
+      "window": "Time window",
+      "geography": "Where",
+      "level": "Level",
+      "source": "Source",
+      "updated": "Last updated",
+      "method": "How it’s measured",
+      "caveat": "Known limits",
+      "sample": "Sample"
+    },
+    "sampleValue": "{n} ads (minimum {min})",
+    "windowValue": "{start} – {end} ({days} days)",
+    "fullDefinition": "Full definition",
+    "ignoresSeniority": "Ignores the level filter so the share stays meaningful.",
+    "ignoresWorkRights": "Ignores the work-rights filter so the share stays meaningful.",
+    "ignoresWorkMode": "Ignores the work-mode filter so the share stays meaningful.",
+    "ad_count": {
+      "label": "Ads",
+      "short": "Ads",
+      "definition": "How many job ads matched in the last four weeks.",
+      "unit": "Ads",
+      "denominator": "Not a ratio — a count of ads",
+      "method": "Each ad is counted once, however many times the skill appears in it."
+    },
+    "share_of_ads": {
+      "label": "Share of ads",
+      "short": "Share",
+      "definition": "Of all job ads matching your filter in the last four weeks, the percentage that mention this skill (or belong to this role).",
+      "unit": "Percent of ads",
+      "denominator": "All ads matching the same filter",
+      "method": "Skill mentions come from the search API’s full-text match plus our skill dictionary on title and summary."
+    },
+    "change_4w": {
+      "label": "4-week change",
+      "short": "4 wk",
+      "definition": "Ads in the last four weeks compared with the four weeks before.",
+      "unit": "Percent change, with the ad counts",
+      "denominator": "Ads in the previous four weeks",
+      "method": "Weekly counts from our own daily snapshots.",
+      "caveat": "Short windows are noisy. We only flag a change when it is at least 25% and at least 10 ads."
+    },
+    "growth_12m": {
+      "label": "12-month change",
+      "short": "12 mo",
+      "definition": "Ads in the last 12 months compared with the 12 months before.",
+      "unit": "Percent change, with the ad counts",
+      "denominator": "Ads in the previous 12 months",
+      "method": "Roles: official occupation-level vacancy series. Skills: our own snapshots once two years are available.",
+      "caveat": "Occupation series are counted by the government agency, not by us, and can be revised."
+    },
+    "entry_level_share": {
+      "label": "Entry-level share",
+      "short": "Entry",
+      "definition": "Of these ads, the percentage aimed at graduates, juniors or interns.",
+      "unit": "Percent of ads",
+      "denominator": "All ads matching the filter, at every level",
+      "method": "Title and text rules: graduate, grad program, junior, entry level or intern — and not senior, lead, principal or manager.",
+      "caveat": "About 1 in 10 ads is classified wrongly in our hand-checked sample."
+    },
+    "no_pr_required_share": {
+      "label": "No PR stated",
+      "short": "No PR",
+      "definition": "Of these ads, the percentage that do not state a requirement for permanent residency or citizenship.",
+      "unit": "Percent of ads",
+      "denominator": "All ads matching the filter",
+      "method": "Text rules for phrases like \"must have full working rights\", \"Australian citizen\" or \"PR or citizen\".",
+      "caveat": "Not stated does not mean you can apply. Many employers expect working rights without saying so."
+    },
+    "employer_concentration": {
+      "label": "Employers hiring",
+      "short": "Employers",
+      "definition": "How many different employers posted these ads, and how much of the total came from the five biggest.",
+      "unit": "Employers",
+      "denominator": "All ads matching the filter",
+      "method": "Employer names are normalised; recruitment agencies are counted as one employer each.",
+      "caveat": "Agencies can hide several real employers behind one name."
+    },
+    "salary_median": {
+      "label": "Median salary",
+      "short": "Median",
+      "definition": "The middle advertised base salary for this role in the last 12 months.",
+      "unit": "AUD per year",
+      "denominator": "Ads that state a salary",
+      "method": "Annualised from the ad’s stated range midpoint; hourly and daily rates are converted.",
+      "caveat": "Only a minority of ads state a salary, and senior roles state it less often."
+    },
+    "salary_p10_p90": {
+      "label": "Salary range",
+      "short": "Range",
+      "definition": "The advertised salary 10% of ads fall below, and the one 10% of ads sit above.",
+      "unit": "AUD per year",
+      "denominator": "Ads that state a salary",
+      "method": "10th and 90th percentiles of annualised range midpoints."
+    },
+    "skill_premium": {
+      "label": "Skill premium",
+      "short": "Premium",
+      "definition": "Median advertised salary of ads mentioning this skill, compared with ads for the same roles that don’t.",
+      "unit": "Percent difference",
+      "denominator": "Same-role ads without the skill",
+      "method": "Compared within each role, then averaged by ad volume.",
+      "caveat": "A premium is a correlation, not a promise. Senior ads mention some skills more often."
+    },
+    "remote_share": {
+      "label": "Remote or hybrid",
+      "short": "Flexible",
+      "definition": "Of these ads, the percentage offering remote or hybrid work.",
+      "unit": "Percent of ads",
+      "denominator": "All ads matching the filter, any work mode",
+      "method": "Work-mode rules on text; ads that say nothing count as on-site.",
+      "caveat": "Many ads leave work mode out, so this is likely an undercount."
+    },
+    "contract_share": {
+      "label": "Contract share",
+      "short": "Contract",
+      "definition": "Of these ads, the percentage that are fixed-term or contract roles.",
+      "unit": "Percent of ads",
+      "denominator": "All ads matching the filter",
+      "method": "Contract type from the ad’s structured field, or from text when it is missing."
+    },
+    "skills_per_ad": {
+      "label": "Skills per ad",
+      "short": "Skills/ad",
+      "definition": "The typical number of skills a single ad for this role asks for.",
+      "unit": "Skills (median)",
+      "denominator": "Ads for this role",
+      "method": "Median count of distinct dictionary skills found in each ad."
+    },
+    "volatility": {
+      "label": "Volatility",
+      "short": "Volatility",
+      "definition": "How much the weekly ad count bounces around over the last 12 weeks.",
+      "unit": "Coefficient of variation",
+      "denominator": "Average weekly ads over 12 weeks",
+      "method": "Standard deviation divided by the mean of 12 weekly counts. Under 0.15 is steady.",
+      "caveat": "Holiday weeks raise volatility for everything."
+    }
+  },
+  "Format": {
+    "ads": "{n, plural, one {# ad} other {# ads}}",
+    "ofAds": "{num} of {den} ads",
+    "inWindow": "ads in the last {days} days",
+    "changeAbs": "{from} → {to} ads",
+    "pp": "{sign}{value} pts",
+    "employers": "{n, plural, one {# employer} other {# employers}}",
+    "top5": "top 5 post {share}",
+    "perYear": "/yr",
+    "range": "{low} – {high}",
+    "premium": "{sign}{value} vs same roles without it",
+    "skillsPerAd": "{n} skills per ad",
+    "cv": "{value} (steady below 0.15)",
+    "insufficient": "Not enough ads",
+    "insufficientDetail": "{n} of the {min} ads we need for a reliable number.",
+    "unavailable": "Not available",
+    "unavailableDetail": "This measure doesn’t apply here yet.",
+    "up": "Up",
+    "down": "Down",
+    "flat": "No change",
+    "since": "since {date}"
+  },
+  "Sources": {
+    "kinds": {
+      "official": "Official statistics",
+      "ads": "Job ad aggregate",
+      "practitioner": "Practitioner experience"
+    },
+    "kindsShort": { "official": "Official", "ads": "Job ads", "practitioner": "People" },
+    "names": {
+      "adzuna-au-fixture": "Job ads (illustrative fixture)",
+      "jsa-ivi-fixture": "Occupation vacancy series (illustrative fixture)",
+      "platform-debriefs": "Coffee-chat debriefs"
+    },
+    "illustrative": "Illustrative data",
+    "illustrativeLong": "Numbers in this preview are generated to behave like the real pipeline. They are not real market signals.",
+    "updated": "Updated {date}",
+    "stale": "May be out of date"
+  },
+  "Sample": {
+    "title": "Not enough ads for a reliable trend",
+    "body": "Only {n} ads match this filter — we need {min} before we draw a line.",
+    "suggestion": "Try widening the filter:",
+    "widenPlace": "All of Australia",
+    "widenLevel": "All levels",
+    "widenRights": "Any work rights",
+    "widenMode": "Any work mode"
+  },
+  "Signal": {
+    "rise": "More ads than 4 weeks ago",
+    "fall": "Fewer ads than 4 weeks ago",
+    "entry_open": "More entry-level openings",
+    "since_added": "Moved since you added it",
+    "badge": "Signal",
+    "talk": "Talk to someone about this",
+    "why": "Why this is flagged",
+    "whyBody": "A change of at least 25% and at least 10 ads, with enough ads to trust it. Signals describe the market; they don’t tell you what to learn."
+  },
+  "Ticker": {
+    "watch": "Watch",
+    "watching": "Watching",
+    "have": "I have this",
+    "held": "Held",
+    "open": "Open {name}",
+    "skill": "Skill",
+    "role": "Role",
+    "trend": "Last 12 months, 4-week rolling ads",
+    "trendDesc": "{name}: from {first} to {last} ads per 4 weeks over the last 12 months.",
+    "entryShare": "Entry-level",
+    "whereLabel": "Where",
+    "anzsco": "ANZSCO {code}",
+    "noAnzsco": "Industry title — no single ANZSCO code"
+  },
+  "Chart": {
+    "showTable": "Show data table",
+    "hideTable": "Hide data table",
+    "week": "Week ending",
+    "value": "Value",
+    "caption": "{metric}, weekly, {start} – {end}",
+    "range": { "3m": "3M", "6m": "6M", "1y": "1Y", "2y": "2Y" },
+    "rangeLabel": "Time range",
+    "noData": "No data for this range"
+  }
+}

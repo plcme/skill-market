@@ -4,7 +4,8 @@ import nextTypescript from 'eslint-config-next/typescript';
 
 export default defineConfig([
   ...nextVitals, ...nextTypescript,
-  { files: ['src/**/*.tsx'], rules: { 'react/jsx-no-literals': ['error', { noStrings: true, ignoreProps: true }] } },
+  { files: ['src/**/*.tsx'], rules: { 'react/jsx-no-literals': ['error', { noStrings: true, ignoreProps: true, allowedStrings: ['·', '→', '←', '/', '—', '–', '(', ')', ':', '+', '−', '%', '…', '×', ',', '|', '•', '▲', '▼', '■', '●', '◆', '▸', '⌘K', '&', 'Esc', '↑', '↓', '↵', '?', '!'] }] } },
+  { files: ['**/*.{ts,tsx}'], rules: { '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }] } },
   { files: ['src/**/*.{ts,tsx}'], ignores: ['src/config/app.ts'], rules: {
     'no-restricted-syntax': ['error', { selector: "Literal[value='skill-market']", message: 'Read the product name from APP_NAME.' }]
   } },

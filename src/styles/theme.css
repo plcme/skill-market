@@ -1,13 +1,198 @@
 @import "tailwindcss";
+@import "@fontsource-variable/newsreader/opsz.css";
+@import "@fontsource-variable/newsreader/opsz-italic.css";
 
-:root { --background: #fafaf9; --foreground: #172524; --muted-foreground: #51635f; --primary: #176754; --primary-foreground: #ffffff; --border: #d5ddda; --ring: #176754; --up: #176754; --down: #b32636; --flat: #51635f; --warn: #815a06; --radius: 0.625rem; }
-@media (prefers-color-scheme: dark) {
-  :root { --background: #101c19; --foreground: #edf5f0; --muted-foreground: #abc0b6; --primary: #91deba; --primary-foreground: #101c19; --border: #344b40; --ring: #91deba; --up: #91deba; --down: #ff9fac; --flat: #abc0b6; --warn: #f4cf77; }
+/*
+ * Visual language: an editorial market sheet. Warm paper, ink type, hairline
+ * rules, a serif for headlines and big numbers, mono for tickers and labels.
+ * One cobalt accent for interaction, a highlighter tone reserved for signals.
+ * Up/down is never colour-only: every change also carries an arrow and words.
+ * Theme is resolved before paint into html[data-theme] (see ThemeScript).
+ */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  color-scheme: light;
+  --paper: #f3f1ea;
+  --surface: #fcfbf7;
+  --sunken: #e9e6dc;
+  --ink: #121316;
+  --ink-2: #34363c;
+  --muted: #5f5e57;
+  --faint: #8d8b81;
+  --rule: #d9d4c7;
+  --rule-strong: #121316;
+  --accent: #2a45d0;
+  --accent-hover: #1f37b0;
+  --accent-soft: #e3e7f8;
+  --accent-ink: #ffffff;
+  --signal: #e2f25a;
+  --signal-soft: #f3f8cc;
+  --signal-ink: #121316;
+  --up: #0b6e43;
+  --up-soft: #dcefe3;
+  --down: #b23a1f;
+  --down-soft: #f6e0d8;
+  --warn: #875500;
+  --warn-soft: #f5ebd2;
+  --src-official: #2a45d0;
+  --src-ads: #121316;
+  --src-practitioner: #a8501a;
+  --overlay: rgb(18 19 22 / 0.42);
+  --shadow: 0 1px 0 rgb(18 19 22 / 0.04), 0 12px 32px -12px rgb(18 19 22 / 0.18);
 }
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0f100e;
+  --surface: #171815;
+  --sunken: #20211d;
+  --ink: #eeece4;
+  --ink-2: #cfcdc4;
+  --muted: #a3a197;
+  --faint: #6d6b63;
+  --rule: #2f302b;
+  --rule-strong: #eeece4;
+  --accent: #9daeff;
+  --accent-hover: #b9c5ff;
+  --accent-soft: #1e2447;
+  --accent-ink: #0b0d1a;
+  --signal: #d4ea3c;
+  --signal-soft: #2a300f;
+  --signal-ink: #121316;
+  --up: #5fd39a;
+  --up-soft: #11291d;
+  --down: #ff9478;
+  --down-soft: #351b12;
+  --warn: #f0c14b;
+  --warn-soft: #2e2410;
+  --src-official: #9daeff;
+  --src-ads: #eeece4;
+  --src-practitioner: #f29a5e;
+  --overlay: rgb(0 0 0 / 0.6);
+  --shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+}
+
 @theme inline {
-  --color-background: var(--background); --color-foreground: var(--foreground);
-  --color-muted-foreground: var(--muted-foreground); --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground); --color-border: var(--border); --color-ring: var(--ring);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-signal-ink: var(--signal-ink);
+  --color-up: var(--up);
+  --color-up-soft: var(--up-soft);
+  --color-down: var(--down);
+  --color-down-soft: var(--down-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-src-official: var(--src-official);
+  --color-src-ads: var(--src-ads);
+  --color-src-practitioner: var(--src-practitioner);
+  --color-overlay: var(--overlay);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-serif: "Newsreader Variable", "Iowan Old Style", Charter, Georgia, serif;
+  --shadow-float: var(--shadow);
+  --animate-tape: tape 110s linear infinite;
+  --animate-rise: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade: fade 0.18s ease-out both;
 }
-body { margin: 0; background: var(--background); color: var(--foreground); font-family: Arial, Helvetica, sans-serif; font-variant-numeric: tabular-nums; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+@keyframes tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+@layer base {
+  html { background: var(--paper); -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--signal); color: var(--signal-ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  [hidden] { display: none !important; }
+  summary { cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+}
+
+@layer components {
+  /* Mono caps label: section kickers, column heads, ticker symbols. */
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .display {
+    font-family: var(--font-serif);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    letter-spacing: -0.022em;
+    line-height: 1.02;
+  }
+  .num { font-variant-numeric: tabular-nums lining-nums; }
+  .serif-num {
+    font-family: var(--font-serif);
+    font-optical-sizing: auto;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-weight: 420;
+    letter-spacing: -0.02em;
+  }
+  .link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  }
+  .link:hover { text-decoration-color: currentColor; }
+  .hl { background: linear-gradient(transparent 58%, var(--signal) 58%, var(--signal) 94%, transparent 94%); color: inherit; }
+  .live-dot { animation: pulse-dot 2s ease-in-out infinite; }
+  .skeleton {
+    background: linear-gradient(90deg, var(--sunken) 25%, color-mix(in oklab, var(--sunken) 55%, var(--surface)) 50%, var(--sunken) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+    border-radius: 4px;
+  }
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  /* Paper grain on large surfaces; purely decorative. */
+  .grain { background-image: radial-gradient(color-mix(in oklab, var(--ink) 5%, transparent) 0.5px, transparent 0.5px); background-size: 3px 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}
