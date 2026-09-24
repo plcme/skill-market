@@ -1,0 +1,145 @@
+{
+  "Legal": {
+    "kicker": "Trust & safety",
+    "draft": "Draft — not legal advice, pending review",
+    "draftBody": "This document is a working draft written in plain English. It has not yet been reviewed by a lawyer and may change before launch.",
+    "updated": "Last updated {date}",
+    "toc": "On this page",
+    "other": "Other documents",
+    "names": {
+      "privacy": "Privacy policy",
+      "terms": "Terms of use",
+      "conduct": "Code of conduct",
+      "reliability": "No-show rules"
+    },
+    "docs": {
+      "privacy": {
+        "title": "Privacy policy",
+        "lede": "How {app} collects, uses, stores and deletes personal information, in line with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).",
+        "sections": {
+          "who": { "heading": "Who we are", "body": { "p1": "{app} is a service for university students in Australia. It shows what employers ask for and connects students with practitioners for short conversations. It is free for students and never paid for by employers." } },
+          "collect": { "heading": "What we collect", "body": {
+            "p1": "We collect only what the service needs (APP 3):",
+            "li1": "Account: your email address, a display name and your confirmation that you are 18 or older.",
+            "li2": "Optional profile: university, degree, year, units and skills. Visa status is optional and sensitive; it is private unless you choose to share it.",
+            "li3": "Watchlist and filters you save, and your coffee-chat requests, messages you write in them (decision question, openers, notes) and your debrief votes.",
+            "li4": "Practitioners: work-email domain (never the full address on your card), title, employer, entry year, city, skills, topics, availability and meeting link.",
+            "li5": "Safety records: reports, blocks and attendance confirmations.",
+            "p2": "We do not collect dates of birth, grades or rejection history, and we do not store IP addresses in plain form."
+          } },
+          "why": { "heading": "Why we use it", "body": {
+            "p1": "We use personal information only to run the service you asked for (APP 6): personalising the market view, matching you with practitioners, sending the emails a request needs, keeping people safe and enforcing the no-show rules.",
+            "p2": "We never sell personal information, never provide it to employers or recruiters, and never use it for advertising."
+          } },
+          "share": { "heading": "Who can see what", "body": {
+            "li1": "A practitioner you send a request to sees your first name, your decision question and openers, the signal you started from, and only the profile fields you chose to share.",
+            "li2": "Students see a practitioner’s public card. They never see a practitioner’s email address.",
+            "li3": "Our operations team can see reports and records needed to handle them."
+          } },
+          "where": { "heading": "Where it is stored", "body": {
+            "p1": "Our database and file storage are in Sydney, Australia. Pages are served from an Australian region; content delivery networks may pass encrypted traffic through other countries.",
+            "p2": "Overseas disclosure is kept to a minimum (APP 8). The service providers that may process limited data outside Australia are listed here: email delivery (to send your emails) and, if you choose Google sign-in, Google. Error monitoring is configured to exclude personal information."
+          } },
+          "keep": { "heading": "How long we keep it", "body": {
+            "li1": "Your account data: until you delete your account. Deletion removes personal data within 30 days.",
+            "li2": "Coffee-chat records: while your account exists, so you can see your history.",
+            "li3": "Safety records (reports, attendance): up to 12 months, then removed, unless needed for an ongoing safety matter.",
+            "li4": "Raw job-ad snippets used for statistics: 30 days. Aggregated statistics contain no personal information."
+          } },
+          "rights": { "heading": "Access, correction and deletion", "body": {
+            "p1": "You can see and edit every profile field in your settings, download your data as a file, and delete your account at any time (APP 12, APP 13). If something is wrong and you can’t fix it yourself, contact us and we will respond within 30 days."
+          } },
+          "security": { "heading": "Security", "body": {
+            "p1": "Data is encrypted in transit and at rest. Access is limited by row-level permissions so people only see their own records. If a data breach is likely to cause serious harm, we will notify you and the Office of the Australian Information Commissioner (OAIC) as the Notifiable Data Breaches scheme requires."
+          } },
+          "contact": { "heading": "Questions and complaints", "body": {
+            "p1": "Contact the {app} privacy team through the support address listed in the app. If you are not satisfied with our response, you can complain to the OAIC at oaic.gov.au."
+          } }
+        }
+      },
+      "terms": {
+        "title": "Terms of use",
+        "lede": "The rules for using {app}. Plain language on purpose.",
+        "sections": {
+          "service": { "heading": "The service", "body": {
+            "p1": "{app} shows labour-market information built from licensed and public sources, and helps students arrange short conversations with practitioners who have opted in. It is free for students.",
+            "p2": "Market numbers describe job ads and official statistics. They are information, not career, financial or migration advice."
+          } },
+          "accounts": { "heading": "Your account", "body": {
+            "li1": "You must be 18 or older.",
+            "li2": "Keep your sign-in secure. You are responsible for activity on your account.",
+            "li3": "Practitioners must verify where they work and keep their card accurate."
+          } },
+          "chats": { "heading": "Coffee chats", "body": {
+            "p1": "Chats are voluntary conversations between adults. Practitioners are not employees of {app} and do not speak for their employers. Nobody is obliged to accept a request, and declining needs no reason.",
+            "p2": "Everyone follows the code of conduct and the no-show rules."
+          } },
+          "content": { "heading": "What you write", "body": {
+            "p1": "You keep ownership of what you write. You give us permission to store it and show it to the person you send it to, only to run the service."
+          } },
+          "ending": { "heading": "Suspension and closing accounts", "body": {
+            "p1": "We may pause or close accounts that break these terms or the code of conduct. You can close your account at any time from settings."
+          } },
+          "liability": { "heading": "Our responsibility", "body": {
+            "p1": "We work to keep the information accurate and the service available, but we can’t guarantee either. Nothing in these terms limits rights you have under the Australian Consumer Law."
+          } },
+          "changes": { "heading": "Changes", "body": {
+            "p1": "If we change these terms in a way that matters, we will tell you by email before the change takes effect."
+          } }
+        }
+      },
+      "conduct": {
+        "title": "Code of conduct",
+        "lede": "Twenty minutes between strangers works when both sides feel safe and respected. These rules apply to students and practitioners alike.",
+        "sections": {
+          "respect": { "heading": "Be respectful", "body": {
+            "li1": "Be on time, keep to 20 minutes unless you both want more, and be kind.",
+            "li2": "No harassment, discrimination, sexual content or pressure of any kind.",
+            "li3": "Respect a “no”. Declining a request or a follow-up is always fine."
+          } },
+          "purpose": { "heading": "Keep it about the decision", "body": {
+            "li1": "No recruiting, selling, fundraising or promoting services.",
+            "li2": "Students: don’t ask for a job or referral in a first chat. Practitioners: don’t ask students for anything — no unpaid work, no personal favours.",
+            "li3": "Don’t share someone’s details or what they told you without their permission."
+          } },
+          "safety": { "heading": "Stay safe", "body": {
+            "li1": "Meet by video using the link on the request. Don’t move to private channels you’re not comfortable with.",
+            "li2": "Never share passwords, bank details or identity documents.",
+            "li3": "If something feels wrong, leave the call. Report or block from the chat page — the other person isn’t told who reported.",
+            "li4": "If you are in immediate danger, call 000."
+          } },
+          "enforcement": { "heading": "What happens after a report", "body": {
+            "p1": "A person on our team reviews every report. Depending on what happened, we may warn, pause matching for 30 days, or close the account. Serious matters may be referred to the police."
+          } }
+        }
+      },
+      "reliability": {
+        "title": "No-show rules",
+        "lede": "Everyone’s time matters. These rules are the same for students and practitioners, and they are exactly what the system does.",
+        "sections": {
+          "reply": { "heading": "The 72-hour reply window", "body": {
+            "p1": "A practitioner has up to 72 hours to accept, suggest another time or decline. The window also closes 12 hours before the requested time so nobody is left hanging.",
+            "p2": "If there is no reply, the request lapses without any penalty and we quietly pass it to the next suitable person. Students are never told who declined or who didn’t reply."
+          } },
+          "cancel": { "heading": "Cancelling", "body": {
+            "li1": "A student can withdraw a request at any time before it is accepted.",
+            "li2": "Either side can cancel an accepted chat up to 24 hours before it starts. It doesn’t count against anyone.",
+            "li3": "If a practitioner cancels, the student’s request is passed to someone else automatically."
+          } },
+          "attendance": { "heading": "Both sides confirm", "body": {
+            "p1": "After the chat, each side confirms with one click whether it happened. A student’s debrief vote counts as confirming it happened.",
+            "p2": "If one side confirms and the other says nothing for 7 days, the chat is recorded as completed."
+          } },
+          "noshow": { "heading": "Two no-shows in 30 days", "body": {
+            "li1": "If someone is marked absent twice within 30 days, matching pauses for 30 days: practitioners are not matched with new students, and students can’t send new requests.",
+            "li2": "Chats already booked are not affected.",
+            "li3": "No score about you is ever shown to anyone. These records are used only for this rule and are removed after 12 months."
+          } },
+          "disputes": { "heading": "If you disagree", "body": {
+            "p1": "If you think a no-show was recorded by mistake, report it from the chat page and a person will review it."
+          } }
+        }
+      }
+    }
+  }
+}

@@ -22,7 +22,7 @@ export function seedSampleActivity(d: DemoDB, now: number) {
       created_at: at(daysAgo),
     };
   };
-  const sydneyPlusRemote = decodeFilter('ohr.au-nsw-sydney*r.au_entry_all');
+  const sydneyPlusRemote = decodeFilter('ohr.au-nsw-sydney*r.au_all_all');
   d.watchlist = [
     item('w-rust', 'rust', 'watching', sydneyPlusRemote, 'share_of_ads', 18, 0.31),
     item('w-sql', 'sql', 'held', DEFAULT_FILTER, 'share_of_ads', 21, 0.02),

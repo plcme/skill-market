@@ -45,30 +45,30 @@ export default async function HomePage() {
             <p className="mt-6 text-[13px] text-muted">{t('promise')}</p>
           </div>
 
-          <article aria-labelledby="lead-title" className="relative flex flex-col overflow-hidden rounded-lg bg-ink p-6 text-paper shadow-float sm:p-8 animate-rise [animation-delay:80ms]">
+          <article aria-labelledby="lead-title" className="relative flex flex-col overflow-hidden rounded-lg bg-night p-6 text-night-ink shadow-float ring-1 ring-rule sm:p-8 animate-rise [animation-delay:80ms]">
             <div className="flex items-center justify-between gap-3">
-              <p className="kicker text-paper/60">{t('leadKicker')}</p>
+              <p className="kicker text-night-ink/60">{t('leadKicker')}</p>
               {lead.signal ? <span className="rounded-[3px] bg-signal px-1.5 py-0.5 text-[11.5px] font-medium text-signal-ink">{t('leadWhy')}</span> : null}
             </div>
             <div className="mt-6 flex items-baseline gap-3">
-              <span className="font-mono text-sm text-paper/70">{lead.instrument.symbol}</span>
+              <span className="font-mono text-sm text-night-ink/70">{lead.instrument.symbol}</span>
               <h2 id="lead-title" className="font-serif text-[30px] leading-none">{lead.instrument.name}</h2>
             </div>
             <p className="serif-num mt-5 text-[88px] leading-[0.85] text-signal sm:text-[112px]">
               {leadChange.value !== null ? formatChange(leadChange.value) : '—'}
             </p>
-            <p className="num mt-3 text-[15px] text-paper/80">
+            <p className="num mt-3 text-[15px] text-night-ink/80">
               {leadChange.from !== null && leadChange.to !== null ? `${leadChange.from} → ${leadChange.to} ` : null}
-              <span className="text-paper/60">{t('leadIn')}</span>
+              <span className="text-night-ink/60">{t('leadIn')}</span>
             </p>
             <div className="mt-6 [&_path]:!stroke-signal [&_circle]:!fill-signal">
               <Sparkline values={lead.sparkline} dir={direction(leadChange.value)} label={tt('trend')} description={tt('trendDesc', { name: lead.instrument.name, first: lead.sparkline[0], last: lead.sparkline[lead.sparkline.length - 1] })} width={420} height={70} className="h-auto w-full" />
             </div>
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-paper/15 pt-5">
-              <SourceBadge kind={lead.change.source} className="text-paper/60 [&_circle]:fill-paper" />
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-night-ink/15 pt-5">
+              <SourceBadge kind={lead.change.source} className="text-night-ink/60 [&_circle]:fill-night-ink" />
               <div className="flex flex-wrap gap-2">
                 <Button asChild variant="signal" size="sm"><Link href={`/chat/new?instrument=${lead.instrument.slug}`}>{t('leadTalk', { name: lead.instrument.name })}</Link></Button>
-                <Button asChild variant="ghost" size="sm" className="text-paper hover:bg-paper/10"><Link href={instrumentHref(lead)}>{t('leadOpen', { name: lead.instrument.name })}<ArrowUpRight aria-hidden /></Link></Button>
+                <Button asChild variant="ghost" size="sm" className="text-night-ink hover:bg-night-ink/10"><Link href={instrumentHref(lead)}>{t('leadOpen', { name: lead.instrument.name })}<ArrowUpRight aria-hidden /></Link></Button>
               </div>
             </div>
           </article>
@@ -115,7 +115,7 @@ export default async function HomePage() {
         <ol className="grid gap-8 sm:grid-cols-3 sm:gap-10">
           {([['1', '01'], ['2', '02'], ['3', '03']] as const).map(([n, label]) => (
             <li key={n} className="flex flex-col gap-3">
-              <span className="serif-num text-[64px] leading-none text-ink/15">{label}</span>
+              <span aria-hidden data-n={label} className="serif-num text-[64px] leading-none text-ink/15 before:content-[attr(data-n)]" />
               <h3 className="font-serif text-[22px] leading-snug">{t(`step${n}Title`)}</h3>
               <p className="text-[15px] text-ink-2">{t(`step${n}Body`)}</p>
             </li>
@@ -123,15 +123,15 @@ export default async function HomePage() {
         </ol>
       </Container>
 
-      <section className="mt-20 bg-ink text-paper">
+      <section className="mt-20 bg-night text-night-ink">
         <Container className="grid gap-10 py-16 lg:grid-cols-[1fr_1.2fr] lg:py-20">
           <div>
-            <p className="kicker text-paper/60">{t('principlesKicker')}</p>
+            <p className="kicker text-night-ink/60">{t('principlesKicker')}</p>
             <h2 className="display mt-4 text-[40px] sm:text-[52px]">{t('principlesTitle')}</h2>
           </div>
-          <ul className="grid gap-px overflow-hidden rounded-md bg-paper/15 sm:grid-cols-2">
+          <ul className="grid gap-px overflow-hidden rounded-md bg-night-ink/15 sm:grid-cols-2">
             {(['p1', 'p2', 'p3', 'p4'] as const).map(k => (
-              <li key={k} className="bg-ink p-6 text-[15px] leading-relaxed text-paper/85">{t(`principles.${k}`)}</li>
+              <li key={k} className="bg-night p-6 text-[15px] leading-relaxed text-night-ink/85">{t(`principles.${k}`)}</li>
             ))}
           </ul>
         </Container>

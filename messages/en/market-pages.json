@@ -1,0 +1,505 @@
+{
+  "MarketPage": {
+    "metaTitle": {
+      "skill": "Skills market",
+      "role": "Roles market",
+      "all": "Market"
+    },
+    "metaDescription": "Every skill and role we track in Australian job ads, with the measure you choose, its change and a 12-month trend.",
+    "kicker": "Job ads · week ending {date}",
+    "title": "The market",
+    "lede": "Every skill and role we track, measured the same way under your filter. Tap any number to see exactly what it counts.",
+    "boardHeading": "Board",
+    "typeTabsLabel": "Instrument type",
+    "types": {
+      "skill": "Skills",
+      "role": "Roles",
+      "all": "All"
+    },
+    "categoriesLabel": "Categories",
+    "allCategories": "All categories",
+    "sortLabel": "Order",
+    "sort": {
+      "value": "By measure",
+      "change": "By change",
+      "name": "A–Z"
+    },
+    "viewLabel": "Layout",
+    "view": {
+      "list": "List",
+      "cards": "Cards"
+    },
+    "textFilterLabel": "Filter this board by name",
+    "textFilterPlaceholder": "Filter by name or alias",
+    "textFilterClear": "Clear the name filter",
+    "sharedMetricHint": "Only measures that apply to both skills and roles are listed on the mixed board.",
+    "colName": "Name",
+    "colTrend": "12-month trend",
+    "colChangeMixed": "Change",
+    "colChangeMixedHint": "4-week change for skills, 12-month change for roles",
+    "count": {
+      "skill": "{n, plural, one {# skill} other {# skills}}",
+      "role": "{n, plural, one {# role} other {# roles}}",
+      "all": "{n, plural, one {# skill or role} other {# skills and roles}}"
+    },
+    "signalCount": "{n, plural, =0 {no signals} one {# with a signal} other {# with signals}}",
+    "matching": "matching “{q}”",
+    "emptyTitle": "Nothing on the board matches",
+    "emptyBody": "No skills or roles in this category match. Try another category.",
+    "emptyBodyQuery": "Nothing here matches “{q}”. Try a shorter name, a common alias such as “JS”, or search everything.",
+    "emptyReset": "Clear name and category",
+    "orderNote": "The order follows the market measure you picked — it ranks skills and roles, never people. Rows with too few ads sink to the bottom and say so instead of showing a number.",
+    "illustrativeNote": "Illustrative data: numbers in this preview are generated to behave like the real pipeline and are not real market signals.",
+    "sourcesLink": "Sources and method",
+    "signalsNow": "Signals now",
+    "signalsNowCount": "{n, plural, =0 {none} one {# under your filter} other {# under your filter}}",
+    "signalsNowNote": "Flagged when a move is at least 25% and 10 ads, with enough ads to trust it.",
+    "signalsNowEmpty": "Nothing has moved enough to flag under this filter. That is normal for narrow filters — widen it, or browse the board below.",
+    "signalsNowTalk": "Talk to someone",
+    "signalsNowTalkLabel": "Talk to someone who uses {name}"
+  },
+  "InstrumentPage": {
+    "metaTitle": {
+      "skill": "{name} — skill",
+      "role": "{name} — role"
+    },
+    "metaDescription": "{blurb} Demand, change, entry-level share and more for {name} in Australian job ads, every number explained.",
+    "notFoundTitle": "Not tracked yet",
+    "breadcrumb": "Breadcrumb",
+    "crumbMarket": "Market",
+    "crumbType": {
+      "skill": "Skills",
+      "role": "Roles"
+    },
+    "tracked": "Tracked since {date}",
+    "aliases": "Also searched as",
+    "talk": {
+      "skill": "Talk to someone who uses {name}",
+      "role": "Talk to someone who does this job"
+    },
+    "talkNote": "A free 20-minute chat with a verified practitioner. Your filter goes with the request.",
+    "compareWith": "Compare with…",
+    "now": "Right now",
+    "whyFlagged": "Why this is flagged:",
+    "why": {
+      "count": "the change is at least 25% and at least 10 ads, and there are enough ads to trust it. A signal describes the market — it doesn’t tell you what to learn.",
+      "entry_open": "the share of entry-level ads rose by at least 10 points in eight weeks, with enough ads to trust it. A signal describes the market — it doesn’t tell you what to learn."
+    },
+    "signalMove": {
+      "count": "{from} → {to} ads in four weeks ({change})",
+      "entry_open": "Entry-level share {from} → {to} in eight weeks ({pp} pts)"
+    },
+    "signalTalk": "Ask someone what’s behind it",
+    "noSignal": "Nothing flagged under this filter. We flag a move when it is at least 25% and at least 10 ads, or when entry-level openings rise by 10 points.",
+    "chartCaption": "{metric} · 4-week rolling, weekly to {end}",
+    "chartFallback": "{metric} isn’t a weekly series, so the chart shows the ads behind it over time.",
+    "fundKicker": "Fundamentals",
+    "fundTitle": "Every measure, under your filter",
+    "fundAction": "What each measure means",
+    "shownAbove": "Shown above",
+    "showAbove": "Show above",
+    "showAboveLabel": "Show {metric} in the main figure",
+    "moreMeasures": "{n, plural, one {# more measure} other {# more measures}}",
+    "fewerMeasures": "Fewer measures",
+    "advancedNote": "Advanced measures are noisier or easier to misread. Open the ⓘ next to each before leaning on it.",
+    "payKicker": "Advertised pay",
+    "payTitle": "What ads for this role offer",
+    "payMedian": "Median",
+    "perYear": "a year",
+    "payInsufficient": "Not enough ads state a salary",
+    "payCoverage": "{num} of {den} ads in the last 12 months state a salary ({pct}).",
+    "payRange": "Middle 80% of advertised salaries",
+    "p10": "10th pct",
+    "p90": "90th pct",
+    "payRangeSentence": "One in ten ads offers less than {low}; one in ten offers more than {high}. The middle ad offers {median}.",
+    "payRangeInsufficient": "Too few ads state a salary under this filter to show a range. Try widening it.",
+    "payCaveat": "Advertised base salary, not total pay. Senior roles state pay less often, so the real range is likely wider.",
+    "compKicker": {
+      "skill": "Composition",
+      "role": "Composition"
+    },
+    "compTitle": {
+      "skill": "Roles that ask for {name}",
+      "role": "What these ads ask for"
+    },
+    "compNote": {
+      "skill": "Share of each role’s ads that mention {name}.",
+      "role": "Share of {name} ads that mention each skill."
+    },
+    "compositionEmpty": "We haven’t linked this to any roles or skills yet.",
+    "weightSentence": "{pct} of {role} ads mention {skill}.",
+    "relKicker": "Co-occurrence",
+    "relTitle": "Often asked for together",
+    "relNote": "Skills that appear in the same ads as {name}, from how roles combine them.",
+    "relatedEmpty": "No strong pairings yet.",
+    "together": {
+      "often": "Often",
+      "sometimes": "Sometimes",
+      "occasionally": "Occasionally"
+    },
+    "togetherHint": {
+      "often": "asked for in the same ads most of the time",
+      "sometimes": "a common pairing in some roles",
+      "occasionally": "shows up together now and then"
+    },
+    "locKicker": "Location",
+    "locTitle": "Where the ads are",
+    "locationsEmpty": "No ads under this filter in the last four weeks.",
+    "locationsNote": "{total} ads in the last four weeks under your filter, by state or country.",
+    "decideKicker": "Before you decide",
+    "decideTitle": "Demand is only one input",
+    "effortLabel": {
+      "skill": "Learning effort",
+      "role": "Time to get job-ready"
+    },
+    "effort": {
+      "weeks": "Weeks",
+      "months": "Months",
+      "year_plus": "A year or more"
+    },
+    "effortShort": {
+      "weeks": "Weeks",
+      "months": "Months",
+      "year_plus": "Year+"
+    },
+    "effortBody": {
+      "skill": {
+        "weeks": "A few weeks of focused practice usually gets you to useful — often alongside something you already know.",
+        "months": "Expect a few months of regular practice, ideally on a real project, before you can use it at work.",
+        "year_plus": "Usually a year or more, often through a degree major or sustained project work."
+      },
+      "role": {
+        "weeks": "People with a related background often move in within weeks.",
+        "months": "Typically months of targeted preparation on top of a related degree.",
+        "year_plus": "Usually a year or more of study and experience, often through a specific degree or graduate program."
+      }
+    },
+    "transferLabel": "Transferability",
+    "transfer": {
+      "narrow": "Narrow",
+      "moderate": "Moderate",
+      "broad": "Broad"
+    },
+    "transferShort": {
+      "narrow": "Narrow",
+      "moderate": "Moderate",
+      "broad": "Broad"
+    },
+    "transferBody": {
+      "narrow": "Mostly useful in a small set of roles or one tool ecosystem.",
+      "moderate": "Carries over to several related roles.",
+      "broad": "Useful across many roles and industries, so it keeps its value if your plans change."
+    },
+    "demandIsOneInput": "Rising ads don’t mean you should learn this.",
+    "demandIsOneInputBody": "Your interests, the time you have and what people in the work tell you matter more. Effort and transferability are editorial estimates, not measurements.",
+    "nextKicker": "Next step",
+    "nextTitle": {
+      "skill": "Numbers only go so far. Ask someone who uses {name}.",
+      "role": "Numbers only go so far. Ask someone who does this job."
+    },
+    "nextBody": "We’ll suggest up to three verified practitioners who opted in, plus questions worth asking. It’s free, and you can decline or reschedule at any time.",
+    "nextCta": "Find someone to talk to",
+    "provenance": "Where these numbers come from",
+    "provSources": "Sources",
+    "provUpdated": "Last updated",
+    "provTracking": "Tracked since {date}",
+    "provSample": "Sample",
+    "provSampleValue": "{n} ads in the last {days} days under this filter",
+    "provThreshold": "We need at least {min} ads before showing a number or drawing a trend.",
+    "provMore": "Method",
+    "provMetricLink": "How “{metric}” is measured",
+    "provAllMetrics": "All measures and where they apply",
+    "provSourcesLink": "Data sources and extraction method"
+  },
+  "ComparePage": {
+    "metaTitle": "Compare",
+    "metaTitlePair": "{a} vs {b}",
+    "metaDescription": "Put two skills or two roles side by side under the same filter: demand, change, entry-level share, overlap, effort and transferability.",
+    "kicker": "Compare",
+    "title": "Side by side",
+    "lede": "Two skills or two roles under the same filter. We lay out the evidence and the trade-offs — we never pick a winner.",
+    "pickA": "First",
+    "pickB": "Second",
+    "pickerPlaceholder": "Choose a skill or role",
+    "pickerChoose": "{label}: choose a skill or role",
+    "pickerChange": "{label}: {name}. Change",
+    "pickerSearch": "Search for the {label} item",
+    "pickerSearchAny": "Search skills and roles",
+    "pickerSearchType": {
+      "skill": "Search skills",
+      "role": "Search roles"
+    },
+    "pickerRestricted": {
+      "skill": "Only skills — compare like with like.",
+      "role": "Only roles — compare like with like."
+    },
+    "pickerEmpty": "Nothing matches. Try a common alias such as “JS”.",
+    "pickerClear": "Clear this side",
+    "swap": "Swap the two sides",
+    "mismatchTitle": "Compare like with like",
+    "mismatchBody": "{a} and {b} are different kinds of thing, so their numbers don’t line up. Pick two skills or two roles.",
+    "sameTitle": "Pick two different items",
+    "sameBody": "Both sides are {name}. Choose something else for one of them.",
+    "partialTitle": "Now pick something to compare {name} with",
+    "partialBody": {
+      "skill": "Choose another skill — perhaps one from a different elective, or one that’s often asked for alongside it.",
+      "role": "Choose another role — perhaps a direction you’re weighing up against it."
+    },
+    "pairsKicker": "Start here",
+    "pairsTitle": "Common comparisons",
+    "vs": "vs",
+    "pairsOpen": "Compare",
+    "sideBySide": "Side by side",
+    "openPage": "Full page",
+    "talkShort": "Talk to someone",
+    "measuresTitle": "Key measures",
+    "colMeasure": "Measure",
+    "noWinner": "Numbers are shown side by side without highlighting a “better” one: which matters depends on what you want.",
+    "trendKicker": "Trend",
+    "trendTitle": "How they moved",
+    "corrKicker": "Do they move together?",
+    "corr": {
+      "strong": "Ads for {a} and {b} move together strongly.",
+      "some": "Ads for {a} and {b} move together somewhat.",
+      "weak": "Ads for {a} and {b} don’t move together much.",
+      "opposite": "Ads for {a} and {b} tend to move in opposite directions."
+    },
+    "corrValue": "Correlation {r} across the last 52 weeks of ad counts (1 = always together, 0 = unrelated).",
+    "corrCaveat": "Moving together doesn’t mean one causes the other — both follow the overall hiring cycle, including the summer slowdown.",
+    "overlapKicker": "Overlap",
+    "overlapTitle": {
+      "skill": "How they relate",
+      "role": "Skills in common"
+    },
+    "together": {
+      "often": "Often asked for together.",
+      "sometimes": "Sometimes asked for together.",
+      "occasionally": "Rarely asked for together."
+    },
+    "togetherBody": "This reflects how often roles ask for {a} and {b} in the same ads. The roles behind it are below.",
+    "overlapRoles": "{shared, plural, =0 {No skills in common} one {# skill in common} other {# skills in common}} out of {total} these roles ask for.",
+    "sharedLabel": {
+      "skill": "Roles that ask for both",
+      "role": "Both ask for"
+    },
+    "onlyLabel": {
+      "skill": "Only {name}",
+      "role": "Only {name}"
+    },
+    "none": "None",
+    "effortTitle": "Effort and transferability",
+    "limitsKicker": "Keep in mind",
+    "limitsTitle": "What this can’t tell you",
+    "limits": {
+      "l1": "Which one you’ll enjoy, or which fits the rest of your study.",
+      "l2": "How hard it is to get a first job in either — ads count openings, not competition for them.",
+      "l3": "Where the market goes next. Past movement is not a forecast.",
+      "l4": "Anything about you. These numbers describe the market, never people."
+    },
+    "talkAbout": "Ask about {name}"
+  },
+  "SearchPage": {
+    "metaTitle": "Search",
+    "metaTitleQuery": "“{q}” — search",
+    "kicker": "Search",
+    "title": "Find a skill or role",
+    "titleQuery": "Results for “{q}”",
+    "lede": "Search by skill, tool or role. Common aliases work too — “JS” finds JavaScript, “k8s” finds Kubernetes.",
+    "inputLabel": "Search skills and roles",
+    "placeholder": "Try “JS”, “k8s” or “data analyst”",
+    "submit": "Search",
+    "summary": "{n, plural, =0 {No results} one {# result} other {# results}} for “{q}”",
+    "count": {
+      "skill": "{n, plural, one {# skill} other {# skills}}",
+      "role": "{n, plural, one {# role} other {# roles}}"
+    },
+    "group": {
+      "skill": "Skills",
+      "role": "Roles"
+    },
+    "aliasNote": "Matched “{matched}” — we list this as {name}.",
+    "emptyTitle": "Nothing matches “{q}”",
+    "emptyBody": "We may not track it yet, or it goes by another name. Try a shorter word, a common alias, or browse the whole market.",
+    "emptyBrowse": "Browse the market",
+    "tryKicker": "Try",
+    "tryTitle": "Searches that work",
+    "tryNote": "Aliases and abbreviations are matched to one standard name, so every search lands on the same numbers.",
+    "browseKicker": "Or start from",
+    "browseTitle": "Familiar names",
+    "browseAll": "Browse the whole market",
+    "missing": "Not what you were after?"
+  },
+  "MetricPage": {
+    "indexMetaTitle": "Measures",
+    "indexMetaDescription": "Every measure we show, what it counts, and whether it applies to skills, roles or both.",
+    "metaTitle": "{metric} — measure",
+    "indexKicker": "Method",
+    "indexTitle": "What each number means",
+    "indexLede": "Every measure has one definition, one denominator and one source. Only valid combinations appear in the app — a skill has no salary, so we never show one.",
+    "legendApplies": "Applies",
+    "legendNot": "Doesn’t apply",
+    "legendDefault": "Shown first for that type",
+    "legendText": "Read from ad text — has a known error rate",
+    "defaultBadge": "Default",
+    "textBadge": "Text-derived",
+    "tierKicker": {
+      "common": "Common measure",
+      "advanced": "Advanced measure"
+    },
+    "tierTitle": {
+      "common": "Common",
+      "advanced": "Advanced"
+    },
+    "tierNote": {
+      "common": "Shown on boards and ticker pages. Start here.",
+      "advanced": "Behind “More measures”. Noisier or easier to misread — read the definition before leaning on one."
+    },
+    "tableCaption": "{tier} measures and where they apply",
+    "colMetric": "Measure",
+    "colType": {
+      "skill": "Skills",
+      "role": "Roles"
+    },
+    "colSource": "Source",
+    "defaultFor": "Default for {type}",
+    "needsHistory": "Needs {days} days of data",
+    "srApplies": "Applies to {type}",
+    "srNot": "Doesn’t apply to {type}",
+    "indexFooter": "How the underlying data is collected, and what we never collect:",
+    "sourcesLink": "Sources and method",
+    "breadcrumb": "Breadcrumb",
+    "backToAll": "All measures",
+    "appliesTo": "{type}",
+    "notFor": "Not for {type}",
+    "defKicker": "Definition",
+    "defTitle": "Exactly what it counts",
+    "factWindow": "Time window",
+    "factWindowValue": "{days} days, ending with the latest complete week",
+    "factSample": "At least {min} ads, otherwise we say “not enough ads” and draw nothing",
+    "factHistory": "Available after",
+    "factHistoryValue": "{days} days of tracking for an item",
+    "factHistoryNone": "Available from the first day we track an item",
+    "factIgnores": "Filters",
+    "sourceFor": "for {type}",
+    "textTitle": "Read from ad text",
+    "textBody": "This measure comes from rules applied to the wording of each ad. Rules miss some phrasing and misread some ads — the known error from our hand-checked sample is in “Known limits”, and the rules themselves are on the sources page.",
+    "exKicker": "Examples",
+    "exTitle": "What it looks like",
+    "exNote": "Across Australia, all levels, this week.",
+    "exSample": "Based on {n} ads",
+    "sigKicker": "Signals",
+    "sigTitle": "How signals use it",
+    "signalUse": {
+      "change_4w": "This is the signal measure. We flag “more ads” when it is at least +{rel}% and at least {abs} more ads, and “fewer ads” for the same size of fall — only when there are at least {min} ads behind it.",
+      "entry_level_share": "We flag “more entry-level openings” when this share rises by at least {pp} percentage points compared with eight weeks earlier, with at least {min} ads behind it.",
+      "growth_12m": "Shown next to roles in lists for context. It does not trigger alerts: official series are revised, and a year is too slow to act on.",
+      "none": "Not used for signals. It’s here to give context next to demand, not to tell you when to act."
+    },
+    "typePlural": {
+      "skill": "skills",
+      "role": "roles"
+    }
+  },
+  "SourcesPage": {
+    "metaTitle": "Sources and method",
+    "metaDescription": "Where our numbers come from, how filters become numbers, the sample threshold, extraction rules and their known error, and what we never collect.",
+    "kicker": "Method",
+    "title": "Sources and method",
+    "lede": "Every number in the app traces back to a licensed source, a collection time and a count of ads. This page is the long version of every ⓘ.",
+    "illustrativeMore": "The method below is the one the live pipeline uses.",
+    "tocLabel": "On this page",
+    "toc": {
+      "sources": "Data sources",
+      "kinds": "Kinds of source",
+      "cells": "From filter to number",
+      "sample": "Sample threshold",
+      "text": "Read from ad text",
+      "signals": "Signals",
+      "never": "What we never collect"
+    },
+    "sourcesKicker": "Data sources",
+    "sourcesTitle": "Where the numbers come from",
+    "use": {
+      "ads": "Skill-level counts, entry-level share, work rights, work mode and advertised pay.",
+      "official": "Occupation-level demand for roles, including the 12-month change.",
+      "practitioner": "What people in the work said after coffee chats — only ever shown in aggregate."
+    },
+    "licence": "Licence",
+    "cadence": "Updated",
+    "lastRun": "Last run",
+    "status": {
+      "healthy": "Up to date",
+      "delayed": "Running late — numbers may be a day old",
+      "failed": "Last run failed — showing the previous run"
+    },
+    "kindsKicker": "Kinds of source",
+    "kindsTitle": "Three shapes, used everywhere",
+    "kindsLede": "Next to every number is a small mark for the kind of source it comes from. The shape carries the meaning, so it still works without colour.",
+    "shape": {
+      "official": "Square",
+      "ads": "Circle",
+      "practitioner": "Diamond"
+    },
+    "kindBody": {
+      "official": "Published by government agencies such as Jobs and Skills Australia. Counted at occupation level, revised from time to time, and slower to move.",
+      "ads": "Counts from licensed job-ad data, collected daily. Fast and skill-level, but ads are not the same as jobs: some are duplicates, some are never filled.",
+      "practitioner": "Experience from verified practitioners after coffee chats. It’s personal and qualitative — never a statistic about a market."
+    },
+    "cellsKicker": "Filters",
+    "cellsTitle": "From filter to number",
+    "cells1": "When we collect an ad we file it into exactly one cell, made of four things:",
+    "cell": {
+      "place": "Place",
+      "mode": "Work mode",
+      "level": "Level",
+      "rights": "Work rights"
+    },
+    "cellHint": {
+      "place": "The most specific region we can tell, e.g. Parramatta rather than Sydney",
+      "mode": "On-site, hybrid or remote. Ads that don’t say count as on-site",
+      "level": "Graduate, other entry-level, or everything else",
+      "rights": "Requires PR or citizenship, not stated, or sponsorship offered"
+    },
+    "cells2": "Your filter is turned into the set of cells it covers. Places expand to everything inside them, and rules are combined so that an ad matching two rules is still counted once.",
+    "cellsExample": "“On-site in Sydney or Melbourne, plus remote anywhere in Australia” covers every Sydney and Melbourne region for on-site ads, and every Australian region for remote ads — added up once each.",
+    "cells3": "Shares use the same cells for the top and the bottom of the fraction, so a percentage always means “of ads matching your filter”. A few shares deliberately ignore one filter — entry-level share ignores the level filter, for example — and say so in their definition.",
+    "sampleKicker": "Sample threshold",
+    "sampleTitle": "At least {min} ads, or no number",
+    "sample1": "If fewer than {min} ads sit behind a number, we show “not enough ads” instead of a value, draw no trend line and raise no signal. We suggest how to widen the filter instead.",
+    "sample2": "Salary comparisons need more: the skill premium needs at least {premium} ads that state a salary.",
+    "textKicker": "Extraction",
+    "textTitle": "Measures read from ad text",
+    "textLede": "Some measures depend on how an ad is worded. We use written rules, test them on a hand-checked sample of ads, and publish the known error next to each one.",
+    "textBadge": "Text-derived",
+    "noKnownError": "Being measured on our hand-checked sample.",
+    "textFoot": "Rules are versioned. When a rule changes, we re-run it over past ads so trends don’t jump because of our own change.",
+    "signalsKicker": "Signals",
+    "signalsTitle": "When we flag a move",
+    "signal": {
+      "rise": "More ads than 4 weeks ago",
+      "fall": "Fewer ads than 4 weeks ago",
+      "entry_open": "More entry-level openings"
+    },
+    "signalRule": {
+      "rise": "Ads in the last four weeks are at least {rel}% and at least {abs} ads higher than the four weeks before, with at least {min} ads behind it.",
+      "fall": "The same test in the other direction: at least {rel}% and {abs} ads lower. Worded neutrally — a fall is information, not a warning.",
+      "entry_open": "The share of entry-level ads is at least {pp} percentage points higher than eight weeks earlier, with at least {min} ads behind it."
+    },
+    "signalsFoot": "Signals describe the market. They never rank people and never tell you what to learn.",
+    "neverKicker": "Boundaries",
+    "neverTitle": "What we never collect",
+    "never": {
+      "n1": "We never scrape LinkedIn, SEEK or any site whose terms forbid it. Job-ad data comes from licensed APIs and published statistics only.",
+      "n2": "We never buy or build profiles of individual job seekers, and we never sell data. Employers can’t pay us for anything.",
+      "n3": "We never show practitioner feedback about an individual — only aggregated, with enough responses to protect identities."
+    },
+    "neverFoot": "Personal data is stored in Australia, in line with the Privacy Act 1988 and the Australian Privacy Principles."
+  },
+  "MyNotes": {
+    "kicker": "Only you can see this",
+    "title": "Your chats about {name}",
+    "with": "Chat with {name}",
+    "open": "Open chat",
+    "private": "Your debriefs stay private. They’re never shown to practitioners or other students."
+  }
+}

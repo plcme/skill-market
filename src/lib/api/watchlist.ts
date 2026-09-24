@@ -143,3 +143,27 @@ export function selectWatchlist(d: DemoDB): WatchlistRow[] {
 export function findWatchItem(d: DemoDB, slug: string, filter: FilterSpec): WatchlistItem | undefined {
   return d.watchlist.find(w => w.instrument_slug === slug && sameFilter(w.filter, filter));
 }
+
+/** Put a just-removed item back exactly as it was, baseline included (undo for remove). */
+export async function restoreWatchlistItem(item: WatchlistItem): Promise<Result<WatchlistItem>> {
+  await latency(40, 60);
+  return transact(d => {
+    const denied = guard(d, 'student');
+    if (denied) return { ok: false, error: denied };
+    if (d.watchlist.some(w => w.id === item.id || (w.instrument_slug === item.instrument_slug && sameFilter(w.filter, item.filter)))) return fail('conflict', 'alreadyWatching');
+    if (d.watchlist.length >= MAX_WATCHLIST_ITEMS) return fail('validation', 'watchlistFull');
+    d.watchlist.push(item);
+    d.watchlist.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return ok(item);
+  });
+}
+
+/** Desk read model: signal rows first, then everything grouped Held / Watching (FR-W1–W3). */
+export function selectWatchlistGroups(d: DemoDB): { signals: WatchlistRow[]; held: WatchlistRow[]; watching: WatchlistRow[] } {
+  const rows = selectWatchlist(d);
+  return {
+    signals: rows.filter(r => r.signal),
+    held: rows.filter(r => r.item.status === 'held'),
+    watching: rows.filter(r => r.item.status === 'watching'),
+  };
+}

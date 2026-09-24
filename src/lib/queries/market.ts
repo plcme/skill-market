@@ -173,3 +173,39 @@ export function getSources(): DataSource[] {
 }
 
 export { signalMetric };
+
+// --- Public market pages (added for /market, /search, /metrics) -------------
+
+/** FR-M6 "30-second" strip: every skill or role with a signal under this filter, biggest move first. */
+export function getSignalsNow(filter: FilterSpec, limit = 12): InstrumentSnapshot[] {
+  return INSTRUMENTS
+    .map(i => snapshot(i.slug, defaultMetric(i.type), filter))
+    .filter(s => s.signal)
+    .sort((x, y) => Math.abs(y.signal?.magnitude ?? 0) - Math.abs(x.signal?.magnitude ?? 0))
+    .slice(0, limit);
+}
+
+export interface SearchResult {
+  hit: SearchHit;
+  snapshot: InstrumentSnapshot;
+}
+
+/** `/search?q=`: alias-aware hits with a ticker snapshot each, grouped by type (FR-D6). */
+export function searchWithSnapshots(q: string, filter: FilterSpec): { skills: SearchResult[]; roles: SearchResult[] } {
+  const { skills, roles } = search(q);
+  const withSnap = (hit: SearchHit): SearchResult => ({ hit, snapshot: snapshot(hit.instrument.slug, defaultMetric(hit.instrument.type), filter) });
+  return { skills: skills.map(withSnap), roles: roles.map(withSnap) };
+}
+
+const METRIC_EXAMPLES: Record<ActiveInstrumentType, readonly string[]> = {
+  skill: ['python', 'rust'],
+  role: ['software-engineer', 'data-analyst'],
+};
+
+/** `/metrics/[key]`: national readings for two familiar instruments of each type the metric applies to. */
+export function getMetricExamples(key: MetricKey, filter: FilterSpec): Array<{ instrument: Instrument; reading: MetricReading }> {
+  return METRICS[key].applies_to.flatMap(type => METRIC_EXAMPLES[type]
+    .map(slug => getInstrument(slug))
+    .filter((i): i is Instrument => Boolean(i))
+    .map(instrument => ({ instrument, reading: computeMetric(instrument.slug, key, filter) })));
+}

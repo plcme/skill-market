@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { METRICS } from '@/lib/metrics/registry';
 import { formatCount, formatShare } from '@/lib/market/format';
-import { formatDate } from '@/lib/time';
+import { formatDayStable } from '@/lib/time';
 import type { MetricKey, SeriesPoint } from '@/lib/market/types';
 import { Segmented } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
@@ -99,7 +99,7 @@ export function TrendChart({ lines, metric, caption, defaultRange = '1y', height
       const month = p.date.slice(0, 7);
       if (month !== lastMonth) {
         lastMonth = month;
-        if (i > 0) out.push({ i, label: formatDate(p.date, { month: 'short', ...(p.date.slice(5, 7) === '01' ? { year: '2-digit' } : {}) }) });
+        if (i > 0) out.push({ i, label: formatDayStable(p.date, { day: false, year: p.date.slice(5, 7) === '01' ? 'short' : false }) });
       }
     });
     const every = Math.ceil(out.length / Math.max(2, Math.floor(innerW / 70)));
@@ -124,7 +124,7 @@ export function TrendChart({ lines, metric, caption, defaultRange = '1y', height
 
   const cursorPoint = cursor !== null && first ? first.points[cursor] : null;
   const readout = cursorPoint
-    ? `${formatDate(cursorPoint.date)}: ${visible.map(l => `${l.label} ${l.points[cursor ?? 0]?.value != null ? fmt(l.points[cursor ?? 0].value as number) : '—'}`).join(', ')}`
+    ? `${formatDayStable(cursorPoint.date)}: ${visible.map(l => `${l.label} ${l.points[cursor ?? 0]?.value != null ? fmt(l.points[cursor ?? 0].value as number) : '—'}`).join(', ')}`
     : '';
   const tipLeft = cursor !== null ? Math.min(width - 190, Math.max(0, x(cursor) - 90)) : 0;
 
@@ -208,7 +208,7 @@ export function TrendChart({ lines, metric, caption, defaultRange = '1y', height
         )}
         {cursorPoint ? (
           <div aria-hidden className="pointer-events-none absolute top-0 w-[180px] rounded-[4px] bg-ink px-2.5 py-2 text-[12px] text-paper shadow-float" style={{ left: tipLeft }}>
-            <p className="font-mono text-[10.5px] uppercase tracking-wider text-paper/70">{formatDate(cursorPoint.date)}</p>
+            <p className="font-mono text-[10.5px] uppercase tracking-wider text-paper/70">{formatDayStable(cursorPoint.date)}</p>
             {visible.map(l => {
               const v = l.points[cursor ?? 0]?.value;
               return (
@@ -239,7 +239,7 @@ export function TrendChart({ lines, metric, caption, defaultRange = '1y', height
               <tbody className="num">
                 {[...(first?.points ?? [])].map((p, i) => ({ p, i })).reverse().map(({ p, i }) => (
                   <tr key={p.date} className="border-t border-rule">
-                    <th scope="row" className="px-3 py-1.5 text-left font-normal text-ink-2">{formatDate(p.date)}</th>
+                    <th scope="row" className="px-3 py-1.5 text-left font-normal text-ink-2">{formatDayStable(p.date)}</th>
                     {visible.map(l => {
                       const v = l.points[i]?.value;
                       return <td key={l.id} className="px-3 py-1.5 text-right">{v == null ? '—' : fmt(v)}</td>;

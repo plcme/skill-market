@@ -1,9 +1,10 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Bookmark, BookmarkCheck, ChevronDown, Package, Trash2 } from 'lucide-react';
 import { useDB } from '@/lib/demo/store';
+import { useUiMode } from '@/lib/demo/ui-mode';
 import { addWatchlistItem, findWatchItem, removeWatchlistItem, updateWatchlistItem } from '@/lib/api/watchlist';
 import { useAction } from '@/lib/api/client';
 import { getInstrument } from '@/lib/market/catalog';
@@ -21,12 +22,10 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className }: {
   size?: 'sm' | 'md';
   className?: string;
 }) {
-  const t = useTranslations('Watch');
+  const t = useTranslations(useUiMode() === 'plain' ? 'WatchPlain' : 'Watch');
   const te = useTranslations('Errors');
   const db = useDB();
   const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
   const { toast } = useToast();
   const inst = getInstrument(slug);
   const onError = (code: string) => toast({ tone: 'warn', title: te.has(code) ? te(code) : te('generic') });
@@ -41,13 +40,12 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className }: {
   const item = signedIn ? findWatchItem(db, slug, filter) : undefined;
 
   if (!signedIn) {
-    const next = `${pathname}${params.toString() ? `?${params}` : ''}`;
     return (
       <Button
         variant="subtle"
         size={size}
         className={className}
-        onClick={() => toast({ title: t('signInToWatch'), body: t('signInBody'), action: { label: t('signIn'), onClick: () => router.push(`/auth/login?next=${encodeURIComponent(next)}`) } })}
+        onClick={() => toast({ title: t('signInToWatch'), body: t('signInBody'), action: { label: t('signIn'), onClick: () => router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`) } })}
       >
         <Bookmark aria-hidden />{t('watch')}
       </Button>

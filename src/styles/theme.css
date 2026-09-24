@@ -20,7 +20,7 @@
   --ink: #121316;
   --ink-2: #34363c;
   --muted: #5f5e57;
-  --faint: #8d8b81;
+  --faint: #6c6a62;
   --rule: #d9d4c7;
   --rule-strong: #121316;
   --accent: #2a45d0;
@@ -39,6 +39,8 @@
   --src-official: #2a45d0;
   --src-ads: #121316;
   --src-practitioner: #a8501a;
+  --night: #141518;
+  --night-ink: #f3f1ea;
   --overlay: rgb(18 19 22 / 0.42);
   --shadow: 0 1px 0 rgb(18 19 22 / 0.04), 0 12px 32px -12px rgb(18 19 22 / 0.18);
 }
@@ -51,7 +53,7 @@
   --ink: #eeece4;
   --ink-2: #cfcdc4;
   --muted: #a3a197;
-  --faint: #6d6b63;
+  --faint: #8e8c83;
   --rule: #2f302b;
   --rule-strong: #eeece4;
   --accent: #9daeff;
@@ -70,6 +72,8 @@
   --src-official: #9daeff;
   --src-ads: #eeece4;
   --src-practitioner: #f29a5e;
+  --night: #1b1c19;
+  --night-ink: #eeece4;
   --overlay: rgb(0 0 0 / 0.6);
   --shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
 }
@@ -101,6 +105,8 @@
   --color-src-ads: var(--src-ads);
   --color-src-practitioner: var(--src-practitioner);
   --color-overlay: var(--overlay);
+  --color-night: var(--night);
+  --color-night-ink: var(--night-ink);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
   --font-serif: "Newsreader Variable", "Iowan Old Style", Charter, Georgia, serif;

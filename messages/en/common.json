@@ -153,7 +153,28 @@
     "retry": "Try again",
     "notFoundTitle": "That page isn’t on the board",
     "notFoundBody": "It may have moved, or the link has a typo.",
-    "goMarket": "Go to the market"
+    "goMarket": "Go to the market",
+    "chatStateChanged": "This chat changed in the meantime. Here’s where it’s at now.",
+    "slotTaken": "That time was just taken. Please pick another.",
+    "tooLateToCancel": "Chats can only be cancelled up to 24 hours before they start.",
+    "tooEarlyToConfirm": "You can do this once the chat time has passed.",
+    "studentPaused": "New requests are paused for 30 days after two missed chats. See the no-show rules.",
+    "candidateUnavailable": "This person can’t take requests right now. Please choose someone else.",
+    "invalidEmail": "That doesn’t look like an email address.",
+    "freeEmailDomain": "That looks like a personal or student email. Use your work email, or ask for a manual review.",
+    "alreadyVerified": "You’re already verified.",
+    "codeFormat": "Enter the 6 digits from the email.",
+    "codeExpired": "That code has expired. Send a new one.",
+    "codeAttempts": "Too many tries. Send a new code.",
+    "codeIncorrect": "That code doesn’t match. Check the email and try again.",
+    "profileIncomplete": "Finish your profile first.",
+    "availabilityMissing": "Add at least one time window.",
+    "availabilityInvalid": "Fix the highlighted time windows.",
+    "alreadyBlocked": "You’ve already blocked this person.",
+    "aliasInvalid": "Use 1–40 lowercase letters, numbers, spaces or + # . / -",
+    "aliasExists": "That alias already points to this instrument.",
+    "aliasConflict": "That alias already points to another instrument.",
+    "agreeRequired": "Please confirm both to continue."
   },
   "Outbox": {
     "to": {
@@ -192,5 +213,24 @@
       "practitioner": "practitioner",
       "admin": "admin"
     }
+  },
+  "WatchPlain": {
+    "watch": "Track",
+    "watching": "Tracking",
+    "held": "I have it",
+    "watchThis": "Track this",
+    "iHaveThis": "I have this skill",
+    "markHeld": "Mark as a skill I have",
+    "markWatching": "Move to tracking",
+    "remove": "Stop tracking",
+    "manage": "Manage {name} in your list",
+    "moreOptions": "More ways to add {name}",
+    "signInToWatch": "Sign in to keep a list",
+    "signInBody": "It’s free. Your filter is saved with each item.",
+    "signIn": "Sign in",
+    "added": "Now tracking {name}",
+    "heldAdded": "{name} added to skills you have",
+    "filterIncluded": "Saved with the current filter.",
+    "removed": "{name} removed"
   }
 }

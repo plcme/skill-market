@@ -37,7 +37,7 @@ export function PreviewDock() {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="no-print fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 z-30 inline-flex h-9 items-center gap-2 rounded-full border border-ink/15 bg-surface/95 pl-2.5 pr-3.5 text-[12.5px] font-medium shadow-float backdrop-blur transition hover:border-ink/40 md:bottom-5 md:left-5"
+          className="no-print fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 z-30 inline-flex h-9 items-center gap-2 rounded-full border border-ink/15 bg-surface/95 pl-2.5 pr-3.5 text-[12.5px] font-medium shadow-float backdrop-blur transition hover:border-ink/40 md:bottom-5 md:left-auto md:right-5"
         >
           <FlaskConical className="size-4 text-accent" aria-hidden />
           <span>{t('label')}</span>

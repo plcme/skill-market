@@ -43,7 +43,7 @@ export function ToastProvider({ children, dismissLabel }: { children: React.Reac
       <div
         aria-live="polite"
         aria-atomic="false"
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4 md:bottom-6 md:items-end md:px-6"
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4 md:bottom-20 md:items-end md:px-6"
       >
         {toasts.map(t => {
           const Icon = ICON[t.tone];

@@ -58,3 +58,19 @@ export function formatRelative(iso: string, now: number): string {
   if (abs < 30 * DAY) return rtf.format(Math.round(diff / DAY), 'day');
   return rtf.format(Math.round(diff / (30 * DAY)), 'month');
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * ICU data differs between Node and browsers ("Sep" vs "Sept"), which breaks
+ * hydration. Use this for any date rendered by a client component on the server.
+ * Input is a calendar date (YYYY-MM-DD or ISO); output "21 Sep 2026".
+ */
+export function formatDayStable(iso: string, parts: { day?: boolean; year?: boolean | 'short' } = { day: true, year: true }): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  const out: string[] = [];
+  if (parts.day) out.push(String(d));
+  out.push(MONTHS[m - 1]);
+  if (parts.year) out.push(parts.year === 'short' ? `’${String(y).slice(2)}` : String(y));
+  return out.join(' ');
+}

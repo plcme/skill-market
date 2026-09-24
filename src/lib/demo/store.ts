@@ -177,6 +177,8 @@ export function setPersona(persona: Persona | null) {
 export function advanceClock(hours: number) {
   transact(d => {
     d.clock_offset_ms += hours * HOUR;
+    // Jobs ran at the old time inside transact; catch up to the new time now.
+    runScheduledJobs(d, clockNow(d));
   });
 }
 
