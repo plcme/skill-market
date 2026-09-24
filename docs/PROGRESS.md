@@ -42,6 +42,8 @@
 
 ## 日志
 
+- 2026-09-24：用户要求在新 worktree 另起分支、按主会话审美重做完整交互前端并写接口报告。分支 `frontend-v2`（`../skill-market-fe2`，基于 `a0428bd`）：主会话完成设计系统（编辑式纸墨风格、Newsreader/Geist 自托管字体、浅深色 token）、合成市场引擎、筛选/指标注册表、应用外壳与首页；三个并行子 agent 分别完成公开盘面、学生侧、咖啡聊/从业者/后台/法律页；主会话集成并在浏览器中逐页核查（1440/375/深色）。lint、typecheck、118 项单测、45 路由生产构建、32 项 Playwright + axe 通过。接口契约见 `docs/FRONTEND_API_REPORT.md`，其 §9 列出需后端补的字段（待拍板）。未合并 dev/main，未推送。
+
 - 2026-09-22：本地完整验收通过：`pnpm db:reset`、`pnpm verify`（lint/typecheck、7 单测、13 pgTAP 权限测试、standalone build）、真实数据库 health 集成测试、桌面/手机 2 个 Playwright + axe 用例。生产依赖审计无已知漏洞。草稿 PR：https://github.com/plcme/skill-market/pull/1 。
 - 2026-09-22：本机首次全栈启动资源超时，关闭本阶段不用的 Storage/Studio/Realtime/Edge Runtime/Analytics 后通过；生成 types 来自真实本地数据库。Vercel 初次作者识别失败及静态输出目录误配置均已修正，最新预览由远端检查验收。尚未合并 dev/main，未启动 M1，未写云端数据库。未执行独立模型审查，本轮为实现自检；实际费用未获取，不新增估算为实测。
 
