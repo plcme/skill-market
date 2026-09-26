@@ -154,3 +154,18 @@ test('account menu does not repeat My desk', async ({ page }, info) => {
   await expect(menu.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
   await expect(menu.getByRole('menuitem', { name: 'My desk' })).toHaveCount(0);
 });
+
+test('settings offer Light / Dark and a way back to matching the device', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await loadSampleStudent(page);
+  await page.goto('/me/settings');
+  const theme = page.getByRole('radiogroup', { name: 'Theme' });
+  await expect(theme.getByRole('radio')).toHaveText(['Light', 'Dark']);
+  await expect(theme.getByRole('radio', { name: 'Light' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Match my device' })).toHaveCount(0);
+  await theme.getByRole('radio', { name: 'Dark' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('button', { name: 'Match my device' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect(await page.evaluate(() => localStorage.getItem('sm-theme'))).toBeNull();
+});
