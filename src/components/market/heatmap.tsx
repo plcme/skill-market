@@ -110,7 +110,7 @@ export function HeatmapTiles({ heatmap, filter, label, className }: { heatmap: H
               >
                 {roomy ? (
                   <>
-                    <span className="line-clamp-2 text-[13px] font-medium leading-tight lg:text-[14px]">{tile.name}</span>
+                    <span lang="en" className="line-clamp-2 hyphens-auto break-words text-[13px] font-medium leading-tight lg:text-[14px]">{tile.name}</span>
                     <span className="flex flex-wrap items-baseline justify-between gap-x-2">
                       <span className="num font-serif text-[18px] leading-none lg:text-[22px]">{changeText(tile) ?? t('thinShort')}</span>
                       <span className="num text-[11.5px]">{t('adsShort', { n: formatCount(tileArea(tile)) })}</span>

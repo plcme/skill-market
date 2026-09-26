@@ -67,7 +67,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             <div className="min-w-0">
               <p className="kicker">{tt(type)} · {inst.category}</p>
               <p className="mt-1 font-mono text-[12px] text-muted">
-                {type === 'role' ? (inst.anzsco ? tt('anzsco', { code: inst.anzsco }) : tt('noAnzsco')) : type === 'industry' && inst.anzsic ? tt('anzsic', { code: inst.anzsic }) : t('tracked', { date: formatDate(inst.tracking_since, { month: 'short', year: 'numeric' }) })}
+                {type === 'role' ? (inst.anzsco ? tt('anzsco', { code: inst.anzsco }) : tt('noAnzsco')) : t('tracked', { date: formatDate(inst.tracking_since, { month: 'short', year: 'numeric' }) })}
               </p>
             </div>
           </div>

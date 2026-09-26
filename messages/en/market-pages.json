@@ -35,7 +35,7 @@
     "colName": "Name",
     "colTrend": "12-month trend",
     "colChangeMixed": "Change",
-    "colChangeMixedHint": "4-week change for skills, 12-month change for roles",
+    "colChangeMixedHint": "4-week change for skills and industries, 12-month change for roles",
     "count": {
       "skill": "{n, plural, one {# skill} other {# skills}}",
       "role": "{n, plural, one {# role} other {# roles}}",
