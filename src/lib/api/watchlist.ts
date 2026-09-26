@@ -37,7 +37,7 @@ export async function addWatchlistItem(input: AddWatchlistInput): Promise<Result
   if (!parsed.success) return fail('validation', 'validation');
   const inst = getInstrument(parsed.data.instrument_slug);
   if (!inst) return fail('not_found', 'instrumentNotFound');
-  if (inst.type !== 'skill' && parsed.data.status === 'held') return fail('validation', 'rolesCannotBeHeld');
+  if (inst.type !== 'skill' && parsed.data.status === 'held') return fail('validation', inst.type === 'industry' ? 'industriesCannotBeHeld' : 'rolesCannotBeHeld');
   const metric: MetricKey = parsed.data.metric && isValidMetric(inst.type, parsed.data.metric) ? parsed.data.metric : defaultMetric(inst.type);
   const filter = normaliseFilter(parsed.data.filter as FilterSpec);
   return transact((d, now) => {
@@ -73,7 +73,7 @@ export async function updateWatchlistItem(input: UpdateWatchlistInput): Promise<
     if (!item) return fail('not_found', 'notFound');
     const inst = getInstrument(item.instrument_slug);
     if (parsed.data.status) {
-      if (inst && inst.type !== 'skill' && parsed.data.status === 'held') return fail('validation', 'rolesCannotBeHeld');
+      if (inst && inst.type !== 'skill' && parsed.data.status === 'held') return fail('validation', inst.type === 'industry' ? 'industriesCannotBeHeld' : 'rolesCannotBeHeld');
       item.status = parsed.data.status as WatchStatus;
     }
     let rebaseline = false;

@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { ArrowRight } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard, getIndustryHeatmap, getMovers } from '@/lib/queries/market';
-import { MIN_SAMPLE_DEFAULT } from '@/lib/metrics/registry';
+import { METRICS } from '@/lib/metrics/registry';
 import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { MoversCarousel, type MoverItem } from '@/features/home/movers-carousel';
 import { formatDate } from '@/lib/time';
@@ -29,6 +29,7 @@ export default async function HomePage() {
     from: m.change.from ?? 0,
     to: m.change.to ?? 0,
     sparkline: m.sparkline,
+    minSample: m.change.min_sample,
   }));
 
   return (
@@ -65,7 +66,7 @@ export default async function HomePage() {
 
       <Container className="mt-14">
         <SectionHeader kicker={t('signalsKicker')} title={t('signalsTitle')} action={<Link href="/market" className="link text-sm">{t('seeMarket')}</Link>} />
-        <p className="-mt-2 mb-4 max-w-3xl text-[13px] text-ink-2">{t('moversRule', { min: MIN_SAMPLE_DEFAULT })}</p>
+        <p className="-mt-2 mb-4 max-w-3xl text-[13px] text-ink-2">{t('moversRule', { min: movers[0]?.minSample ?? METRICS.change_4w.min_sample })}</p>
         <MoversCarousel items={movers} />
         <p className="mt-3 max-w-2xl text-[13px] text-muted">{t('signalsNote')}</p>
       </Container>

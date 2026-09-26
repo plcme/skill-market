@@ -25,6 +25,8 @@ export interface MoverItem {
   from: number;
   to: number;
   sparkline: number[];
+  /** Minimum base count this mover had to clear (from its reading). */
+  minSample: number;
 }
 
 const INTERVAL_MS = 8000;

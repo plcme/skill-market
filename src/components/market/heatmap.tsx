@@ -61,7 +61,7 @@ export function HeatmapLegend({ heatmap, filter, parentName, className }: { heat
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
         <span className="font-medium text-ink">{t('colourLabel')}</span>
         <span>{t('colourBody')}</span>
-        <MetricInfo metric="change_4w" type="industry" reading={sample?.change} filter={filter} />
+        <MetricInfo metric="change_4w" type={heatmap.kind === 'industries' ? 'industry' : 'skill'} reading={sample?.change} filter={filter} />
       </div>
       <ul className="flex flex-wrap gap-1" aria-label={t('legendLabel')}>
         {LEGEND_STEPS.map(step => (

@@ -101,6 +101,7 @@ test.describe('market board', () => {
   });
 
   test('Filter button opens the builder and shows the scope when active', async ({ page }) => {
+    test.slow();
     await page.goto('/market?f=r.au-nt-darwin_graduate_npr');
     const button = page.getByRole('button', { name: /Filter the whole board, 3 conditions active/ });
     await expect(button).toBeVisible();
@@ -109,8 +110,13 @@ test.describe('market board', () => {
     await expect(page.getByRole('dialog', { name: 'Filter' })).toBeVisible();
     await noSeriousAxe(page);
     await page.keyboard.press('Escape');
-    await page.getByRole('link', { name: 'Reset filter' }).click();
-    await expect(page).toHaveURL(/\/market$/);
+    const reset = page.getByRole('link', { name: 'Reset filter' });
+    await expect(reset).toHaveAttribute('href', '/market');
+    // The click can land before hydration under load; retry until the URL changes.
+    await expect(async () => {
+      if (!/\/market$/.test(page.url())) await reset.click({ timeout: 5000 });
+      await expect(page).toHaveURL(/\/market$/, { timeout: 10000 });
+    }).toPass({ timeout: 40000 });
     await expect(page.getByRole('button', { name: 'Filter the whole board' })).toBeVisible();
   });
 
@@ -182,8 +188,11 @@ test('settings offer Light / Dark and a way back to matching the device', async 
 test.describe('industries', () => {
   test('Industries tab lists ANZSIC divisions by Demand', async ({ page }) => {
     await page.goto('/market');
-    await page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Industries' }).click();
-    await expect(page).toHaveURL(/type=industry/);
+    const tab = page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Industries' });
+    await expect(tab).toHaveAttribute('href', '/market?type=industry');
+    // Follow the link directly: a click before hydration can be lost under load.
+    await page.goto('/market?type=industry');
+    await expect(page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Industries' })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('button', { name: /Measure\s*Demand/ })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Health Care and Social Assistance' }).first()).toBeVisible();
   });

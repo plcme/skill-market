@@ -39,7 +39,7 @@ export default async function MetricsIndexPage() {
               <tr className="border-b border-rule-strong">
                 <th scope="col" className="kicker py-2 pr-4 font-normal">{t('colMetric')}</th>
                 {ACTIVE_INSTRUMENT_TYPES.map(type => (
-                  <th key={type} scope="col" className="kicker w-16 py-2 text-center font-normal sm:w-24">{t(`colType.${type}`)}</th>
+                  <th key={type} scope="col" className="kicker hidden w-24 py-2 text-center font-normal sm:table-cell">{t(`colType.${type}`)}</th>
                 ))}
                 <th scope="col" className="kicker hidden w-44 py-2 pl-4 font-normal md:table-cell">{t('colSource')}</th>
               </tr>
@@ -58,11 +58,15 @@ export default async function MetricsIndexPage() {
                         {def.text_derived ? <Badge tone="outline">{t('textBadge')}</Badge> : null}
                         {def.available_after_days > 0 ? <Badge tone="neutral">{t('needsHistory', { days: def.available_after_days })}</Badge> : null}
                       </p>
+                      {/* Phones: the per-type columns collapse into one line. */}
+                      <p className="mt-2 text-[12.5px] text-muted sm:hidden">
+                        {t('appliesList', { types: ACTIVE_INSTRUMENT_TYPES.filter(type => def.applies_to.includes(type)).map(type => t(`colType.${type}`)).join(', ') })}
+                      </p>
                     </th>
                     {ACTIVE_INSTRUMENT_TYPES.map(type => {
                       const applies = def.applies_to.includes(type);
                       return (
-                        <td key={type} className="py-4 text-center">
+                        <td key={type} className="hidden py-4 text-center sm:table-cell">
                           {applies ? <Check className="mx-auto size-4 text-ink" aria-hidden /> : <Minus className="mx-auto size-4 text-faint" aria-hidden />}
                           <span className="sr-only">{t(applies ? 'srApplies' : 'srNot', { type: t(`typePlural.${type}`) })}</span>
                         </td>

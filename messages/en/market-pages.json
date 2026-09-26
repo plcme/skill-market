@@ -426,6 +426,7 @@
       "growth_12m": "Shown next to roles in lists for context. It does not trigger alerts: official series are revised, and a year is too slow to act on.",
       "none": "Not used for signals. It’s here to give context next to demand, not to tell you when to act."
     },
+    "appliesList": "Applies to: {types}",
     "typePlural": {
       "skill": "skills",
       "role": "roles",
