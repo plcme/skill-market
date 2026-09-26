@@ -85,6 +85,17 @@ export function isDefaultFilter(spec: FilterSpec): boolean {
   return filterHash(spec) === filterHash(DEFAULT_FILTER);
 }
 
+/**
+ * How many conditions narrow the board, for the Filter button's badge: each
+ * place/work-mode rule (unless it's the national default), plus seniority and
+ * work rights when set.
+ */
+export function activeConditionCount(spec: FilterSpec): number {
+  const n = normaliseFilter(spec);
+  const defaultRules = sameFilter({ ...n, seniority: 'all', work_rights: 'all' }, DEFAULT_FILTER);
+  return (defaultRules ? 0 : n.rules.length) + (n.seniority !== 'all' ? 1 : 0) + (n.work_rights !== 'all' ? 1 : 0);
+}
+
 export function sameFilter(a: FilterSpec, b: FilterSpec): boolean {
   return filterHash(a) === filterHash(b);
 }

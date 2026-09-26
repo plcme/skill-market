@@ -24,48 +24,71 @@ function useSparkCopy(snap: InstrumentSnapshot) {
   return { label: t('trend'), description: t('trendDesc', { name: snap.instrument.name, first, last }) };
 }
 
+/**
+ * Row grid, driven by the row's own width (container queries) so the same row
+ * works full-width on /market and in narrower columns (landing page):
+ * - below 36rem: name on top, value/change/action wrap underneath;
+ * - 36–56rem: name · value · change · action (no sparkline, icon-only watch);
+ * - 56rem and up: adds the 12-month sparkline and a labelled watch button.
+ * The name column always keeps a real minimum so it never collapses.
+ * Must be mirrored by the column header (features/market/board.tsx).
+ */
+export const ROW_GRID = 'grid-cols-[auto_1fr_auto] gap-x-3 px-3 @xl:grid-cols-[auto_minmax(150px,1fr)_136px_104px_72px] @xl:px-4 @4xl:grid-cols-[auto_minmax(160px,1.3fr)_minmax(132px,1fr)_minmax(116px,0.9fr)_96px_136px] @4xl:gap-x-5';
+
+/** Classes for a WatchButton inside a row: icon-only until the row is wide enough. */
+export const ROW_WATCH_LABEL = '@max-4xl:sr-only';
+
 /** List-row size: name, current value, change, sparkline. */
-export function TickerRow({ snap, href, action, showType = false }: {
+export function TickerRow({ snap, href, action, select, showType = false }: {
   snap: InstrumentSnapshot;
   href: string;
   action?: React.ReactNode;
+  /** Optional selection control drawn over the monogram (compare mode). */
+  select?: React.ReactNode;
   showType?: boolean;
 }) {
   const t = useTranslations('Ticker');
   const spark = useSparkCopy(snap);
   const dir = direction(snap.change.value);
   return (
-    <div className={cn('group relative grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 px-3 py-3 transition-colors hover:bg-surface sm:grid-cols-[auto_minmax(0,1.3fr)_minmax(132px,1fr)_minmax(116px,0.9fr)_96px_auto] sm:gap-x-5 sm:px-4', snap.signal && 'bg-signal-soft/40')}>
-      <Monogram tone={snap.signal ? 'signal' : 'plain'}>{snap.instrument.symbol}</Monogram>
-      <div className="min-w-0">
-        <Link href={href} className="block truncate font-medium text-ink after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent">
-          {snap.instrument.name}
-        </Link>
-        <p className="flex min-w-0 items-center gap-2 truncate text-[12.5px] text-muted">
-          {showType ? <span className="kicker">{t(snap.instrument.type)}</span> : null}
-          <span className="truncate">{snap.instrument.category}</span>
-          {snap.signal ? <SignalTag signal={snap.signal} className="hidden md:inline-flex" /> : null}
-        </p>
+    <div className="@container">
+      <div className={cn('group relative grid items-center gap-y-1 py-3 transition-colors hover:bg-surface', ROW_GRID, snap.signal && 'bg-signal-soft/40')}>
+        <span className="relative grid place-items-center">
+          <Monogram tone={snap.signal ? 'signal' : 'plain'}>{snap.instrument.symbol}</Monogram>
+          {select}
+        </span>
+        <div className="min-w-0">
+          <Link href={href} className="block truncate font-medium text-ink after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent">
+            {snap.instrument.name}
+          </Link>
+          <p className="flex min-w-0 items-center gap-2 truncate text-[12.5px] text-muted">
+            {showType ? <span className="kicker">{t(snap.instrument.type)}</span> : null}
+            <span className="truncate">{snap.instrument.category}</span>
+            {snap.signal ? <SignalTag signal={snap.signal} className="hidden @4xl:inline-flex" /> : null}
+          </p>
+        </div>
+        <div className="min-w-0 text-right @xl:text-left">
+          <MetricValue reading={snap.metric} size="md" />
+        </div>
+        <div className="col-start-2 min-w-0 @xl:col-start-auto">
+          <ChangeBadge reading={snap.change} size="sm" />
+        </div>
+        <div className="hidden @4xl:block">
+          <Sparkline values={snap.sparkline} dir={dir} label={spark.label} description={spark.description} />
+        </div>
+        <div className="relative z-10 col-start-3 row-start-2 flex justify-end @xl:col-start-auto @xl:row-start-auto">{action}</div>
       </div>
-      <div className="text-right sm:text-left">
-        <MetricValue reading={snap.metric} size="md" />
-      </div>
-      <div className="col-start-2 sm:col-start-auto">
-        <ChangeBadge reading={snap.change} size="sm" />
-      </div>
-      <div className="hidden sm:block">
-        <Sparkline values={snap.sparkline} dir={dir} label={spark.label} description={spark.description} />
-      </div>
-      <div className="relative z-10 col-start-3 row-start-2 justify-self-end sm:col-start-auto sm:row-start-auto">{action}</div>
     </div>
   );
 }
 
 /** Card size: adds entry-level share and signal context. */
-export function TickerCard({ snap, href, action, className }: {
+export function TickerCard({ snap, href, action, select, className }: {
   snap: InstrumentSnapshot;
   href: string;
   action?: React.ReactNode;
+  /** Optional selection control in the header (compare mode). */
+  select?: React.ReactNode;
   className?: string;
 }) {
   const t = useTranslations('Ticker');
@@ -83,6 +106,7 @@ export function TickerCard({ snap, href, action, className }: {
             <p className="kicker mt-0.5">{t(snap.instrument.type)} · {snap.instrument.category}</p>
           </div>
         </div>
+        {select}
       </header>
       <div className="flex items-end justify-between gap-3">
         <MetricValue reading={snap.metric} size="lg" />

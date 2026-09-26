@@ -184,7 +184,7 @@ export function WatchRow({ row }: { row: WatchlistRow }) {
       </div>
       <div className="col-span-2 col-start-2 flex min-w-0 items-start gap-1 sm:col-span-1 sm:col-start-auto [&_.whitespace-nowrap]:whitespace-normal">
         <MetricValue reading={row.current} size="sm" />
-        <MetricInfo metric={row.item.metric} type={instrument.type} reading={row.current} filter={row.item.filter} className="mt-px" />
+        <MetricInfo metric={row.item.metric} type={instrument.type} reading={row.current} filter={row.item.filter} subject={instrument.name} className="mt-px" />
       </div>
       <SinceAdded row={row} className="col-span-2 col-start-2 sm:col-span-1 sm:col-start-auto" />
       <div className="hidden sm:block">

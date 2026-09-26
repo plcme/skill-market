@@ -13,14 +13,22 @@ export function firstParam(v: string | string[] | undefined): string | undefined
   return s && s.trim() ? s : undefined;
 }
 
+/** The board opens on All; `?type=skill|role` narrows it. */
+export const DEFAULT_BOARD_TYPE: BoardType = 'all';
+
 export function parseBoardType(v: string | string[] | undefined): BoardType {
   const s = firstParam(v);
-  return s === 'role' || s === 'all' ? s : 'skill';
+  return s === 'skill' || s === 'role' ? s : DEFAULT_BOARD_TYPE;
 }
 
+/** `type` value for a board link: omitted for the default so URLs stay canonical. */
+export function boardTypeParam(type: BoardType): BoardType | undefined {
+  return type === DEFAULT_BOARD_TYPE ? undefined : type;
+}
+
+/** Only "by measure" and "by change" — no A–Z (GLOSSARY §2); old `?sort=az|name` falls back. */
 export function parseSort(v: string | string[] | undefined): BoardSort {
-  const s = firstParam(v);
-  return s === 'change' || s === 'name' ? s : 'value';
+  return firstParam(v) === 'change' ? 'change' : 'value';
 }
 
 export type BoardView = 'list' | 'cards';
@@ -73,6 +81,41 @@ export const SUGGESTED_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ['aws', 'azure'],
   ['software-engineer', 'devops-engineer'],
 ];
+
+/**
+ * Board → /compare selection. /compare shows exactly two instruments of the same
+ * type (`?a=&b=`), so the cap mirrors that; raise it when /compare grows.
+ */
+export const COMPARE_MAX = 2;
+
+export interface CompareItem {
+  slug: string;
+  type: ActiveInstrumentType;
+}
+
+export type CompareToggle =
+  | { ok: true; selection: CompareItem[] }
+  | { ok: false; reason: 'max' | 'type'; selection: CompareItem[] };
+
+/** Add or remove one instrument; refuses past the cap or when mixing skills and roles. */
+export function toggleCompare(selection: readonly CompareItem[], item: CompareItem, max = COMPARE_MAX): CompareToggle {
+  if (selection.some(s => s.slug === item.slug)) return { ok: true, selection: selection.filter(s => s.slug !== item.slug) };
+  const first = selection[0];
+  if (first && first.type !== item.type) return { ok: false, reason: 'type', selection: [...selection] };
+  if (selection.length >= max) return { ok: false, reason: 'max', selection: [...selection] };
+  return { ok: true, selection: [...selection, item] };
+}
+
+/** Why a not-yet-selected instrument can't be added right now, if it can't. */
+export function compareBlocker(selection: readonly CompareItem[], item: CompareItem, max = COMPARE_MAX): 'max' | 'type' | null {
+  const r = toggleCompare(selection, item, max);
+  return r.ok ? null : r.reason;
+}
+
+/** Link to /compare for a selection (first two slugs as `a` and `b`). */
+export function compareHref(selection: readonly CompareItem[], f?: string): string {
+  return hrefWith('/compare', { a: selection[0]?.slug, b: selection[1]?.slug, f });
+}
 
 export type CompareState =
   | { kind: 'empty' }

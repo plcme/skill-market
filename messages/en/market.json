@@ -12,6 +12,10 @@
       "separator": " · "
     },
     "title": "Filter",
+    "button": "Filter",
+    "buttonLabel": "Filter the whole board",
+    "buttonLabelActive": "Filter the whole board, {n, plural, one {# condition} other {# conditions}} active",
+    "scopeReset": "Reset filter",
     "edit": "Edit filter",
     "apply": "Apply",
     "reset": "Reset",
@@ -70,12 +74,15 @@
     "ignoresWorkRights": "Ignores the work-rights filter so the share stays meaningful.",
     "ignoresWorkMode": "Ignores the work-mode filter so the share stays meaningful.",
     "ad_count": {
-      "label": "Ads",
-      "short": "Ads",
-      "definition": "How many job ads matched in the last four weeks.",
-      "unit": "Ads",
-      "denominator": "Not a ratio — a count of ads",
-      "method": "Each ad is counted once, however many times the skill appears in it."
+      "label": "Demand",
+      "short": "Job ads",
+      "column": "Job ads",
+      "definition": "How many job ads under your filter mentioned this skill (or belong to this role) in the last four weeks.",
+      "unit": "Job ads",
+      "denominator": "Not a ratio — a count of job ads",
+      "method": "Each ad is counted once, however many times the skill appears in it.",
+      "shareLine": "{name} appears in {share} of all {den} ads in this filter (share of ads).",
+      "shareLineGeneric": "Divided by all ads in this filter, the same count gives the share of ads — useful for setting aside the whole market rising or falling."
     },
     "share_of_ads": {
       "label": "Share of ads",
@@ -194,7 +201,7 @@
   "Format": {
     "ads": "{n, plural, one {# ad} other {# ads}}",
     "ofAds": "{num} of {den} ads",
-    "inWindow": "ads in the last {days} days",
+    "inWindow": "job ads in {days} days",
     "changeAbs": "{from} → {to} ads",
     "pp": "{sign}{value} pts",
     "employers": "{n, plural, one {# employer} other {# employers}}",

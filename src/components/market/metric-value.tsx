@@ -48,7 +48,7 @@ export function MetricValue({ reading, size = 'md', showDetail = true, className
   const value = primaryValue(reading);
   const line = showDetail ? detail(reading) : null;
   return (
-    <span className={cn('inline-flex min-w-0 flex-col gap-0.5', className)}>
+    <span className={cn('inline-flex min-w-0 max-w-full flex-col gap-0.5', className)}>
       {value !== null ? (
         <span
           className={cn(
@@ -65,7 +65,8 @@ export function MetricValue({ reading, size = 'md', showDetail = true, className
           {t(reading.status === 'unavailable' ? 'unavailable' : 'insufficient')}
         </span>
       )}
-      {line ? <span className="num whitespace-nowrap text-[12px] leading-snug text-muted">{line}</span> : null}
+      {/* Wraps in narrow columns rather than cutting off the unit or window. */}
+      {line ? <span className="num max-w-full text-pretty text-[12px] leading-snug text-muted">{line}</span> : null}
     </span>
   );
 }

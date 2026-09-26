@@ -73,3 +73,108 @@ test('signed-out visitors are asked to sign in on private pages', async ({ page 
   await page.goto('/me');
   await expect(page.getByText('Sign in to see this page')).toBeVisible();
 });
+
+test.describe('market board', () => {
+  test('opens on All with the Filter button, search first and no A–Z or category pills', async ({ page }) => {
+    await page.goto('/market');
+    const tabs = page.getByRole('navigation', { name: 'Instrument type' });
+    await expect(tabs.getByRole('link')).toHaveText(['All', 'Skills', 'Roles']);
+    await expect(tabs.getByRole('link', { name: 'All' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('button', { name: 'A–Z' })).toHaveCount(0);
+    await expect(page.getByRole('radio', { name: 'A–Z' })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Categories' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Edit filter' })).toHaveCount(0);
+    await expect(page.getByLabel('Filter this board by name')).toBeVisible();
+    await page.goto('/market?type=skill&sort=az');
+    await expect(page.getByText('Job ads', { exact: true }).filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Measure\s*Demand/ })).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'By measure' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('Demand column definition explains share of ads without an unnamed figure', async ({ page }) => {
+    await page.goto('/market?type=skill');
+    await page.getByRole('button', { name: 'What does Demand mean?' }).filter({ visible: true }).first().click();
+    const popover = page.getByRole('dialog').filter({ hasText: 'share of ads' });
+    await expect(popover).toBeVisible();
+    await expect(popover.getByText(/Divided by all ads in this filter/)).toBeVisible();
+    await expect(popover.getByText(/appears in [\d.]+% of all/)).toHaveCount(0);
+  });
+
+  test('Filter button opens the builder and shows the scope when active', async ({ page }) => {
+    await page.goto('/market?f=r.au-nt-darwin_graduate_npr');
+    const button = page.getByRole('button', { name: /Filter the whole board, 3 conditions active/ });
+    await expect(button).toBeVisible();
+    await expect(page.getByText(/Showing remote roles in Darwin/).first()).toBeVisible();
+    await button.click();
+    await expect(page.getByRole('dialog', { name: 'Filter' })).toBeVisible();
+    await noSeriousAxe(page);
+    await page.keyboard.press('Escape');
+    await page.getByRole('link', { name: 'Reset filter' }).click();
+    await expect(page).toHaveURL(/\/market$/);
+    await expect(page.getByRole('button', { name: 'Filter the whole board' })).toBeVisible();
+  });
+
+  test('select two skills on the board and compare them', async ({ page }) => {
+    await page.goto('/market?type=skill');
+    await page.getByRole('button', { name: /^Compare$/ }).click();
+    await page.getByRole('checkbox', { name: 'Select Python to compare' }).click();
+    await expect(page.getByRole('button', { name: 'Compare (1)' })).toBeDisabled();
+    await page.getByRole('checkbox', { name: 'Select SQL to compare' }).click();
+    await expect(page.getByRole('checkbox', { name: 'Select Java to compare' })).toBeDisabled();
+    await noSeriousAxe(page);
+    await page.getByRole('link', { name: 'Compare (2)' }).click();
+    await page.waitForURL(/\/compare\?a=python&b=sql/);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  });
+});
+
+test('theme toggle has two states, follows the device by default and remembers a choice', async ({ page }, info) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/market');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  // On phones the toggle lives in the menu sheet.
+  if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Theme: Dark. Switch to Light' }).filter({ visible: true }).click();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.reload();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByText('System', { exact: true })).toHaveCount(0);
+});
+
+test('primary nav is Market and People; Sources sits in the footer', async ({ page }, info) => {
+  await page.goto('/');
+  const footer = page.getByRole('navigation', { name: 'Data & safety' });
+  await expect(footer.getByRole('link', { name: 'Sources & methods' })).toHaveAttribute('href', '/sources');
+  test.skip(info.project.name === 'mobile', 'Primary nav is in the menu sheet on phones');
+  const nav = page.getByRole('banner').getByRole('navigation', { name: 'Main' });
+  await expect(nav.getByRole('link')).toHaveText(['Market', 'Coffee chats']);
+});
+
+test('account menu does not repeat My desk', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile', 'Avatar menu is desktop-only');
+  await loadSampleStudent(page);
+  await expect(page.getByRole('banner').getByRole('link', { name: 'My desk' })).toBeVisible();
+  await page.getByRole('button', { name: 'Account' }).click();
+  const menu = page.getByRole('menu');
+  await expect(menu.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'My desk' })).toHaveCount(0);
+});
+
+test('settings offer Light / Dark and a way back to matching the device', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await loadSampleStudent(page);
+  await page.goto('/me/settings');
+  const theme = page.getByRole('radiogroup', { name: 'Theme' });
+  await expect(theme.getByRole('radio')).toHaveText(['Light', 'Dark']);
+  await expect(theme.getByRole('radio', { name: 'Light' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Match my device' })).toHaveCount(0);
+  await theme.getByRole('radio', { name: 'Dark' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('button', { name: 'Match my device' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect(await page.evaluate(() => localStorage.getItem('sm-theme'))).toBeNull();
+});

@@ -16,13 +16,10 @@
       "role": "Roles",
       "all": "All"
     },
-    "categoriesLabel": "Categories",
-    "allCategories": "All categories",
     "sortLabel": "Order",
     "sort": {
       "value": "By measure",
-      "change": "By change",
-      "name": "A–Z"
+      "change": "By change"
     },
     "viewLabel": "Layout",
     "view": {
@@ -45,9 +42,9 @@
     "signalCount": "{n, plural, =0 {no signals} one {# with a signal} other {# with signals}}",
     "matching": "matching “{q}”",
     "emptyTitle": "Nothing on the board matches",
-    "emptyBody": "No skills or roles in this category match. Try another category.",
+    "emptyBody": "Nothing on this board under the current filter. Try widening the filter.",
     "emptyBodyQuery": "Nothing here matches “{q}”. Try a shorter name, a common alias such as “JS”, or search everything.",
-    "emptyReset": "Clear name and category",
+    "emptyReset": "Clear the name filter",
     "orderNote": "The order follows the market measure you picked — it ranks skills and roles, never people. Rows with too few ads sink to the bottom and say so instead of showing a number.",
     "illustrativeNote": "Illustrative data: numbers in this preview are generated to behave like the real pipeline and are not real market signals.",
     "sourcesLink": "Sources and method",
@@ -56,7 +53,19 @@
     "signalsNowNote": "Flagged when a move is at least 25% and 10 ads, with enough ads to trust it.",
     "signalsNowEmpty": "Nothing has moved enough to flag under this filter. That is normal for narrow filters — widen it, or browse the board below.",
     "signalsNowTalk": "Talk to someone",
-    "signalsNowTalkLabel": "Talk to someone who uses {name}"
+    "signalsNowTalkLabel": "Talk to someone who uses {name}",
+    "filterScopeLabel": "Scope of every number on this board",
+    "compareMode": "Compare",
+    "compareModeOn": "Done comparing",
+    "compareSelect": "Select {name} to compare",
+    "compareBarLabel": "Compare selection",
+    "compareBarHint": "{n, plural, one {Pick # more of the same type to compare} other {Pick # of the same type to compare}}",
+    "compareBarReady": "Ready — see them side by side.",
+    "compareGo": "Compare ({n})",
+    "compareClear": "Clear",
+    "compareExit": "Stop selecting",
+    "compareBlockedType": "Compare works within one type: skills with skills, roles with roles.",
+    "compareBlockedMax": "You can compare {max} at a time."
   },
   "InstrumentPage": {
     "metaTitle": {

@@ -99,7 +99,7 @@
       "startTitle": "Skills you probably have",
       "firstTitle": "Good first steps",
       "firstBody": "Tell us your degree and we’ll suggest where you already are. Until then, these are broad skills that open many doors and are quick to start.",
-      "suggestionNote": "The figure on the right is the share of Australian ads that mention the skill. Suggestions aren’t saved as yours until you confirm them.",
+      "suggestionNote": "The figure on the right is Demand: how many Australian job ads mentioned the skill in the last four weeks. Suggestions aren’t saved as yours until you confirm them.",
       "rolesKicker": "Where this points",
       "rolesTitle": "Roles that ask for these",
       "rolesVia": "Asks for {skills}",
@@ -421,7 +421,7 @@
       "plain": "The same data in plain words: tracking, skills I have, changes."
     },
     "modeSaved": "Display updated",
-    "themeHint": "System follows your device’s light or dark setting.",
+    "themeHint": "Starts out matching your device’s light or dark setting. Once you pick one, this browser remembers it.",
     "dataLede": "Your data is stored in Sydney, Australia. You can download it or delete it.",
     "exportTitle": "Download your data",
     "exportBody": "A JSON file with your profile, skills, watchlist, chat requests and the emails we’ve sent you. We also email you when it’s ready.",

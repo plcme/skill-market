@@ -4,25 +4,20 @@ import { instrumentPath } from '@/lib/links';
 import { signalMetric } from '@/lib/metrics/registry';
 import type { ActiveInstrumentType, FilterSpec, InstrumentSnapshot, MetricKey } from '@/lib/market/types';
 import { MetricLabel } from '@/components/market/metric-info';
-import { TickerCard, TickerRow } from '@/components/market/ticker';
+import { ROW_GRID, ROW_WATCH_LABEL, TickerCard, TickerRow } from '@/components/market/ticker';
 import { WatchButton } from '@/components/market/watch-button';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { CompareCheckbox } from './compare-select';
 
 // Shared board pieces for /market and /search. Server-rendered; only the watch
 // buttons (and the popovers inside labels) hydrate.
 
-// Must mirror the grid in TickerRow so headers line up with values.
-const ROW_GRID = 'sm:grid-cols-[auto_minmax(0,1.3fr)_minmax(132px,1fr)_minmax(116px,0.9fr)_96px_auto] sm:gap-x-5 sm:px-4';
-const ACTION_W = 'sm:w-[136px]';
-
 function WatchSlot({ slug, filter, metric }: { slug: string; filter: FilterSpec; metric: MetricKey }) {
   return (
-    <div className={cn('flex justify-end', ACTION_W)}>
-      <Suspense fallback={<Button variant="subtle" size="sm" disabled className="w-[92px]" aria-hidden />}>
-        <WatchButton slug={slug} filter={filter} metric={metric} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<Button variant="subtle" size="sm" disabled className="w-8 @4xl:w-[92px]" aria-hidden />}>
+      <WatchButton slug={slug} filter={filter} metric={metric} labelClassName={ROW_WATCH_LABEL} />
+    </Suspense>
   );
 }
 
@@ -40,28 +35,30 @@ export function BoardColumnHeader({ type, metric, filter, sample, changeSample }
     ? <span className="kicker" title={t('colChangeMixedHint')}>{t('colChangeMixed')}</span>
     : <MetricLabel metric={signalMetric(type)} type={type} reading={(changeSample ?? sample)?.change} filter={filter} short />;
   return (
-    <>
-      <div className={cn('hidden items-center border-b border-rule-strong py-2 sm:grid', ROW_GRID)}>
+    <div className="@container">
+      <div className={cn('hidden items-center border-b border-rule-strong py-2 @xl:grid', ROW_GRID)}>
         <span className="w-9" aria-hidden />
         <span className="kicker">{t('colName')}</span>
-        <MetricLabel metric={metric} type={valueType} reading={sample?.metric} filter={filter} />
+        <MetricLabel metric={metric} type={valueType} reading={sample?.metric} filter={filter} column />
         {changeHead}
-        <span className="kicker whitespace-nowrap">{t('colTrend')}</span>
-        <span className={ACTION_W} aria-hidden />
+        <span className="kicker hidden whitespace-nowrap @4xl:block">{t('colTrend')}</span>
+        <span aria-hidden />
       </div>
-      <div className="flex items-center justify-between border-b border-rule-strong px-3 py-2 sm:hidden">
+      <div className="flex items-center justify-between border-b border-rule-strong px-3 py-2 @xl:hidden">
         {changeHead}
-        <MetricLabel metric={metric} type={valueType} reading={sample?.metric} filter={filter} short />
+        <MetricLabel metric={metric} type={valueType} reading={sample?.metric} filter={filter} short column />
       </div>
-    </>
+    </div>
   );
 }
 
-export function BoardRows({ rows, filter, metric, showType = false, notes, className }: {
+export function BoardRows({ rows, filter, metric, showType = false, selectable = false, notes, className }: {
   rows: InstrumentSnapshot[];
   filter: FilterSpec;
   metric: MetricKey;
   showType?: boolean;
+  /** Rows get a compare checkbox (needs a CompareSelectionProvider above). */
+  selectable?: boolean;
   /** Optional one-line note under a row, keyed by slug (e.g. which alias matched). */
   notes?: Record<string, string>;
   className?: string;
@@ -74,6 +71,7 @@ export function BoardRows({ rows, filter, metric, showType = false, notes, class
             snap={snap}
             showType={showType}
             href={instrumentPath(snap.instrument.type, snap.instrument.slug, filter)}
+            select={selectable ? <CompareCheckbox slug={snap.instrument.slug} type={snap.instrument.type} name={snap.instrument.name} className="absolute inset-0 m-auto size-9 rounded-[4px] disabled:border-rule disabled:bg-sunken disabled:opacity-100 [&_svg]:size-4" /> : null}
             action={<WatchSlot slug={snap.instrument.slug} filter={filter} metric={metric} />}
           />
           {notes?.[snap.instrument.slug] ? (
@@ -85,7 +83,7 @@ export function BoardRows({ rows, filter, metric, showType = false, notes, class
   );
 }
 
-export function BoardCards({ rows, filter, metric }: { rows: InstrumentSnapshot[]; filter: FilterSpec; metric: MetricKey }) {
+export function BoardCards({ rows, filter, metric, selectable = false }: { rows: InstrumentSnapshot[]; filter: FilterSpec; metric: MetricKey; selectable?: boolean }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map(snap => (
@@ -94,6 +92,7 @@ export function BoardCards({ rows, filter, metric }: { rows: InstrumentSnapshot[
             snap={snap}
             className="w-full"
             href={instrumentPath(snap.instrument.type, snap.instrument.slug, filter)}
+            select={selectable ? <CompareCheckbox slug={snap.instrument.slug} type={snap.instrument.type} name={snap.instrument.name} /> : null}
             action={(
               <Suspense fallback={null}>
                 <WatchButton slug={snap.instrument.slug} filter={filter} metric={metric} />
