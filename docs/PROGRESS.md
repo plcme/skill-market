@@ -40,7 +40,22 @@
 | 9 | 新增人类事项：Supabase 需要**两个**项目（prod + dev）；Supabase Vault 写入 `jobs_url` / `jobs_secret`；免费拨测账号（UptimeRobot 类）用于健康检查与防闲置暂停 | 架构 §3.3 §5.4 §8.3 | 加入 SETUP_CHECKLIST | 待办 |
 | 10 | 其余 PRD Q2/Q3/Q4/Q5/Q7/Q8 | PRD | 按 PRD 建议默认执行（见架构 §12） | 默认通过 |
 
+## 前端反馈第 1 轮（2026-09-26）
+
+来源：`coda-feedback/26sep-first-feedback.md`、`coda-feedback/26sep-2nd.md`。用户确认按下列批次实施，worktree 方案获准。
+
+| 批次 | 分支 | 内容 | 状态 |
+|---|---|---|---|
+| C1 术语表 | `dev` | `docs/GLOSSARY.md`，CLAUDE.md 指向它 | 完成 |
+| A 快修 | `fe-feedback-r1` | All 置前；Filter 收成右侧按钮；删分类 bubble；删 A–Z、搜索前置；Share of ads → Demand / Job ads；修 ticker 名字列被挤；主题切换去掉 System 态（默认跟随系统，手动点选后记住）；导航只留 Market/People，Compare 并入盘面多选，Sources 移页脚 "Data & safety"；头像菜单去掉重复的 My desk | 进行中 |
+| B Industry | `fe-industry`（worktree） | industry 标的（ANZSIC Division）、`/i/[slug]` 行业页与行业内技能、非 tech fixture；landing 右侧改 industry 热力图，下方 1 主卡 + 2～3 小卡轮播；Role 页 "Top holdings" | A 合并后开始 |
+| C2 适配 | `fe-responsive`（worktree） | 375 / 768 全页面适配与截图测试；手机 onboarding 用 bottom sheet | A 合并后开始 |
+
+本轮不动（待拍板）：标语与开场动画；"什么算 skill"（候选 ASC 三层框架）与 Communication 类软技能；skill 薪资与 breakdown 设计；LinkedIn 证书导入；Twitter 书签交互（待用户发链接）；"master level" 含义；细分行业颗粒度。
+
 ## 日志
+
+- 2026-09-26：前端反馈第 1 轮定稿（见上节）。新增 `docs/GLOSSARY.md`。
 
 - 2026-09-24：用户要求在新 worktree 另起分支、按主会话审美重做完整交互前端并写接口报告。分支 `frontend-v2`（`../skill-market-fe2`，基于 `a0428bd`）：主会话完成设计系统（编辑式纸墨风格、Newsreader/Geist 自托管字体、浅深色 token）、合成市场引擎、筛选/指标注册表、应用外壳与首页；三个并行子 agent 分别完成公开盘面、学生侧、咖啡聊/从业者/后台/法律页；主会话集成并在浏览器中逐页核查（1440/375/深色）。lint、typecheck、118 项单测、45 路由生产构建、32 项 Playwright + axe 通过。接口契约见 `docs/FRONTEND_API_REPORT.md`，其 §9 列出需后端补的字段（待拍板）。未合并 dev/main，未推送。
 
