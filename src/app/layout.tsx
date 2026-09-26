@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { instrumentPath } from '@/lib/links';
 import { NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { GeistSans } from 'geist/font/sans';
@@ -26,7 +27,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const t = await getTranslations('Common');
-  const tape = getTape().map(e => ({ ...e, href: e.type === 'skill' ? `/s/${e.slug}` : `/r/${e.slug}` }));
+  const tape = getTape().map(e => ({ ...e, href: instrumentPath(e.type, e.slug) }));
   return (
     <html lang="en-AU" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>

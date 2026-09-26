@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { instrumentPath } from '@/lib/links';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { ArrowRight, Search, SearchX } from 'lucide-react';
@@ -19,7 +20,7 @@ export async function generateMetadata({ searchParams }: PageProps<'/search'>): 
   return { title: q ? t('metaTitleQuery', { q }) : t('metaTitle'), robots: { index: false } };
 }
 
-const QUERY_SUGGESTIONS = ['JS', 'k8s', 'data analyst', 'Postgres', 'ML', 'cloud'];
+const QUERY_SUGGESTIONS = ['JS', 'k8s', 'data analyst', 'Postgres', 'ML', 'cloud', 'Xero', 'health'];
 const BROWSE = ['python', 'sql', 'react', 'software-engineer', 'data-analyst', 'cyber-security-analyst'];
 
 async function ResultGroup({ type, results, filter, q }: { type: ActiveInstrumentType; results: SearchResult[]; filter: FilterSpec; q: string }) {
@@ -44,8 +45,8 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
   const q = (firstParam(sp.q) ?? '').trim().slice(0, 80);
   const filter = decodeFilter(firstParam(sp.f));
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
-  const results = q ? searchWithSnapshots(q, filter) : { skills: [], roles: [] };
-  const total = results.skills.length + results.roles.length;
+  const results = q ? searchWithSnapshots(q, filter) : { skills: [], roles: [], industries: [] };
+  const total = results.skills.length + results.roles.length + results.industries.length;
 
   const suggestions = (
     <div className="mt-10 grid gap-10 md:grid-cols-2">
@@ -64,7 +65,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
           {BROWSE.map(slug => getInstrument(slug)).filter(i => i !== undefined).map(i => (
             <li key={i.id} className="relative flex items-center gap-3 py-2.5 hover:bg-surface">
               <Monogram size="sm">{i.symbol}</Monogram>
-              <Link href={hrefWith(i.type === 'skill' ? `/s/${i.slug}` : `/r/${i.slug}`, { f })} className="min-w-0 flex-1 truncate font-medium after:absolute after:inset-0">{i.name}</Link>
+              <Link href={hrefWith(instrumentPath(i.type, i.slug), { f })} className="min-w-0 flex-1 truncate font-medium after:absolute after:inset-0">{i.name}</Link>
               <span className="kicker">{tt(i.type)}</span>
             </li>
           ))}
@@ -107,6 +108,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
         <>
           {results.skills.length ? <ResultGroup type="skill" results={results.skills} filter={filter} q={q} /> : null}
           {results.roles.length ? <ResultGroup type="role" results={results.roles} filter={filter} q={q} /> : null}
+          {results.industries.length ? <ResultGroup type="industry" results={results.industries} filter={filter} q={q} /> : null}
           <p className="mt-8 text-[13px] text-muted">
             {t('missing')}{' '}
             <Link href={hrefWith('/market', { f })} className="link">{t('browseAll')}</Link>

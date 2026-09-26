@@ -466,6 +466,34 @@ export function correlation(a: string, b: string, filter: FilterSpec): number {
   return da && db ? num / Math.sqrt(da * db) : 0;
 }
 
+// --- Industry × skill segments ------------------------------------------------
+
+/**
+ * Weekly ads in an industry that mention a skill. Level = the industry's
+ * weekly ads × `weight` (share of the industry's ads mentioning the skill);
+ * shape = the skill's own share of all ads relative to its level over the
+ * last `anchorWeeks`, so a skill that is rising overall also rises inside the
+ * industry. Pure; exported for tests.
+ */
+export function segmentCounts(industry: readonly number[], skill: readonly number[], universe: readonly number[], weight: number, anchorWeeks = 8): number[] {
+  const rel = skill.map((n, i) => (universe[i] ? n / universe[i] : 0));
+  const anchor = rel.slice(-anchorWeeks);
+  const mean = anchor.length ? anchor.reduce((a, b) => a + b, 0) / anchor.length : 0;
+  return industry.map((n, i) => Math.round(n * weight * (mean > 0 ? rel[i] / mean : 1)));
+}
+
+/** Job ads (last 4 weeks) and 4-week change for one skill inside one industry. */
+export function industrySkillReadings(industrySlug: string, skillSlug: string, weight: number, filter: FilterSpec): { ad_count: MetricReading; change_4w: MetricReading } {
+  const counts = segmentCounts(weeklyCounts(industrySlug, filter), weeklyCounts(skillSlug, filter), universeCounts(filter), weight);
+  const last4 = sum(lastN(counts, 4));
+  const prev = sum(lastN(counts, 4, 4));
+  const industryLast4 = sum(lastN(weeklyCounts(industrySlug, filter), 4));
+  return {
+    ad_count: reading('ad_count', 'industry', { value: last4, numerator: last4, denominator: industryLast4, sample_n: last4 }),
+    change_4w: reading('change_4w', 'industry', { value: prev > 0 ? (last4 - prev) / prev : null, from: prev, to: last4, sample_n: Math.min(prev, last4) }),
+  };
+}
+
 export function allSlugs(type?: ActiveInstrumentType): string[] {
   return INSTRUMENTS.filter(i => !type || i.type === type).map(i => i.slug);
 }

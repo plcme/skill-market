@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { ArrowLeftRight, ChevronRight, MessageCircle } from 'lucide-react';
 import { encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
-import { chatHref } from '@/lib/links';
+import { chatHref, instrumentPath } from '@/lib/links';
 import { METRICS, signalMetric } from '@/lib/metrics/registry';
 import { formatDate } from '@/lib/time';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
@@ -35,7 +35,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const inst = snap.instrument;
   const type = inst.type;
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
-  const base = type === 'skill' ? `/s/${inst.slug}` : `/r/${inst.slug}`;
+  const base = instrumentPath(type, inst.slug);
   const metricHref = (m: MetricKey) => `${hrefWith(base, { f, metric: m === detail.metrics.default ? undefined : m })}#now`;
   const talk = chatHref(inst.slug, filter, signal?.kind);
   const compare = hrefWith('/compare', { a: inst.slug, f });

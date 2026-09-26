@@ -264,6 +264,7 @@
     "open": "Open {name}",
     "skill": "Skill",
     "role": "Role",
+    "industry": "Industry",
     "trend": "Last 12 months, 4-week rolling ads",
     "trendDesc": "{name}: from {first} to {last} ads per 4 weeks over the last 12 months.",
     "entryShare": "Entry-level",

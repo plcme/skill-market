@@ -13,12 +13,12 @@ export function firstParam(v: string | string[] | undefined): string | undefined
   return s && s.trim() ? s : undefined;
 }
 
-/** The board opens on All; `?type=skill|role` narrows it. */
+/** The board opens on All; `?type=skill|role|industry` narrows it. */
 export const DEFAULT_BOARD_TYPE: BoardType = 'all';
 
 export function parseBoardType(v: string | string[] | undefined): BoardType {
   const s = firstParam(v);
-  return s === 'skill' || s === 'role' ? s : DEFAULT_BOARD_TYPE;
+  return s === 'skill' || s === 'role' || s === 'industry' ? s : DEFAULT_BOARD_TYPE;
 }
 
 /** `type` value for a board link: omitted for the default so URLs stay canonical. */
@@ -165,6 +165,5 @@ export function keyMetrics(groups: { default: MetricKey; common: MetricKey[] }):
   return [groups.default, ...groups.common];
 }
 
-export function otherType(type: ActiveInstrumentType): ActiveInstrumentType {
-  return type === 'skill' ? 'role' : 'skill';
-}
+/** Board tab order (GLOSSARY §2): All · Skills · Roles · Industries. */
+export const BOARD_TYPES: readonly BoardType[] = ['all', 'skill', 'role', 'industry'];

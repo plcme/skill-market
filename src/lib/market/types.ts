@@ -3,8 +3,8 @@
 
 export type InstrumentType = 'skill' | 'role' | 'industry' | 'employer' | 'credential';
 /** Types open in the MVP (FR-D7). */
-export type ActiveInstrumentType = Extract<InstrumentType, 'skill' | 'role'>;
-export const ACTIVE_INSTRUMENT_TYPES: readonly ActiveInstrumentType[] = ['skill', 'role'];
+export type ActiveInstrumentType = Extract<InstrumentType, 'skill' | 'role' | 'industry'>;
+export const ACTIVE_INSTRUMENT_TYPES: readonly ActiveInstrumentType[] = ['skill', 'role', 'industry'];
 
 export type WorkMode = 'onsite' | 'hybrid' | 'remote';
 export const WORK_MODES: readonly WorkMode[] = ['onsite', 'hybrid', 'remote'];
@@ -41,6 +41,13 @@ export interface Instrument {
   aliases: string[];
   /** ANZSCO 6-digit code for roles when a single code applies. */
   anzsco: string | null;
+  /** ANZSIC code for industries (Division letter, e.g. `Q`); null otherwise. */
+  anzsic: string | null;
+  /**
+   * Parent instrument id. Reserved for sub-industries (ANZSIC Subdivision/Group,
+   * granularity undecided — GLOSSARY §5); always null today and not shown in UI.
+   */
+  parent_id: string | null;
   blurb: string;
   learning_effort: LearningEffort;
   transferability: Transferability;
@@ -53,6 +60,9 @@ export interface RoleComponent {
   /** Share of this role's ads that mention the skill (0–1). */
   weight: number;
 }
+
+/** Industry → skill link: same shape as RoleComponent; weight = share of the industry's ads mentioning the skill (0–1). */
+export type IndustryComponent = RoleComponent;
 
 export type LocationLevel = 'country' | 'state' | 'city' | 'region';
 
