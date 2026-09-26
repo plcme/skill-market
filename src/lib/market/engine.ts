@@ -281,8 +281,11 @@ export function computeMetric(slug: string, metric: MetricKey, filter: FilterSpe
   const m = modelOf(slug);
 
   switch (metric) {
-    case 'ad_count':
-      return reading(metric, type, { value: last4, numerator: last4, sample_n: last4 });
+    case 'ad_count': {
+      // The denominator lets the Demand definition also state the share of ads.
+      const den = sum(lastN(universeCounts(filter), 4));
+      return reading(metric, type, { value: last4, numerator: last4, denominator: den, sample_n: last4 });
+    }
     case 'share_of_ads': {
       const den = sum(lastN(universeCounts(filter), 4));
       return reading(metric, type, { value: shareOf(last4, den), numerator: last4, denominator: den, sample_n: last4 });
