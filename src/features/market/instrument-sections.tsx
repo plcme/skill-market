@@ -143,7 +143,8 @@ export function CompositionList({ entries, parent, filter, mode }: {
   entries: CompositionEntry[];
   parent: Instrument;
   filter: FilterSpec;
-  mode: 'skillsOfRole' | 'rolesOfSkill';
+  /** skillsOfRole = "Top holdings"; skillsOfIndustry = skills in an industry's ads; rolesOfSkill = roles asking for a skill. */
+  mode: 'skillsOfRole' | 'skillsOfIndustry' | 'rolesOfSkill';
 }) {
   const t = useTranslations('InstrumentPage');
   if (!entries.length) return <p className="text-sm text-muted">{t('compositionEmpty')}</p>;
@@ -152,8 +153,9 @@ export function CompositionList({ entries, parent, filter, mode }: {
     <ul className="divide-y divide-rule border-y border-rule">
       {entries.map(e => {
         const pct = formatShare(e.weight).replace(/\.0%$/, '%');
-        const roleName = mode === 'skillsOfRole' ? parent.name : e.instrument.name;
-        const skillName = mode === 'skillsOfRole' ? e.instrument.name : parent.name;
+        const skillsOfParent = mode !== 'rolesOfSkill';
+        const roleName = skillsOfParent ? parent.name : e.instrument.name;
+        const skillName = skillsOfParent ? e.instrument.name : parent.name;
         return (
           <li key={e.instrument.id} className="relative py-3 hover:bg-surface">
             <div className="flex items-baseline justify-between gap-4">
@@ -163,7 +165,7 @@ export function CompositionList({ entries, parent, filter, mode }: {
                 </Link>
                 <span className="ml-2 text-[12px] text-muted">{e.instrument.category}</span>
               </p>
-              <span className="num shrink-0 text-sm font-medium">{pct}</span>
+              <span className="num shrink-0 text-sm font-medium">{skillsOfParent ? t('holdingPct', { pct }) : pct}</span>
             </div>
             <span className="relative mt-2 block h-1.5 overflow-hidden rounded-full bg-sunken" aria-hidden>
               <span className="absolute inset-y-0 left-0 rounded-full bg-ink/70" style={{ width: `${barPercent(e.weight, max)}%` }} />

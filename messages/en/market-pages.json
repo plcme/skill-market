@@ -131,7 +131,7 @@
     "payCaveat": "Advertised base salary, not total pay. Senior roles state pay less often, so the real range is likely wider.",
     "compKicker": {
       "skill": "Composition",
-      "role": "Composition",
+      "role": "Top holdings",
       "industry": "Skills in this industry"
     },
     "compTitle": {
@@ -141,10 +141,13 @@
     },
     "compNote": {
       "skill": "Share of each role’s ads that mention {name}.",
-      "role": "Share of {name} ads that mention each skill.",
+      "role": "The skills that make up this role: the share of {name} ads that mention each one. An ad usually asks for several skills, so shares add up to more than 100%.",
       "industry": "Share of {name} ads that mention each skill, highest first. A list sorted by a measure, not a ranking of people."
     },
     "compositionEmpty": "We haven’t linked this to any roles or skills yet.",
+    "holdingPct": "in {pct} of these ads",
+    "industryHeatmapLabel": "Skills in {name}: tile size is job ads mentioning the skill, colour is 4-week change",
+    "industryListTitle": "Share of this industry’s ads mentioning each skill",
     "weightSentence": "{pct} of {role} ads mention {skill}.",
     "relKicker": "Co-occurrence",
     "relTitle": "Often asked for together",

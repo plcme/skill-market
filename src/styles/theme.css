@@ -202,3 +202,33 @@
   .no-print { display: none !important; }
   body { background: white; }
 }
+
+/*
+ * Heatmap bands (diverging, colour-blind-safe blue ↔ orange; neutral near 0).
+ * Each band carries its own text colour so tile labels keep AA contrast.
+ */
+:root {
+  --heat-dn2: #b4531a; --heat-dn2-ink: #ffffff;
+  --heat-dn1: #f3c9a4; --heat-dn1-ink: #121316;
+  --heat-0: #e2dfd5;   --heat-0-ink: #121316;
+  --heat-up1: #b7cfee; --heat-up1-ink: #121316;
+  --heat-up2: #1f5fa8; --heat-up2-ink: #ffffff;
+  --heat-na: #efece4;  --heat-na-ink: #4f4e48;
+}
+:root[data-theme="dark"] {
+  --heat-dn2: #f09a5c; --heat-dn2-ink: #0f100e;
+  --heat-dn1: #5a3218; --heat-dn1-ink: #eeece4;
+  --heat-0: #2a2b27;   --heat-0-ink: #eeece4;
+  --heat-up1: #1f3a5f; --heat-up1-ink: #eeece4;
+  --heat-up2: #7fb0f0; --heat-up2-ink: #0f100e;
+  --heat-na: #1b1c19;  --heat-na-ink: #b3b1a7;
+}
+.heat-dn2 { background: var(--heat-dn2); color: var(--heat-dn2-ink); }
+.heat-dn1 { background: var(--heat-dn1); color: var(--heat-dn1-ink); }
+.heat-0 { background: var(--heat-0); color: var(--heat-0-ink); }
+.heat-up1 { background: var(--heat-up1); color: var(--heat-up1-ink); }
+.heat-up2 { background: var(--heat-up2); color: var(--heat-up2-ink); }
+.heat-na {
+  color: var(--heat-na-ink);
+  background: repeating-linear-gradient(135deg, var(--heat-na) 0 6px, var(--sunken) 6px 7px);
+}

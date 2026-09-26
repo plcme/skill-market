@@ -1,4 +1,4 @@
-import { cooccurrence, getInstrument, instrumentsOfType, ROLE_COMPONENTS, rolesForSkill } from '@/lib/market/catalog';
+import { componentsOf, cooccurrence, getInstrument, instrumentsOfType, rolesForSkill } from '@/lib/market/catalog';
 import { getLocation, stateOf } from '@/lib/filters/locations';
 import type { FilterSpec } from '@/lib/market/types';
 import { TOPICS, type Topic } from '@/lib/demo/seed';
@@ -170,8 +170,9 @@ export function filterStates(filter: FilterSpec): Set<string> {
 
 type SkillMatch = { kind: 'direct'; reason: MatchReason } | { kind: 'adjacent'; skill: string; weight: number } | null;
 
+/** Top component skills of a role or an industry (industries match like roles). */
 function roleTopComponents(roleSlug: string): string[] {
-  return (ROLE_COMPONENTS[roleSlug] ?? []).slice(0, ROLE_TOP_COMPONENTS).map(c => c.skill_slug);
+  return componentsOf(roleSlug).slice(0, ROLE_TOP_COMPONENTS).map(c => c.skill_slug);
 }
 
 function skillMatch(p: Practitioner, slug: string): SkillMatch {

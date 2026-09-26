@@ -92,7 +92,8 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className, labe
     );
   }
 
-  if (inst.type === 'role') {
+  // Only skills can be "held"; roles and industries are watched.
+  if (inst.type !== 'skill') {
     return <Button variant="outline" size={size} loading={busy} className={cn(iconPad, className)} onClick={() => doAdd('watching')}>{!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}</Button>;
   }
 
