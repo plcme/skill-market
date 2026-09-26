@@ -22,7 +22,7 @@ export function ChangeBadge({ reading, size = 'md', showAbsolute = true, classNa
   const dir = direction(reading.value);
   const abs = reading.from !== null && reading.to !== null ? t('changeAbs', { from: formatCount(reading.from), to: formatCount(reading.to) }) : null;
   return (
-    <span className={cn('inline-flex flex-col gap-0.5', className)}>
+    <span className={cn('inline-flex min-w-0 max-w-full flex-col gap-0.5', className)}>
       <span
         className={cn(
           'num inline-flex items-center gap-1 font-medium',
@@ -38,7 +38,7 @@ export function ChangeBadge({ reading, size = 'md', showAbsolute = true, classNa
         <span className="sr-only">{t(dir)}</span>
         {formatChange(reading.value)}
       </span>
-      {showAbsolute && abs ? <span className="num whitespace-nowrap text-[12px] text-muted">{abs}</span> : null}
+      {showAbsolute && abs ? <span className="num max-w-full truncate text-[12px] text-muted" title={abs}>{abs}</span> : null}
     </span>
   );
 }

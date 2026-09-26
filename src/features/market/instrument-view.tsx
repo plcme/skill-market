@@ -53,7 +53,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         <ol className="flex flex-wrap items-center gap-1 text-[13px] text-muted">
           <li><Link href={hrefWith('/market', { f })} className="hover:text-ink hover:underline">{t('crumbMarket')}</Link></li>
           <li aria-hidden><ChevronRight className="size-3.5" /></li>
-          <li><Link href={hrefWith('/market', { type: type === 'skill' ? undefined : 'role', f })} className="hover:text-ink hover:underline">{t(`crumbType.${type}`)}</Link></li>
+          <li><Link href={hrefWith('/market', { type, f })} className="hover:text-ink hover:underline">{t(`crumbType.${type}`)}</Link></li>
           <li aria-hidden><ChevronRight className="size-3.5" /></li>
           <li aria-current="page" className="text-ink">{inst.name}</li>
         </ol>

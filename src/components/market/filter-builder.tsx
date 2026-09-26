@@ -7,7 +7,7 @@ import { Dialog, DialogTrigger, SheetContent, Popover, PopoverContent, PopoverTr
 import { Button } from '@/components/ui/button';
 import { ChipToggleGroup, Input, Segmented } from '@/components/ui/form';
 import { LOCATIONS, getLocation } from '@/lib/filters/locations';
-import { cloneFilter, DEFAULT_FILTER, describeFilter, isDefaultFilter, MAX_RULES, normaliseFilter } from '@/lib/filters/spec';
+import { activeConditionCount, cloneFilter, DEFAULT_FILTER, describeFilter, isDefaultFilter, MAX_RULES, normaliseFilter } from '@/lib/filters/spec';
 import type { FilterRule, FilterSpec, Seniority, WorkMode, WorkRights } from '@/lib/market/types';
 import { WORK_MODES } from '@/lib/market/types';
 import { cn } from '@/lib/utils';
@@ -149,12 +149,17 @@ export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange:
   );
 }
 
-/** Readback + edit sheet. Without `onChange` it reads and writes the `?f=` param. */
-export function FilterBar({ value, onChange, className, compact = false }: {
+/**
+ * Readback + edit sheet. Without `onChange` it reads and writes the `?f=` param.
+ * `variant="button"` renders only a compact Filter button (with a badge counting
+ * active conditions); the caller keeps the readback visible elsewhere (PRD §10.1).
+ */
+export function FilterBar({ value, onChange, className, compact = false, variant = 'bar' }: {
   value?: FilterSpec;
   onChange?: (f: FilterSpec) => void;
   className?: string;
   compact?: boolean;
+  variant?: 'bar' | 'button';
 }) {
   const t = useTranslations('Filter');
   const copy = useFilterCopy();
@@ -164,8 +169,23 @@ export function FilterBar({ value, onChange, className, compact = false }: {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<FilterSpec>(() => cloneFilter(current));
   const valid = draft.rules.every(r => r.work_modes.length && r.location_ids.length);
+  const count = activeConditionCount(current);
   return (
     <Dialog open={open} onOpenChange={o => { setOpen(o); if (o) setDraft(cloneFilter(current)); }}>
+      {variant === 'button' ? (
+        <DialogTrigger asChild>
+          <Button
+            variant={count ? 'primary' : 'subtle'}
+            size="sm"
+            className={cn(pending && 'opacity-70', className)}
+            aria-label={count ? t('buttonLabelActive', { n: count }) : t('buttonLabel')}
+          >
+            <SlidersHorizontal aria-hidden />
+            {t('button')}
+            {count ? <span className="num -mr-1 grid h-5 min-w-5 place-items-center rounded-full bg-paper px-1 text-[11.5px] font-semibold text-ink" aria-hidden>{count}</span> : null}
+          </Button>
+        </DialogTrigger>
+      ) : (
       <div className={cn('flex items-center gap-3 rounded-md border border-rule bg-surface px-3 py-2.5 sm:px-4', pending && 'opacity-70', className)}>
         <SlidersHorizontal className="hidden size-4 shrink-0 text-muted sm:block" aria-hidden />
         <div className="min-w-0 flex-1">
@@ -179,6 +199,7 @@ export function FilterBar({ value, onChange, className, compact = false }: {
           <Button variant="outline" size="sm">{t('edit')}</Button>
         </DialogTrigger>
       </div>
+      )}
       <SheetContent
         title={t('title')}
         closeLabel={t('close')}

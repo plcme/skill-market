@@ -22,7 +22,7 @@ export function BoardViewControls({ sort, view, className }: { sort: BoardSort; 
         label={t('sortLabel')}
         value={sort}
         onValueChange={v => set({ sort: v === 'value' ? null : v })}
-        options={(['value', 'change', 'name'] as const).map(v => ({ value: v, label: t(`sort.${v}`) }))}
+        options={(['value', 'change'] as const).map(v => ({ value: v, label: t(`sort.${v}`) }))}
       />
       <Segmented<BoardView>
         size="sm"

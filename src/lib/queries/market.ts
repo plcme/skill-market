@@ -11,7 +11,7 @@ import type {
 // Signatures are the contract documented in docs/FRONTEND_API_REPORT.md.
 
 export type BoardType = ActiveInstrumentType | 'all';
-export type BoardSort = 'value' | 'change' | 'name';
+export type BoardSort = 'value' | 'change';
 
 export interface BoardQuery {
   type: BoardType;
@@ -19,7 +19,6 @@ export interface BoardQuery {
   filter: FilterSpec;
   sort?: BoardSort;
   q?: string;
-  category?: string;
 }
 
 export interface Board {
@@ -27,7 +26,6 @@ export interface Board {
   metric: MetricKey;
   sort: BoardSort;
   rows: InstrumentSnapshot[];
-  categories: string[];
   signals: number;
   as_of: string;
 }
@@ -42,17 +40,14 @@ export function getBoard(query: BoardQuery): Board {
   const sort = query.sort ?? 'value';
   const needle = query.q?.trim().toLowerCase() ?? '';
   const pool = INSTRUMENTS.filter(i => query.type === 'all' || i.type === query.type);
-  const categories = [...new Set(pool.map(i => i.category))].sort();
   const rows = pool
-    .filter(i => !query.category || i.category === query.category)
     .filter(i => !needle || i.name.toLowerCase().includes(needle) || i.aliases.some(a => a.includes(needle)) || i.symbol.toLowerCase() === needle)
     .map(i => snapshot(i.slug, metric, query.filter));
   rows.sort((a, b) => {
-    if (sort === 'name') return a.instrument.name.localeCompare(b.instrument.name);
     if (sort === 'change') return sortValue(b.change) - sortValue(a.change);
     return sortValue(b.metric) - sortValue(a.metric);
   });
-  return { type: query.type, metric, sort, rows, categories, signals: rows.filter(r => r.signal).length, as_of: DATA_AS_OF };
+  return { type: query.type, metric, sort, rows, signals: rows.filter(r => r.signal).length, as_of: DATA_AS_OF };
 }
 
 export interface TapeEntry {
@@ -105,7 +100,8 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
   const metric = metricParam && isValidMetric(inst.type, metricParam) ? metricParam : defaultMetric(inst.type);
   const groups = metricsFor(inst.type);
   const readings: Partial<Record<MetricKey, MetricReading>> = {};
-  for (const k of [groups.default, ...groups.common, ...groups.advanced]) readings[k] = computeMetric(slug, k, filter);
+  // The active metric may be a non-selectable one kept for old links (e.g. share_of_ads).
+  for (const k of new Set([metric, groups.default, ...groups.common, ...groups.advanced])) readings[k] = computeMetric(slug, k, filter);
   const series = computeSeries(slug, METRICS[metric].chartable ? metric : 'ad_count', filter);
   const snap = snapshot(slug, metric, filter);
   const composition: CompositionEntry[] = inst.type === 'role'
