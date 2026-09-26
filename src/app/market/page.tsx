@@ -15,7 +15,7 @@ import { SourceBadge } from '@/components/market/source-badge';
 import { BoardCards, BoardColumnHeader, BoardRows } from '@/features/market/board';
 import { BoardTextFilter, BoardViewControls, SharedMetricSelect } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
-import { boardTypeParam, firstParam, hrefWith, parseBoardType, parseSort, parseView } from '@/features/market/logic';
+import { BOARD_TYPES, boardTypeParam, firstParam, hrefWith, parseBoardType, parseSort, parseView } from '@/features/market/logic';
 import { SignalsStrip } from '@/features/market/signals-strip';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +25,6 @@ export async function generateMetadata({ searchParams }: PageProps<'/market'>): 
   return { title: t(`metaTitle.${type}`), description: t('metaDescription') };
 }
 
-const TYPES: BoardType[] = ['all', 'skill', 'role'];
 
 export default async function MarketPage({ searchParams }: PageProps<'/market'>) {
   const t = await getTranslations('MarketPage');
@@ -63,19 +62,19 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
 
       <SignalsStrip rows={signalsNow} filter={filter} />
 
-      {/* Keyed by type: switching All/Skills/Roles starts a fresh selection. */}
+      {/* Keyed by type: switching board tabs starts a fresh selection. */}
       <CompareSelectionProvider key={type} f={f}>
       <section aria-labelledby="board-h" className="mt-8">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
         <div className="flex items-end justify-between gap-4 border-b border-rule">
-          <nav aria-label={t('typeTabsLabel')} className="flex items-end gap-6">
-            {TYPES.map(k => (
+          <nav aria-label={t('typeTabsLabel')} className="flex min-w-0 flex-wrap items-end gap-x-4 sm:gap-x-6">
+            {BOARD_TYPES.map(k => (
               <Link
                 key={k}
                 href={typeHref(k)}
                 aria-current={k === type ? 'page' : undefined}
                 className={cn(
-                  '-mb-px border-b-2 pb-2.5 font-serif text-[22px] leading-none transition-colors sm:text-[26px]',
+                  '-mb-px border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-colors sm:text-[26px]',
                   k === type ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink',
                 )}
               >

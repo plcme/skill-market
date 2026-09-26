@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { instrumentPath } from '@/lib/links';
 import { useTranslations } from 'next-intl';
 import { direction } from '@/lib/market/format';
 import type { InstrumentSnapshot } from '@/lib/market/types';
@@ -13,7 +14,7 @@ import { Sparkline } from './sparkline';
 // composes the same pieces at a larger size.
 
 export function instrumentHref(snap: Pick<InstrumentSnapshot, 'instrument'>, query = ''): string {
-  const base = snap.instrument.type === 'skill' ? `/s/${snap.instrument.slug}` : `/r/${snap.instrument.slug}`;
+  const base = instrumentPath(snap.instrument.type, snap.instrument.slug);
   return query ? `${base}?${query}` : base;
 }
 

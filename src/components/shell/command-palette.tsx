@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { instrumentPath } from '@/lib/links';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowRight, CornerDownLeft, Search } from 'lucide-react';
@@ -52,7 +53,7 @@ export function CommandPalette() {
     const hit = list[i];
     setOpen(false);
     setQ('');
-    if (hit) router.push(hit.instrument.type === 'skill' ? `/s/${hit.instrument.slug}` : `/r/${hit.instrument.slug}`);
+    if (hit) router.push(instrumentPath(hit.instrument.type, hit.instrument.slug));
     else if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`);
   };
 

@@ -19,7 +19,7 @@ async function loadSampleStudent(page: Page) {
   await page.keyboard.press('Escape');
 }
 
-const PUBLIC = ['/', '/market', '/market?type=role&view=cards', '/s/rust', '/r/data-engineer', '/compare?a=python&b=java', '/search?q=js', '/metrics/share_of_ads', '/sources', '/people', '/legal/privacy'];
+const PUBLIC = ['/', '/market', '/market?type=industry', '/i/health-care', '/compare?a=mining&b=construction', '/market?type=role&view=cards', '/s/rust', '/r/data-engineer', '/compare?a=python&b=java', '/search?q=js', '/metrics/share_of_ads', '/sources', '/people', '/legal/privacy'];
 
 for (const path of PUBLIC) {
   test(`public page ${path} renders, fits and passes axe`, async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe('market board', () => {
   test('opens on All with the Filter button, search first and no A–Z or category pills', async ({ page }) => {
     await page.goto('/market');
     const tabs = page.getByRole('navigation', { name: 'Instrument type' });
-    await expect(tabs.getByRole('link')).toHaveText(['All', 'Skills', 'Roles']);
+    await expect(tabs.getByRole('link')).toHaveText(['All', 'Skills', 'Roles', 'Industries']);
     await expect(tabs.getByRole('link', { name: 'All' })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('button', { name: 'A–Z' })).toHaveCount(0);
     await expect(page.getByRole('radio', { name: 'A–Z' })).toHaveCount(0);
@@ -177,4 +177,65 @@ test('settings offer Light / Dark and a way back to matching the device', async 
   await page.getByRole('button', { name: 'Match my device' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   expect(await page.evaluate(() => localStorage.getItem('sm-theme'))).toBeNull();
+});
+
+test.describe('industries', () => {
+  test('Industries tab lists ANZSIC divisions by Demand', async ({ page }) => {
+    await page.goto('/market');
+    await page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Industries' }).click();
+    await expect(page).toHaveURL(/type=industry/);
+    await expect(page.getByRole('button', { name: /Measure\s*Demand/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Health Care and Social Assistance' }).first()).toBeVisible();
+  });
+
+  test('landing heatmap tiles are labelled links to industry pages', async ({ page }) => {
+    await page.goto('/');
+    const map = page.getByRole('list', { name: /Industries by job ads/ }).filter({ visible: true });
+    const tile = map.getByRole('link', { name: /^Mining: [\d,]+ job ads/ });
+    await expect(tile).toBeVisible();
+    await expect(page.getByText('Size:').first()).toBeVisible();
+    await expect(page.getByText('Colour:').first()).toBeVisible();
+    await tile.click();
+    await expect(page).toHaveURL(/\/i\/mining$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mining');
+    await expect(page.getByText('ANZSIC Division B')).toBeVisible();
+  });
+
+  test('movers carousel states its rule, advances and can pause', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await expect(page.getByText(/biggest 4-week changes, up or down/)).toBeVisible();
+    const carousel = page.getByRole('region', { name: 'Biggest 4-week moves' });
+    await expect(carousel.getByRole('button', { name: 'Resume rotation' })).toBeVisible();
+    const first = await carousel.getByRole('heading', { level: 3 }).textContent();
+    await carousel.getByRole('button', { name: 'Next move' }).click();
+    await expect(carousel.getByRole('heading', { level: 3 })).not.toHaveText(first ?? '');
+    await expect(carousel.getByText(/^Ads (mentioning|for|in) .+ (rose|fell) [\d,]+ → [\d,]+ in 4 weeks\.$/).first()).toBeVisible();
+  });
+
+  test('industry page shows skills as a heatmap and a labelled list, plus a way to talk', async ({ page }) => {
+    await page.goto('/i/construction');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Construction');
+    const map = page.getByRole('list', { name: /Skills in Construction/ }).filter({ visible: true });
+    await expect(map.getByRole('link', { name: /^AutoCAD: / })).toBeVisible();
+    await expect(page.getByText('Share of this industry’s ads mentioning each skill')).toBeVisible();
+    await expect(page.getByText(/in \d+% of these ads/).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Talk to someone working in this industry/ })).toBeVisible();
+    await expect(page.getByText('Median salary')).toHaveCount(0);
+    await page.getByText('Show these numbers as a table').click();
+    await expect(page.getByRole('rowheader', { name: 'AutoCAD' })).toBeVisible();
+  });
+
+  test('a role opened under /i/ redirects to /r/', async ({ page }) => {
+    await page.goto('/i/data-engineer');
+    await expect(page).toHaveURL(/\/r\/data-engineer$/);
+  });
+});
+
+test('role page lists its Top holdings with weights', async ({ page }) => {
+  await page.goto('/r/data-engineer');
+  await expect(page.getByText('Top holdings')).toBeVisible();
+  const holdings = page.locator('section[aria-labelledby="comp-h"]');
+  await expect(holdings.getByRole('link', { name: 'SQL' })).toBeVisible();
+  await expect(holdings.getByText('in 85% of these ads')).toBeVisible();
 });

@@ -1,10 +1,13 @@
 import { encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
-import type { FilterSpec, SignalKind } from '@/lib/market/types';
+import type { ActiveInstrumentType, FilterSpec, SignalKind } from '@/lib/market/types';
 
 // Cross-area URL builders so every "talk to someone" entry carries the same context (FR-C1).
 
-export function instrumentPath(type: 'skill' | 'role', slug: string, filter?: FilterSpec): string {
-  const base = type === 'skill' ? `/s/${slug}` : `/r/${slug}`;
+/** URL prefix per instrument type: /s skills, /r roles, /i industries. */
+export const INSTRUMENT_PREFIX: Record<ActiveInstrumentType, '/s' | '/r' | '/i'> = { skill: '/s', role: '/r', industry: '/i' };
+
+export function instrumentPath(type: ActiveInstrumentType, slug: string, filter?: FilterSpec): string {
+  const base = `${INSTRUMENT_PREFIX[type]}/${slug}`;
   return filter && !isDefaultFilter(filter) ? `${base}?f=${encodeFilter(filter)}` : base;
 }
 

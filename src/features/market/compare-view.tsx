@@ -193,6 +193,8 @@ export function CompareView({ c, filter }: { c: Comparison; filter: FilterSpec }
         </div>
       </section>
 
+      {/* Learning effort / transferability describe skills and roles, not industries. */}
+      {type !== 'industry' ? (
       <section aria-labelledby="effort-h" className="mt-16">
         <SectionHeader id="effort-h" kicker={ti('decideKicker')} title={t('effortTitle')} />
         <dl className="border-t border-rule">
@@ -209,6 +211,7 @@ export function CompareView({ c, filter }: { c: Comparison; filter: FilterSpec }
           ))}
         </dl>
       </section>
+      ) : null}
 
       <section aria-labelledby="limits-h" className="mt-16 grid gap-6 rounded-lg border border-rule bg-surface p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
         <div>

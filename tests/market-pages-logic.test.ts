@@ -199,13 +199,13 @@ describe('market page queries', () => {
     const r = searchWithSnapshots('js', DEFAULT_FILTER);
     expect(r.skills[0]?.hit.instrument.slug).toBe('javascript');
     expect(r.skills[0]?.snapshot.instrument.slug).toBe('javascript');
-    expect(searchWithSnapshots('', DEFAULT_FILTER)).toEqual({ skills: [], roles: [] });
+    expect(searchWithSnapshots('', DEFAULT_FILTER)).toEqual({ skills: [], roles: [], industries: [] });
   });
   it('gives example readings only for types the metric applies to', () => {
     const salary = getMetricExamples('salary_median', DEFAULT_FILTER);
     expect(salary.length).toBe(2);
     expect(salary.every(e => e.instrument.type === 'role')).toBe(true);
-    expect(getMetricExamples('share_of_ads', DEFAULT_FILTER).length).toBe(4);
+    expect(getMetricExamples('share_of_ads', DEFAULT_FILTER).length).toBe(6);
     expect(getInstrument('python')).toBeDefined();
   });
 });

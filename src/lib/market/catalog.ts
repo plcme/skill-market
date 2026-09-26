@@ -1,4 +1,4 @@
-import type { Instrument, LearningEffort, RoleComponent, Transferability } from './types';
+import type { ActiveInstrumentType, IndustryComponent, Instrument, LearningEffort, RoleComponent, Transferability } from './types';
 
 // Illustrative catalogue for the launch vertical (software / data, PRD §12.2).
 // Profile numbers are synthetic parameters for the fixture engine, not real data.
@@ -33,6 +33,7 @@ interface Seed {
   effort: LearningEffort;
   transfer: Transferability;
   anzsco?: string | null;
+  anzsic?: string | null;
   p: SkillProfile;
   premium?: number;
   salary?: { median: number; spread: number; skillsPerAd: number };
@@ -83,6 +84,30 @@ const SKILLS: Seed[] = [
   { slug: 'stakeholder-management', name: 'Stakeholder management', symbol: 'STK', category: 'Ways of working', aliases: ['stakeholder engagement', 'client management'], blurb: 'Working with the people who shape and depend on a project.', effort: 'year_plus', transfer: 'broad', p: P(0.14, 0.03, 0, 0.09), premium: 0.02 },
   { slug: 'project-management', name: 'Project management', symbol: 'PM', category: 'Ways of working', aliases: ['pmp', 'prince2', 'delivery management'], blurb: 'Planning scope, time and people to deliver outcomes.', effort: 'year_plus', transfer: 'broad', p: P(0.06, -0.02, 0, 0.08, 0, 0.5, 0.8), premium: 0.02 },
   { slug: 'testing', name: 'Software testing', symbol: 'QA', category: 'Web & product', aliases: ['qa', 'test automation', 'quality assurance', 'selenium'], blurb: 'Checking software works — by hand and through automation.', effort: 'weeks', transfer: 'moderate', p: P(0.05, -0.07, -0.03, 0.22, 0, 0.55, 0.9), premium: -0.03 },
+  // Concrete tools and techniques outside software (fixture set for the industry view).
+  { slug: 'xero', name: 'Xero', symbol: 'XRO', category: 'Accounting & finance', aliases: ['xero accounting'], blurb: 'Cloud accounting software used by many Australian small businesses and their accountants.', effort: 'weeks', transfer: 'moderate', p: P(0.022, 0.09, 0.02, 0.3, 0.01, 0.6, 0.9, 0.18), premium: 0.01 },
+  { slug: 'myob', name: 'MYOB', symbol: 'MYOB', category: 'Accounting & finance', aliases: ['myob accountright'], blurb: 'Australian accounting and payroll software.', effort: 'weeks', transfer: 'narrow', p: P(0.012, -0.08, -0.02, 0.3, 0, 0.58, 0.8, 0.18), premium: -0.01 },
+  { slug: 'financial-modelling', name: 'Financial modelling', symbol: 'FMOD', category: 'Accounting & finance', aliases: ['financial modeling', 'valuation modelling', 'dcf'], blurb: 'Building spreadsheet models of cash flows, forecasts and valuations.', effort: 'months', transfer: 'moderate', p: P(0.04, 0.05, 0.01, 0.16, 0, 0.55, 0.8, 0.2), premium: 0.05 },
+  { slug: 'sap', name: 'SAP', symbol: 'SAP', category: 'Enterprise systems', aliases: ['sap erp', 's/4hana', 'sap s4'], blurb: 'Enterprise resource planning software for finance, supply chain and maintenance.', effort: 'months', transfer: 'moderate', p: P(0.04, 0.02, 0, 0.1, 0, 0.5, 0.8, 0.32), premium: 0.04 },
+  { slug: 'autocad', name: 'AutoCAD', symbol: 'ACAD', category: 'Design & engineering', aliases: ['cad', 'autocad civil 3d', 'drafting'], blurb: 'Computer-aided drafting for plans, sections and engineering drawings.', effort: 'months', transfer: 'moderate', p: P(0.05, -0.02, -0.01, 0.2, 0, 0.5, 0.6, 0.2), premium: 0.01 },
+  { slug: 'revit', name: 'Revit', symbol: 'RVT', category: 'Design & engineering', aliases: ['bim', 'building information modelling'], blurb: 'Building information modelling software for architecture and building services.', effort: 'months', transfer: 'narrow', p: P(0.024, 0.11, 0.03, 0.18, 0.01, 0.52, 0.7, 0.2), premium: 0.04 },
+  { slug: 'gis', name: 'GIS', symbol: 'GIS', category: 'Design & engineering', aliases: ['arcgis', 'qgis', 'geographic information systems', 'spatial analysis'], blurb: 'Mapping and analysing spatial data with tools such as ArcGIS and QGIS.', effort: 'months', transfer: 'moderate', p: P(0.022, 0.06, 0.01, 0.2, 0, 0.45, 0.8, 0.22), premium: 0.02 },
+  { slug: 'estimating', name: 'Construction estimating', symbol: 'EST', category: 'Design & engineering', aliases: ['cost estimating', 'quantity take-off', 'takeoffs'], blurb: 'Pricing construction work from drawings: quantities, rates and tenders.', effort: 'months', transfer: 'narrow', p: P(0.022, -0.05, -0.08, 0.1, 0, 0.55, 0.5, 0.22), premium: 0.02 },
+  { slug: 'clinical-assessment', name: 'Clinical assessment', symbol: 'CLIN', category: 'Health & care', aliases: ['patient assessment', 'clinical observations', 'triage'], blurb: 'Assessing patients’ condition, observations and needs to plan care.', effort: 'year_plus', transfer: 'moderate', p: P(0.075, 0.07, 0.05, 0.22, 0.01, 0.45, 0.3, 0.25), premium: 0 },
+  { slug: 'medication-administration', name: 'Medication administration', symbol: 'MEDS', category: 'Health & care', aliases: ['medication management', 'administering medication'], blurb: 'Safely giving, recording and reviewing medicines under clinical protocols.', effort: 'months', transfer: 'moderate', p: P(0.062, 0.08, 0.06, 0.26, 0.01, 0.48, 0.2, 0.26), premium: 0 },
+  { slug: 'wound-care', name: 'Wound care', symbol: 'WND', category: 'Health & care', aliases: ['wound management', 'wound dressing'], blurb: 'Assessing and dressing wounds and preventing infection.', effort: 'months', transfer: 'narrow', p: P(0.04, 0.05, 0.02, 0.24, 0, 0.46, 0.2, 0.24), premium: 0.01 },
+  { slug: 'lesson-planning', name: 'Lesson planning', symbol: 'LSN', category: 'Education', aliases: ['unit planning', 'lesson plans'], blurb: 'Designing lessons and assessment that follow the curriculum.', effort: 'months', transfer: 'moderate', p: P(0.04, 0.03, 0.12, 0.32, 0.01, 0.42, 0.3, 0.4), premium: 0 },
+  { slug: 'curriculum-design', name: 'Curriculum design', symbol: 'CURR', category: 'Education', aliases: ['australian curriculum', 'acara', 'instructional design'], blurb: 'Structuring courses and learning outcomes, including against the Australian Curriculum.', effort: 'months', transfer: 'moderate', p: P(0.022, 0.05, 0.08, 0.2, 0, 0.5, 0.6, 0.35), premium: 0.01 },
+  { slug: 'lms', name: 'Learning management systems', symbol: 'LMS', category: 'Education', aliases: ['canvas', 'moodle', 'lms'], blurb: 'Running courses in platforms such as Canvas and Moodle.', effort: 'weeks', transfer: 'moderate', p: P(0.018, 0.09, 0.08, 0.24, 0, 0.55, 0.9, 0.3), premium: 0 },
+  { slug: 'pos-systems', name: 'Point-of-sale systems', symbol: 'POS', category: 'Retail & operations', aliases: ['pos', 'point of sale', 'eftpos'], blurb: 'Operating point-of-sale systems for sales, refunds and end-of-day reconciliation.', effort: 'weeks', transfer: 'narrow', p: P(0.034, 0.02, 0.1, 0.5, 0, 0.7, 0.1, 0.35), premium: -0.02 },
+  { slug: 'inventory-management', name: 'Inventory management', symbol: 'INV', category: 'Retail & operations', aliases: ['stock control', 'stocktake', 'inventory control'], blurb: 'Tracking, ordering and counting stock so shelves and warehouses stay supplied.', effort: 'weeks', transfer: 'moderate', p: P(0.042, 0.01, 0.04, 0.3, 0, 0.62, 0.2, 0.3), premium: 0 },
+  { slug: 'visual-merchandising', name: 'Visual merchandising', symbol: 'VM', category: 'Retail & operations', aliases: ['merchandising', 'planograms'], blurb: 'Laying out stores and displays to planograms.', effort: 'weeks', transfer: 'narrow', p: P(0.018, -0.04, 0.12, 0.4, 0, 0.66, 0.1, 0.3), premium: -0.02 },
+  { slug: 'policy-analysis', name: 'Policy analysis', symbol: 'POL', category: 'Government', aliases: ['policy development', 'briefing writing', 'ministerial briefs'], blurb: 'Researching options and writing briefs that inform government decisions.', effort: 'months', transfer: 'moderate', p: P(0.02, 0.04, 0.03, 0.2, 0, 0.18, 0.9, 0.3), premium: 0.01 },
+  { slug: 'records-management', name: 'Records management', symbol: 'REC', category: 'Government', aliases: ['trim', 'content manager', 'recordkeeping'], blurb: 'Capturing and keeping official records in systems such as Content Manager (TRIM).', effort: 'weeks', transfer: 'moderate', p: P(0.014, -0.03, -0.01, 0.26, 0, 0.3, 0.8, 0.3), premium: -0.01 },
+  { slug: 'mine-planning', name: 'Mine planning software', symbol: 'MINE', category: 'Resources', aliases: ['deswik', 'vulcan', 'surpac', 'mine scheduling'], blurb: 'Designing and scheduling mines in tools such as Deswik, Vulcan and Surpac.', effort: 'months', transfer: 'narrow', p: P(0.008, -0.06, -0.16, 0.14, 0, 0.5, 0.3, 0.3), premium: 0.06 },
+  { slug: 'lean-six-sigma', name: 'Lean Six Sigma', symbol: 'LSS', category: 'Retail & operations', aliases: ['lean', 'six sigma', 'continuous improvement'], blurb: 'Methods for measuring and reducing waste and variation in processes.', effort: 'months', transfer: 'broad', p: P(0.018, -0.02, -0.03, 0.12, 0, 0.55, 0.4, 0.28), premium: 0.02 },
+  { slug: 'plc-programming', name: 'PLC programming', symbol: 'PLC', category: 'Design & engineering', aliases: ['plc', 'scada', 'allen-bradley', 'siemens s7'], blurb: 'Programming the controllers that run machines and production lines.', effort: 'months', transfer: 'narrow', p: P(0.014, 0.04, -0.05, 0.12, 0, 0.5, 0.2, 0.3), premium: 0.05 },
+  { slug: 'adobe-creative-cloud', name: 'Adobe Creative Cloud', symbol: 'ADBE', category: 'Media & design', aliases: ['photoshop', 'illustrator', 'indesign', 'premiere pro'], blurb: 'Photoshop, Illustrator, InDesign and Premiere for design and media production.', effort: 'months', transfer: 'moderate', p: P(0.015, -0.06, -0.14, 0.3, 0, 0.65, 1.0, 0.35), premium: -0.02 },
 ];
 
 const ROLES: Seed[] = [
@@ -104,6 +129,16 @@ const ROLES: Seed[] = [
   { slug: 'database-administrator', name: 'Database Administrator', symbol: 'DBA', category: 'Infrastructure', aliases: ['dba', 'database engineer'], anzsco: '262111', blurb: 'Keeps databases fast, backed up and secure.', effort: 'year_plus', transfer: 'narrow', p: P(0.012, -0.05, -0.02, 0.08, 0, 0.5, 0.9), salary: { median: 125000, spread: 0.24, skillsPerAd: 7 } },
   { slug: 'network-engineer', name: 'Network Engineer', symbol: 'NWE', category: 'Infrastructure', aliases: ['network administrator', 'systems engineer'], anzsco: '263111', blurb: 'Designs and maintains the networks organisations run on.', effort: 'year_plus', transfer: 'moderate', p: P(0.02, -0.02, -0.01, 0.12, 0, 0.42, 0.6), salary: { median: 112000, spread: 0.26, skillsPerAd: 7 } },
   { slug: 'ict-project-manager', name: 'ICT Project Manager', symbol: 'IPM', category: 'Product & delivery', aliases: ['it project manager', 'delivery manager'], anzsco: '135112', blurb: 'Runs technology projects from scope to delivery.', effort: 'year_plus', transfer: 'broad', p: P(0.03, -0.03, 0, 0.03, 0, 0.5, 0.8), salary: { median: 150000, spread: 0.25, skillsPerAd: 7 } },
+  // Non-tech roles for the industry view (ANZSCO 6-digit codes).
+  { slug: 'registered-nurse', name: 'Registered Nurse', symbol: 'RN', category: 'Health', aliases: ['rn', 'nurse', 'clinical nurse'], anzsco: '254418', blurb: 'Plans and delivers nursing care in hospitals and the community.', effort: 'year_plus', transfer: 'moderate', p: P(0.05, 0.06, 0.05, 0.24, 0.01, 0.46, 0.2, 0.26), salary: { median: 92000, spread: 0.2, skillsPerAd: 6 } },
+  { slug: 'aged-care-worker', name: 'Aged or Disabled Carer', symbol: 'CARE', category: 'Health', aliases: ['aged care worker', 'disability support worker', 'support worker'], anzsco: '423111', blurb: 'Supports older people and people with disability with daily living.', effort: 'months', transfer: 'moderate', p: P(0.04, 0.1, 0.06, 0.45, 0.01, 0.6, 0.1, 0.3), salary: { median: 62000, spread: 0.18, skillsPerAd: 4 } },
+  { slug: 'accountant', name: 'Accountant (General)', symbol: 'ACCT', category: 'Finance', aliases: ['accountant', 'tax accountant', 'management accountant'], anzsco: '221111', blurb: 'Prepares accounts, tax returns and financial reports.', effort: 'year_plus', transfer: 'broad', p: P(0.035, 0.02, 0.01, 0.22, 0, 0.5, 0.8, 0.18), salary: { median: 90000, spread: 0.28, skillsPerAd: 6 } },
+  { slug: 'civil-engineer', name: 'Civil Engineer', symbol: 'CIV', category: 'Engineering & built environment', aliases: ['civil engineering', 'structural engineer'], anzsco: '233211', blurb: 'Designs and oversees roads, water, structures and other infrastructure.', effort: 'year_plus', transfer: 'moderate', p: P(0.022, 0.03, -0.02, 0.18, 0, 0.44, 0.5, 0.22), salary: { median: 118000, spread: 0.26, skillsPerAd: 6 } },
+  { slug: 'architectural-draftsperson', name: 'Architectural Draftsperson', symbol: 'DRFT', category: 'Engineering & built environment', aliases: ['draftsperson', 'drafter', 'bim modeller'], anzsco: '312111', blurb: 'Prepares architectural drawings and building models.', effort: 'months', transfer: 'narrow', p: P(0.01, 0.04, 0.02, 0.24, 0, 0.55, 0.6, 0.22), salary: { median: 85000, spread: 0.22, skillsPerAd: 5 } },
+  { slug: 'secondary-teacher', name: 'Secondary School Teacher', symbol: 'TCHR', category: 'Education', aliases: ['high school teacher', 'teacher'], anzsco: '241411', blurb: 'Teaches one or more subjects to students in years 7–12.', effort: 'year_plus', transfer: 'moderate', p: P(0.025, 0.02, 0.14, 0.3, 0.01, 0.4, 0.1, 0.38), salary: { median: 98000, spread: 0.16, skillsPerAd: 5 } },
+  { slug: 'policy-analyst', name: 'Policy Analyst', symbol: 'PLCY', category: 'Government', aliases: ['policy officer', 'policy adviser'], anzsco: '224412', blurb: 'Researches issues and advises on government policy options.', effort: 'year_plus', transfer: 'broad', p: P(0.012, 0.03, 0.02, 0.2, 0, 0.16, 0.9, 0.3), salary: { median: 108000, spread: 0.22, skillsPerAd: 5 } },
+  { slug: 'retail-manager', name: 'Retail Manager (General)', symbol: 'RTLM', category: 'Retail', aliases: ['store manager', 'retail store manager', 'assistant store manager'], anzsco: '142111', blurb: 'Runs a store: staff, stock, sales and customer service.', effort: 'months', transfer: 'broad', p: P(0.02, -0.01, 0.08, 0.2, 0, 0.66, 0.1, 0.12), salary: { median: 72000, spread: 0.2, skillsPerAd: 5 } },
+  { slug: 'mining-engineer', name: 'Mining Engineer', symbol: 'MNE', category: 'Mining & resources', aliases: ['mine planning engineer', 'drill and blast engineer'], anzsco: '233611', blurb: 'Plans and optimises how ore is extracted safely and economically.', effort: 'year_plus', transfer: 'narrow', p: P(0.006, -0.05, -0.14, 0.16, 0, 0.5, 0.2, 0.28), salary: { median: 150000, spread: 0.24, skillsPerAd: 6 } },
 ];
 
 export const ROLE_COMPONENTS: Record<string, RoleComponent[]> = Object.fromEntries(Object.entries({
@@ -125,11 +160,53 @@ export const ROLE_COMPONENTS: Record<string, RoleComponent[]> = Object.fromEntri
   'database-administrator': { sql: 0.9, postgresql: 0.55, linux: 0.4, azure: 0.3, aws: 0.3 },
   'network-engineer': { networking: 0.9, linux: 0.5, cybersecurity: 0.4, azure: 0.25 },
   'ict-project-manager': { 'project-management': 0.9, communication: 0.8, 'stakeholder-management': 0.8, agile: 0.6 },
+  'registered-nurse': { 'clinical-assessment': 0.82, 'medication-administration': 0.74, 'wound-care': 0.46 },
+  'aged-care-worker': { 'medication-administration': 0.52, 'wound-care': 0.22, 'clinical-assessment': 0.18 },
+  accountant: { xero: 0.48, excel: 0.62, myob: 0.3, 'financial-modelling': 0.24, sap: 0.1 },
+  'civil-engineer': { autocad: 0.58, gis: 0.26, 'project-management': 0.4, estimating: 0.22, revit: 0.12 },
+  'architectural-draftsperson': { revit: 0.76, autocad: 0.72, estimating: 0.08 },
+  'secondary-teacher': { 'lesson-planning': 0.78, 'curriculum-design': 0.42, lms: 0.36 },
+  'policy-analyst': { 'policy-analysis': 0.86, 'records-management': 0.2, 'data-analysis': 0.26, excel: 0.22 },
+  'retail-manager': { 'inventory-management': 0.62, 'pos-systems': 0.44, 'visual-merchandising': 0.38, excel: 0.2 },
+  'mining-engineer': { 'mine-planning': 0.7, autocad: 0.34, gis: 0.24, sap: 0.18, excel: 0.3 },
 }).map(([role, comps]) => [role, Object.entries(comps).map(([skill_slug, weight]) => ({ skill_slug, weight })).sort((a, b) => b.weight - a.weight)]));
+
+// Industries = ANZSIC 2006 Divisions (top level). `share` is the division's share
+// of all ads; the ten below are the fixture set, the remaining divisions are
+// not yet tracked. Sub-industries (parent_id) are reserved, not modelled.
+const INDUSTRIES: Seed[] = [
+  { slug: 'health-care', name: 'Health Care and Social Assistance', symbol: 'HLTH', category: 'ANZSIC Division Q', anzsic: 'Q', aliases: ['health', 'healthcare', 'social assistance', 'aged care', 'disability services'], blurb: 'Hospitals, medical and allied health, aged care, childcare and social assistance.', effort: 'year_plus', transfer: 'moderate', p: P(0.15, 0.07, 0.1, 0.26, 0.01, 0.5, 0.25, 0.26) },
+  { slug: 'professional-services', name: 'Professional, Scientific and Technical Services', symbol: 'PROF', category: 'ANZSIC Division M', anzsic: 'M', aliases: ['professional services', 'consulting', 'engineering services', 'computer system design', 'legal and accounting'], blurb: 'Consulting, engineering, legal, accounting, research and computer system design.', effort: 'year_plus', transfer: 'broad', p: P(0.13, 0.03, 0.02, 0.18, 0, 0.56, 1.1, 0.24) },
+  { slug: 'construction', name: 'Construction', symbol: 'CONS', category: 'ANZSIC Division E', anzsic: 'E', aliases: ['building', 'civil construction', 'trades'], blurb: 'Building and civil construction, and construction trade services.', effort: 'year_plus', transfer: 'moderate', p: P(0.08, -0.03, -0.12, 0.16, 0, 0.58, 0.3, 0.26) },
+  { slug: 'retail-trade', name: 'Retail Trade', symbol: 'RETL', category: 'ANZSIC Division G', anzsic: 'G', aliases: ['retail', 'shops', 'supermarkets'], blurb: 'Supermarkets, department stores, specialised and online retailing.', effort: 'months', transfer: 'broad', p: P(0.08, -0.01, 0.16, 0.42, 0, 0.68, 0.15, 0.3) },
+  { slug: 'education-training', name: 'Education and Training', symbol: 'EDUC', category: 'ANZSIC Division P', anzsic: 'P', aliases: ['education', 'schools', 'universities', 'tafe', 'teaching'], blurb: 'Schools, universities, vocational training and other education.', effort: 'year_plus', transfer: 'moderate', p: P(0.07, 0.03, 0.22, 0.28, 0.01, 0.45, 0.4, 0.38) },
+  { slug: 'financial-services', name: 'Financial and Insurance Services', symbol: 'FINS', category: 'ANZSIC Division K', anzsic: 'K', aliases: ['finance', 'banking', 'insurance', 'superannuation', 'financial services'], blurb: 'Banks, insurers, superannuation funds and other financial services.', effort: 'year_plus', transfer: 'broad', p: P(0.07, 0.02, 0.04, 0.16, 0, 0.5, 1.0, 0.24) },
+  { slug: 'manufacturing', name: 'Manufacturing', symbol: 'MANU', category: 'ANZSIC Division C', anzsic: 'C', aliases: ['factories', 'production', 'food manufacturing'], blurb: 'Food, machinery, metal, chemical and other manufacturing.', effort: 'year_plus', transfer: 'moderate', p: P(0.06, -0.04, -0.12, 0.2, 0, 0.6, 0.3, 0.28) },
+  { slug: 'public-administration', name: 'Public Administration and Safety', symbol: 'PUBA', category: 'ANZSIC Division O', anzsic: 'O', aliases: ['government', 'public service', 'public sector', 'aps', 'defence'], blurb: 'Federal, state and local government administration, defence and public order.', effort: 'year_plus', transfer: 'broad', p: P(0.06, 0.04, 0.06, 0.2, 0, 0.2, 0.8, 0.3) },
+  { slug: 'information-media-telecommunications', name: 'Information Media and Telecommunications', symbol: 'IMT', category: 'ANZSIC Division J', anzsic: 'J', aliases: ['media', 'telecommunications', 'telco', 'publishing', 'broadcasting'], blurb: 'Publishing, broadcasting, telecommunications and internet services.', effort: 'year_plus', transfer: 'moderate', p: P(0.035, -0.06, -0.22, 0.18, 0, 0.58, 1.1, 0.28) },
+  { slug: 'mining', name: 'Mining', symbol: 'MINI', category: 'ANZSIC Division B', anzsic: 'B', aliases: ['resources', 'mining and resources', 'oil and gas'], blurb: 'Coal, metal ore and other mining, oil and gas extraction, and support services.', effort: 'year_plus', transfer: 'narrow', p: P(0.03, -0.02, -0.34, 0.14, 0, 0.5, 0.2, 0.3) },
+];
+
+/**
+ * Industry → skills. Weight = share of the industry's ads that mention the
+ * skill (0–1), the same shape as RoleComponent. Illustrative fixture values.
+ */
+export const INDUSTRY_COMPONENTS: Record<string, IndustryComponent[]> = Object.fromEntries(Object.entries({
+  'health-care': { 'clinical-assessment': 0.52, 'medication-administration': 0.44, 'wound-care': 0.28, excel: 0.07, 'data-analysis': 0.04 },
+  'professional-services': { excel: 0.3, 'project-management': 0.2, 'data-analysis': 0.2, sql: 0.19, python: 0.18, javascript: 0.15, xero: 0.14, aws: 0.12, autocad: 0.12, 'financial-modelling': 0.12, revit: 0.08, myob: 0.08, gis: 0.06 },
+  construction: { autocad: 0.36, estimating: 0.3, 'project-management': 0.28, revit: 0.2, excel: 0.18, gis: 0.05 },
+  'retail-trade': { 'pos-systems': 0.46, 'inventory-management': 0.4, 'visual-merchandising': 0.24, excel: 0.14, sap: 0.05 },
+  'education-training': { 'lesson-planning': 0.58, 'curriculum-design': 0.34, lms: 0.3, excel: 0.06 },
+  'financial-services': { excel: 0.55, 'financial-modelling': 0.4, 'data-analysis': 0.3, sql: 0.3, python: 0.2, powerbi: 0.2, sap: 0.14, xero: 0.1, cybersecurity: 0.1 },
+  manufacturing: { sap: 0.3, excel: 0.3, 'lean-six-sigma': 0.3, 'plc-programming': 0.25, autocad: 0.24, 'inventory-management': 0.16 },
+  'public-administration': { 'policy-analysis': 0.34, excel: 0.3, 'records-management': 0.24, 'data-analysis': 0.15, powerbi: 0.1, gis: 0.08, cybersecurity: 0.06 },
+  'information-media-telecommunications': { networking: 0.3, 'adobe-creative-cloud': 0.25, cybersecurity: 0.2, python: 0.15, sql: 0.15, aws: 0.15, linux: 0.15, javascript: 0.12 },
+  mining: { excel: 0.3, 'mine-planning': 0.3, sap: 0.25, autocad: 0.2, gis: 0.2, 'lean-six-sigma': 0.05 },
+}).map(([industry, comps]) => [industry, Object.entries(comps).map(([skill_slug, weight]) => ({ skill_slug, weight })).sort((a, b) => b.weight - a.weight)]));
 
 export const TRACKING_SINCE = '2024-06-03';
 
-function toInstrument(seed: Seed, type: 'skill' | 'role'): Instrument {
+function toInstrument(seed: Seed, type: ActiveInstrumentType): Instrument {
   return {
     id: `${type}:${seed.slug}`,
     slug: seed.slug,
@@ -139,6 +216,8 @@ function toInstrument(seed: Seed, type: 'skill' | 'role'): Instrument {
     category: seed.category,
     aliases: seed.aliases,
     anzsco: seed.anzsco ?? null,
+    anzsic: seed.anzsic ?? null,
+    parent_id: null,
     blurb: seed.blurb,
     learning_effort: seed.effort,
     transferability: seed.transfer,
@@ -149,16 +228,17 @@ function toInstrument(seed: Seed, type: 'skill' | 'role'): Instrument {
 export const INSTRUMENTS: readonly Instrument[] = [
   ...SKILLS.map(s => toInstrument(s, 'skill')),
   ...ROLES.map(r => toInstrument(r, 'role')),
+  ...INDUSTRIES.map(r => toInstrument(r, 'industry')),
 ];
 
-const PROFILES = new Map<string, Seed>([...SKILLS, ...ROLES].map(s => [s.slug, s]));
+const PROFILES = new Map<string, Seed>([...SKILLS, ...ROLES, ...INDUSTRIES].map(s => [s.slug, s]));
 const BY_SLUG = new Map(INSTRUMENTS.map(i => [i.slug, i]));
 
 export function getInstrument(slug: string): Instrument | undefined {
   return BY_SLUG.get(slug);
 }
 
-export function instrumentsOfType(type: 'skill' | 'role'): Instrument[] {
+export function instrumentsOfType(type: ActiveInstrumentType): Instrument[] {
   return INSTRUMENTS.filter(i => i.type === type);
 }
 
@@ -216,6 +296,22 @@ export function rolesForSkill(skillSlug: string): Array<{ role: Instrument; weig
     const c = comps.find(x => x.skill_slug === skillSlug);
     const role = BY_SLUG.get(roleSlug);
     if (c && role) out.push({ role, weight: c.weight });
+  }
+  return out.sort((a, b) => b.weight - a.weight);
+}
+
+/** Component skills of a role or an industry (weight = share of its ads mentioning the skill). */
+export function componentsOf(slug: string): RoleComponent[] {
+  return ROLE_COMPONENTS[slug] ?? INDUSTRY_COMPONENTS[slug] ?? [];
+}
+
+/** Industries whose ads mention a skill, strongest weight first. */
+export function industriesForSkill(skillSlug: string): Array<{ industry: Instrument; weight: number }> {
+  const out: Array<{ industry: Instrument; weight: number }> = [];
+  for (const [slug, comps] of Object.entries(INDUSTRY_COMPONENTS)) {
+    const c = comps.find(x => x.skill_slug === skillSlug);
+    const industry = BY_SLUG.get(slug);
+    if (c && industry) out.push({ industry, weight: c.weight });
   }
   return out.sort((a, b) => b.weight - a.weight);
 }

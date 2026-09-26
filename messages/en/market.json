@@ -264,6 +264,7 @@
     "open": "Open {name}",
     "skill": "Skill",
     "role": "Role",
+    "industry": "Industry",
     "trend": "Last 12 months, 4-week rolling ads",
     "trendDesc": "{name}: from {first} to {last} ads per 4 weeks over the last 12 months.",
     "entryShare": "Entry-level",
@@ -280,5 +281,33 @@
     "range": { "3m": "3M", "6m": "6M", "1y": "1Y", "2y": "2Y" },
     "rangeLabel": "Time range",
     "noData": "No data for this range"
+  },
+  "Heatmap": {
+    "sizeLabel": "Size:",
+    "sizeIndustries": "job ads in each industry in the last 4 weeks.",
+    "sizeSkills": "job ads in {industry} that mention each skill, last 4 weeks.",
+    "colourLabel": "Colour:",
+    "colourBody": "4-week change — the last 4 weeks against the 4 weeks before.",
+    "legendLabel": "Colour bands",
+    "band": {
+      "dn2": "−{strong}% or more",
+      "dn1": "−{flat} to −{strong}%",
+      "flat": "within ±{flat}%",
+      "up1": "+{flat} to +{strong}%",
+      "up2": "+{strong}% or more",
+      "na": "fewer than {min} ads"
+    },
+    "window": "Window {start} – {end}.",
+    "thinNote": "Grey, hatched tiles have fewer than {min} ads in the earlier 4 weeks, so no change is shown.",
+    "tileLabel": "{name}: {ads} job ads, {dir, select, up {up {change}} down {down {change}} other {no change}} in 4 weeks ({from} → {to}).",
+    "tileLabelThin": "{name}: {ads} job ads. Too few ads (under {min}) to show a 4-week change.",
+    "thinShort": "Too few ads",
+    "adsShort": "{n} ads",
+    "empty": "No ads under this filter yet.",
+    "tableToggle": "Show these numbers as a table",
+    "colAds": "Job ads (4 weeks)",
+    "colChange": "4-week change",
+    "changeCell": "{change} ({from} → {to})",
+    "thinCell": "Too few ads (under {min})"
   }
 }

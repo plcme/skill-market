@@ -43,9 +43,9 @@ pnpm test:unit && pnpm build && pnpm test:e2e
 
 | 路由 | 身份 | 主要 FR | 数据来源 |
 |---|---|---|---|
-| `/` | 公开 | FR-M1、R7 | `getBoard`、`getTape` |
-| `/market?type&metric&f&sort&view&cat&q` | 公开 | FR-M1/M2/M4/M6、FR-F1–F5 | `getBoard`、`getSignalsNow` |
-| `/s/[slug]`、`/r/[slug]`（类型不符时自动重定向到另一个） | 公开 | FR-M2/M3、FR-D2–D5、FR-R1（本人复盘记录） | `getInstrumentDetail`、`selectDebriefsFor` |
+| `/` | 公开 | FR-M1、R7 | `getIndustryHeatmap`（hero 行业热力图）、`getMovers`（信号轮播）、`getBoard`、`getTape` |
+| `/market?type=all\|skill\|role\|industry&metric&f&sort=value\|change&view&q` | 公开 | FR-M1/M2/M4/M6、FR-F1–F5 | `getBoard`、`getSignalsNow` |
+| `/s/[slug]`、`/r/[slug]`、`/i/[slug]`（类型不符时 308 重定向到正确前缀） | 公开 | FR-M2/M3、FR-D2–D5、FR-R1（本人复盘记录） | `getInstrumentDetail`、`selectDebriefsFor` |
 | `/compare?a&b&f` | 公开 | FR-M5 | `getComparison` |
 | `/search?q` | 公开 | FR-D6 | `searchWithSnapshots` |
 | `/metrics`、`/metrics/[key]` | 公开 | FR-D2、FR-M4 | registry、`getMetricExamples` |
@@ -83,12 +83,15 @@ type FilterSpec = { rules: { work_modes: ('onsite'|'hybrid'|'remote')[]; locatio
 
 | 函数 | 返回 | 说明 |
 |---|---|---|
-| `getBoard({type: 'skill'\|'role'\|'all', metric?, filter, sort?: 'value'\|'change'\|'name', q?, category?})` | `Board { type, metric, sort, rows: InstrumentSnapshot[], categories, signals, as_of }` | 无效 metric 回退到该类型默认（skill→`share_of_ads`，role→`growth_12m`，all→`ad_count`） |
-| `getInstrumentDetail(slug, filter, metric?)` | `InstrumentDetail \| null` | 含 `readings`（该类型全部有效指标）、104 周 `series`、`composition`（role→技能权重 / skill→岗位）、`related`、`locations`（按州）、`signal` |
+| `getBoard({type: 'all'\|'skill'\|'role'\|'industry', metric?, filter, sort?: 'value'\|'change', q?})` | `Board { type, metric, sort, rows: InstrumentSnapshot[], signals, as_of }` | 不再有 category 与 name（A–Z）排序；旧 `?sort=az\|name` 回退为 `value`。无效或不可选 metric 回退到默认（skill→`ad_count`，role→`growth_12m`，industry→`ad_count`，all→`ad_count`，all 只接受三类共同适用的 `sharedMetrics()`） |
+| `getInstrumentDetail(slug, filter, metric?)` | `InstrumentDetail \| null` | 含 `readings`（该类型全部有效指标）、104 周 `series`、`composition`（role→技能权重，即 Top holdings / industry→技能权重 / skill→岗位）、`heatmap`（仅 industry：行业内技能热力图，其他类型为 `null`）、`related`、`locations`（按州）、`signal` |
 | `getComparison(a, b, filter)` | `Comparison \| null` | `correlation`（近 52 周 Pearson）、`overlap`、`shared/onlyA/onlyB` |
-| `search(q)` / `searchWithSnapshots(q, filter)` | 按 skill/role 分组的命中，含 `matched`、`via: name\|alias\|symbol\|prefix` | 别名归一（FR-D6） |
+| `search(q)` / `searchWithSnapshots(q, filter)` | 按 `skills`/`roles`/`industries` 分组的命中，含 `matched`、`via: name\|alias\|symbol\|prefix` | 别名归一（FR-D6） |
 | `getSignalsNow(filter, limit=12)` | `InstrumentSnapshot[]` | 当前筛选下有信号的标的，按幅度排序 |
 | `getTape(limit=16)` | `TapeEntry[]` | 顶部行情条：全国 4 周变化，信号优先 |
+| `getIndustryHeatmap(filter)` | `Heatmap`（`kind='industries'`） | 全部行业，按 job ads 降序 |
+| `getIndustrySkillHeatmap(industrySlug, filter)` | `Heatmap`（`kind='industry_skills'`, `parent`） | 行业内技能；面积 = 该行业中提到该技能的广告数 |
+| `getMovers(filter, limit=4)` | `Mover { instrument, change: MetricReading(change_4w), sparkline }[]` | 首页轮播选取规则：三类标的统一用 `change_4w`，要求 `from ≥ min_sample`，按 \|相对变化\| 降序，平手按 `from` 大者、再按 slug（`pickMovers`，纯函数） |
 | `getMetricExamples(key, filter)` | `{instrument, reading}[]` | 指标定义页示例 |
 | `getSources()` | `DataSource[]` | `/sources` 与 admin |
 
@@ -96,6 +99,10 @@ type FilterSpec = { rules: { work_modes: ('onsite'|'hybrid'|'remote')[]; locatio
 - `status='insufficient_sample'` 时 `value=null`，前端不画趋势线并给出放宽建议（FR-D4）。
 - 变化类指标必须带 `from/to`（FR-D3）。
 - 指标注册表 `src/lib/metrics/registry.ts` 定义适用类型、默认/常用/进阶、窗口、`min_sample`（默认 30）、`available_after_days`、`text_derived`、`ignores`、来源；文案在 `Metrics.<key>`。后端 `metric_definitions` 应由同一文件生成（ARCHITECTURE A6）。
+- **行业（industry）**：`ActiveInstrumentType = 'skill' | 'role' | 'industry'`。行业 = ANZSIC Division（`Instrument.anzsic` 为 Division 字母；`Instrument.parent_id` 为细分行业预留，当前恒为 `null`，界面不展示）。适用指标：除 `salary_median`、`salary_p10_p90`、`skill_premium`、`skills_per_ad` 外全部；默认 `ad_count`（Demand），列表变化列 `signalMetric('industry') = 'change_4w'`。
+- **行业 → 技能**：`INDUSTRY_COMPONENTS: Record<industrySlug, IndustryComponent[]>`，`IndustryComponent` 与 `RoleComponent` 同形 `{skill_slug, weight}`，`weight` = 该行业广告中提到该技能的比例（0–1）。`componentsOf(slug)` 统一读取 role / industry 构成；`industriesForSkill(skill)` 反查。后端建议：`instrument_components(parent_id, skill_id, weight, window)` 一张表同时服务 role 与 industry。
+- **行业 × 技能分段计数**（fixture 近似，`segmentCounts`）：周计数 = 行业周计数 × weight × 技能相对全市场占比的走势（以近 8 周均值归一）。真实数据应直接对"行业 ∩ 技能"的 cell 求和。`industrySkillReadings` 返回该分段的 `ad_count`（`denominator` = 行业广告数）与 `change_4w`。
+- **`Heatmap`**：`{ kind: 'industries'|'industry_skills', parent: string|null, tiles: HeatTile[], as_of }`；`HeatTile { slug, type, name, symbol, ads: MetricReading(ad_count), change: MetricReading(change_4w) }`。面积取 `ads.numerator`（样本不足时 `value` 为 null，但仍按计数画面积）；颜色按 `heatStep`：\|变化\| < 2% 中性、2–10% 浅、≥ 10% 深（蓝升 / 橙降），`change.status !== 'ok'` 灰色斜纹。布局由 `squarify()`（`src/lib/market/treemap.ts`，纯函数）计算。
 - 信号（`detectSignal`）：`rise`/`fall` = `change_4w` 绝对值 ≥ 25% 且变化 ≥ 10 条，`entry_open` = entry-level 占比 8 周内上升 ≥ 10 个百分点，均要求样本充足；`since_added` 仅在 watchlist 上由 `selectWatchlist` 计算。
 
 ## 6. 写接口（actions）
@@ -126,7 +133,7 @@ type FilterSpec = { rules: { work_modes: ('onsite'|'hybrid'|'remote')[]; locatio
 ### 6.3 Watchlist（`watchlist.ts`）
 | action | 输入 | 输出 | 错误 |
 |---|---|---|---|
-| `addWatchlistItem` | `{instrument_slug, status: 'held'\|'watching', filter, metric?}` | `WatchlistItem`（写入 `baseline_value`） | `instrumentNotFound`、`rolesCannotBeHeld`、`alreadyWatching`（同标的 + 同 filter）、`watchlistFull`（30） |
+| `addWatchlistItem` | `{instrument_slug, status: 'held'\|'watching', filter, metric?}` | `WatchlistItem`（写入 `baseline_value`） | `instrumentNotFound`、`rolesCannotBeHeld`（现适用于 role 与 industry：只有 skill 可 held）、`alreadyWatching`（同标的 + 同 filter）、`watchlistFull`（30） |
 | `updateWatchlistItem` | `{id, status?, filter?, metric?}` | `WatchlistItem` | filter / metric 变化会重置基线 |
 | `removeWatchlistItem(id)` / `restoreWatchlistItem(item)` | | | Undo |
 | 读：`selectWatchlist(db)` → `WatchlistRow {item, current, since_added, signal}`；`selectWatchlistGroups` → `{signals, held, watching}`；`findWatchItem` | | | `watchlist_items` + `signals` |
@@ -233,11 +240,13 @@ type FilterSpec = { rules: { work_modes: ('onsite'|'hybrid'|'remote')[]; locatio
 | 8 | ANZSCO 代码 | 只填了有把握的 11 个，其余显示"无单一代码" | M1 种子时核对 |
 | 9 | 学习投入 / 可迁移性 | catalog 中的编辑估计，界面已注明"不是测量值" | 需人工维护或数据支撑 |
 | 10 | 环境变量 | 无新增 | — |
+| 11 | 行业与细分行业 | 10 个 ANZSIC Division fixture；`parent_id` 预留 | 上线补齐 19 个 Division；细分颗粒度（Subdivision / Group）待拍板（GLOSSARY §5） |
+| 12 | 行业 ↔ 技能权重 | 编辑估计的 fixture | 由广告的行业字段（ANZSIC 映射）× 技能抽取计算 |
 
 ## 10. 已知限制
 
 - 全部数据为演示：市场数字合成，人物与雇主虚构（邮箱域名均为 `.example`），没有真实认证、邮件、存储或服务端鉴权；管理后台的权限只在客户端判断。
 - 一个浏览器只有一个演示账号；删除账号后重新登录会新建。
-- "All" 盘面的变化列混合了技能的 4 周变化与岗位的 12 个月变化（列头有说明）。
+- "All" 盘面的变化列混合了技能 / 行业的 4 周变化与岗位的 12 个月变化（列头有说明）；首页轮播则对三类统一使用 4 周变化。
 - 法律页为草稿，需法律审阅。
 - 如需与设计稿核对：本分支未更新 Figma。

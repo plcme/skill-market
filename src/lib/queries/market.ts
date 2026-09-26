@@ -1,5 +1,7 @@
-import { computeMetric, computeSeries, correlation, DATA_AS_OF, detectSignal, locationBreakdown, snapshot, SOURCE_IDS } from '@/lib/market/engine';
-import { cooccurrence, getInstrument, INSTRUMENTS, relatedSkills, ROLE_COMPONENTS, rolesForSkill, searchInstruments, type SearchHit } from '@/lib/market/catalog';
+import { computeMetric, computeSeries, computeSparkline, correlation, DATA_AS_OF, detectSignal, industrySkillReadings, locationBreakdown, snapshot, SOURCE_IDS } from '@/lib/market/engine';
+import { cooccurrence, getInstrument, INDUSTRY_COMPONENTS, INSTRUMENTS, instrumentsOfType, relatedSkills, ROLE_COMPONENTS, rolesForSkill, searchInstruments, type SearchHit } from '@/lib/market/catalog';
+import type { HeatTile, Heatmap } from '@/lib/market/heatmap';
+import { pickMovers } from '@/lib/market/movers';
 import { METRICS, defaultMetric, isValidMetric, metricsFor, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
 import { sortValue } from '@/lib/market/format';
 import type {
@@ -90,8 +92,14 @@ export interface InstrumentDetail {
   metrics: { default: MetricKey; common: MetricKey[]; advanced: MetricKey[] };
   readings: Partial<Record<MetricKey, MetricReading>>;
   series: SeriesPoint[];
-  /** Role → component skills; skill → roles that ask for it (FR-M3). */
+  /**
+   * Role → component skills ("Top holdings"); industry → skills mentioned in
+   * its ads; skill → roles that ask for it (FR-M3). Weight semantics per type
+   * are documented in docs/FRONTEND_API_REPORT.md.
+   */
   composition: CompositionEntry[];
+  /** Industry only: skills within the industry as heatmap tiles; null otherwise. */
+  heatmap: Heatmap | null;
   /** Skill → often asked together. */
   related: CompositionEntry[];
   locations: Array<{ location_id: string; name: string; count: number }>;
@@ -109,8 +117,9 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
   for (const k of [groups.default, ...groups.common, ...groups.advanced]) readings[k] = computeMetric(slug, k, filter);
   const series = computeSeries(slug, METRICS[metric].chartable ? metric : 'ad_count', filter);
   const snap = snapshot(slug, metric, filter);
-  const composition: CompositionEntry[] = inst.type === 'role'
-    ? (ROLE_COMPONENTS[slug] ?? []).map(c => {
+  const components = inst.type === 'role' ? ROLE_COMPONENTS[slug] : inst.type === 'industry' ? INDUSTRY_COMPONENTS[slug] : undefined;
+  const composition: CompositionEntry[] = components
+    ? components.map(c => {
       const skill = getInstrument(c.skill_slug);
       return skill ? { instrument: skill, weight: c.weight, snapshot: snapshot(skill.slug, 'share_of_ads', filter) } : null;
     }).filter((x): x is CompositionEntry => x !== null)
@@ -125,6 +134,7 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
     readings,
     series,
     composition,
+    heatmap: inst.type === 'industry' ? getIndustrySkillHeatmap(slug, filter) : null,
     related,
     locations: locationBreakdown(slug, filter),
     signal: snap.signal,
@@ -160,9 +170,13 @@ export function getComparison(aSlug: string, bSlug: string, filter: FilterSpec):
   return { a, b, correlation: correlation(aSlug, bSlug, filter), overlap, shared, onlyA, onlyB };
 }
 
-export function search(q: string): { skills: SearchHit[]; roles: SearchHit[] } {
+export function search(q: string): { skills: SearchHit[]; roles: SearchHit[]; industries: SearchHit[] } {
   const hits = searchInstruments(q, 40);
-  return { skills: hits.filter(h => h.instrument.type === 'skill'), roles: hits.filter(h => h.instrument.type === 'role') };
+  return {
+    skills: hits.filter(h => h.instrument.type === 'skill'),
+    roles: hits.filter(h => h.instrument.type === 'role'),
+    industries: hits.filter(h => h.instrument.type === 'industry'),
+  };
 }
 
 export function getSources(): DataSource[] {
@@ -192,15 +206,16 @@ export interface SearchResult {
 }
 
 /** `/search?q=`: alias-aware hits with a ticker snapshot each, grouped by type (FR-D6). */
-export function searchWithSnapshots(q: string, filter: FilterSpec): { skills: SearchResult[]; roles: SearchResult[] } {
-  const { skills, roles } = search(q);
+export function searchWithSnapshots(q: string, filter: FilterSpec): { skills: SearchResult[]; roles: SearchResult[]; industries: SearchResult[] } {
+  const { skills, roles, industries } = search(q);
   const withSnap = (hit: SearchHit): SearchResult => ({ hit, snapshot: snapshot(hit.instrument.slug, defaultMetric(hit.instrument.type), filter) });
-  return { skills: skills.map(withSnap), roles: roles.map(withSnap) };
+  return { skills: skills.map(withSnap), roles: roles.map(withSnap), industries: industries.map(withSnap) };
 }
 
 const METRIC_EXAMPLES: Record<ActiveInstrumentType, readonly string[]> = {
   skill: ['python', 'rust'],
   role: ['software-engineer', 'data-analyst'],
+  industry: ['health-care', 'mining'],
 };
 
 /** `/metrics/[key]`: national readings for two familiar instruments of each type the metric applies to. */
@@ -209,4 +224,49 @@ export function getMetricExamples(key: MetricKey, filter: FilterSpec): Array<{ i
     .map(slug => getInstrument(slug))
     .filter((i): i is Instrument => Boolean(i))
     .map(instrument => ({ instrument, reading: computeMetric(instrument.slug, key, filter) })));
+}
+
+// --- Industry heatmaps and landing movers -------------------------------------
+
+function tileFor(inst: Instrument, filter: FilterSpec): HeatTile {
+  return {
+    slug: inst.slug,
+    type: inst.type,
+    name: inst.name,
+    symbol: inst.symbol,
+    ads: computeMetric(inst.slug, 'ad_count', filter),
+    change: computeMetric(inst.slug, 'change_4w', filter),
+  };
+}
+
+/** Landing hero: every industry (ANZSIC Division), area = job ads, colour = 4-week change. */
+export function getIndustryHeatmap(filter: FilterSpec): Heatmap {
+  const tiles = instrumentsOfType('industry').map(i => tileFor(i, filter)).sort((a, b) => (b.ads.value ?? b.ads.sample_n) - (a.ads.value ?? a.ads.sample_n));
+  return { kind: 'industries', parent: null, tiles, as_of: DATA_AS_OF };
+}
+
+/** Industry page: skills within the industry, area = ads in the industry mentioning the skill. */
+export function getIndustrySkillHeatmap(industrySlug: string, filter: FilterSpec): Heatmap {
+  const tiles: HeatTile[] = [];
+  for (const c of INDUSTRY_COMPONENTS[industrySlug] ?? []) {
+    const skill = getInstrument(c.skill_slug);
+    if (!skill) continue;
+    const r = industrySkillReadings(industrySlug, skill.slug, c.weight, filter);
+    tiles.push({ slug: skill.slug, type: 'skill', name: skill.name, symbol: skill.symbol, ads: r.ad_count, change: r.change_4w });
+  }
+  tiles.sort((a, b) => (b.ads.numerator ?? 0) - (a.ads.numerator ?? 0));
+  return { kind: 'industry_skills', parent: industrySlug, tiles, as_of: DATA_AS_OF };
+}
+
+export interface Mover {
+  instrument: Instrument;
+  /** 4-week change for every type (so skills, roles and industries compare like for like). */
+  change: MetricReading;
+  sparkline: number[];
+}
+
+/** Landing carousel: largest |4-week change| among instruments with base count ≥ min sample. */
+export function getMovers(filter: FilterSpec, limit = 4): Mover[] {
+  const candidates = INSTRUMENTS.map(instrument => ({ slug: instrument.slug, instrument, change: computeMetric(instrument.slug, 'change_4w', filter) }));
+  return pickMovers(candidates, limit).map(c => ({ instrument: c.instrument, change: c.change, sparkline: computeSparkline(c.slug, filter) }));
 }

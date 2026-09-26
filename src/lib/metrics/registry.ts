@@ -1,4 +1,4 @@
-import type { ActiveInstrumentType, MetricKey, SourceKind } from '@/lib/market/types';
+import { ACTIVE_INSTRUMENT_TYPES, type ActiveInstrumentType, type MetricKey, type SourceKind } from '@/lib/market/types';
 
 // Single source of truth for metrics (ARCHITECTURE §6.4, PRD §7.1 validity matrix).
 // Human copy (label, definition, denominator, method, caveat) lives in
@@ -34,26 +34,27 @@ export interface MetricDefinition {
   selectable: boolean;
 }
 
-const BOTH = ['skill', 'role'] as const;
-const ADS = { skill: 'ads', role: 'ads' } as const;
+/** Every active type: skill, role and industry. */
+const ALL = ['skill', 'role', 'industry'] as const;
+const ADS = { skill: 'ads', role: 'ads', industry: 'ads' } as const;
 
 export const MIN_SAMPLE_DEFAULT = 30;
 
 export const METRICS: Record<MetricKey, MetricDefinition> = {
-  ad_count: { key: 'ad_count', applies_to: BOTH, default_for: ['skill'], tier: 'common', unit: 'count', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: true },
-  share_of_ads: { key: 'share_of_ads', applies_to: BOTH, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: false },
-  change_4w: { key: 'change_4w', applies_to: BOTH, default_for: [], tier: 'common', unit: 'change', source: ADS, window_days: 56, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 56, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true },
-  growth_12m: { key: 'growth_12m', applies_to: BOTH, default_for: ['role'], tier: 'common', unit: 'change', source: { skill: 'ads', role: 'official' }, window_days: 728, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 730, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true },
-  entry_level_share: { key: 'entry_level_share', applies_to: BOTH, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['seniority'], chartable: true, neutral: true, selectable: true },
-  no_pr_required_share: { key: 'no_pr_required_share', applies_to: BOTH, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_rights'], chartable: true, neutral: true, selectable: true },
-  employer_concentration: { key: 'employer_concentration', applies_to: BOTH, default_for: [], tier: 'common', unit: 'employers', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
+  ad_count: { key: 'ad_count', applies_to: ALL, default_for: ['skill', 'industry'], tier: 'common', unit: 'count', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: true },
+  share_of_ads: { key: 'share_of_ads', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: false },
+  change_4w: { key: 'change_4w', applies_to: ALL, default_for: [], tier: 'common', unit: 'change', source: ADS, window_days: 56, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 56, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true },
+  growth_12m: { key: 'growth_12m', applies_to: ALL, default_for: ['role'], tier: 'common', unit: 'change', source: { skill: 'ads', role: 'official', industry: 'ads' }, window_days: 728, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 730, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true },
+  entry_level_share: { key: 'entry_level_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['seniority'], chartable: true, neutral: true, selectable: true },
+  no_pr_required_share: { key: 'no_pr_required_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_rights'], chartable: true, neutral: true, selectable: true },
+  employer_concentration: { key: 'employer_concentration', applies_to: ALL, default_for: [], tier: 'common', unit: 'employers', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
   salary_median: { key: 'salary_median', applies_to: ['role'], default_for: [], tier: 'common', unit: 'aud', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
   salary_p10_p90: { key: 'salary_p10_p90', applies_to: ['role'], default_for: [], tier: 'advanced', unit: 'aud_range', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
   skill_premium: { key: 'skill_premium', applies_to: ['skill'], default_for: [], tier: 'advanced', unit: 'premium', source: { skill: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT * 2, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
-  remote_share: { key: 'remote_share', applies_to: BOTH, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_mode'], chartable: true, neutral: true, selectable: true },
-  contract_share: { key: 'contract_share', applies_to: BOTH, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: [], chartable: false, neutral: true, selectable: true },
+  remote_share: { key: 'remote_share', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_mode'], chartable: true, neutral: true, selectable: true },
+  contract_share: { key: 'contract_share', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: [], chartable: false, neutral: true, selectable: true },
   skills_per_ad: { key: 'skills_per_ad', applies_to: ['role'], default_for: [], tier: 'advanced', unit: 'ratio', source: { role: 'ads' }, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: [], chartable: false, neutral: true, selectable: true },
-  volatility: { key: 'volatility', applies_to: BOTH, default_for: [], tier: 'advanced', unit: 'cv', source: ADS, window_days: 84, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 84, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
+  volatility: { key: 'volatility', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'cv', source: ADS, window_days: 84, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 84, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
 };
 
 export const METRIC_KEYS = Object.keys(METRICS) as MetricKey[];
@@ -77,9 +78,9 @@ export function metricsFor(type: ActiveInstrumentType): { default: MetricKey; co
   };
 }
 
-/** Metrics that can be shown on a board for both types at once. */
+/** Metrics that can be shown on a board for every active type at once (the All board). */
 export function sharedMetrics(): MetricKey[] {
-  return METRIC_KEYS.filter(k => METRICS[k].applies_to.length === 2 && METRICS[k].selectable);
+  return METRIC_KEYS.filter(k => ACTIVE_INSTRUMENT_TYPES.every(t => METRICS[k].applies_to.includes(t)) && METRICS[k].selectable);
 }
 
 export function metricSource(key: MetricKey, type: ActiveInstrumentType): SourceKind {
@@ -88,5 +89,6 @@ export function metricSource(key: MetricKey, type: ActiveInstrumentType): Source
 
 /** The change metric that sits next to values in lists and drives signals. */
 export function signalMetric(type: ActiveInstrumentType): MetricKey {
+  // Industries move with the cycle, so the short window is the useful one (as for skills).
   return type === 'role' ? 'growth_12m' : 'change_4w';
 }

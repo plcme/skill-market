@@ -1,29 +1,35 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
-import { getBoard } from '@/lib/queries/market';
+import { getBoard, getIndustryHeatmap, getMovers } from '@/lib/queries/market';
+import { MIN_SAMPLE_DEFAULT } from '@/lib/metrics/registry';
+import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
+import { MoversCarousel, type MoverItem } from '@/features/home/movers-carousel';
 import { formatDate } from '@/lib/time';
-import { direction } from '@/lib/market/format';
 import { Button } from '@/components/ui/button';
 import { Container, SectionHeader } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
 import { MetricInfo } from '@/components/market/metric-info';
-import { SourceBadge } from '@/components/market/source-badge';
-import { Sparkline } from '@/components/market/sparkline';
-import { ROW_WATCH_LABEL, TickerCard, TickerRow, instrumentHref } from '@/components/market/ticker';
+import { ROW_WATCH_LABEL, TickerRow, instrumentHref } from '@/components/market/ticker';
 import { WatchButton } from '@/components/market/watch-button';
-import { formatChange } from '@/lib/market/format';
 
 export default async function HomePage() {
   const t = await getTranslations('Home');
   const tt = await getTranslations('Ticker');
   const skills = getBoard({ type: 'skill', filter: DEFAULT_FILTER });
   const roles = getBoard({ type: 'role', filter: DEFAULT_FILTER, metric: 'growth_12m' });
-  const withSignals = [...skills.rows, ...roles.rows].filter(r => r.signal);
-  const lead = withSignals.find(r => r.instrument.slug === 'rust') ?? withSignals[0] ?? skills.rows[0];
-  const others = withSignals.filter(r => r !== lead).slice(0, 4);
-  const leadChange = lead.signal ? lead.change : lead.change;
+  const heat = getIndustryHeatmap(DEFAULT_FILTER);
+  const movers: MoverItem[] = getMovers(DEFAULT_FILTER, 4).map(m => ({
+    slug: m.instrument.slug,
+    type: m.instrument.type,
+    name: m.instrument.name,
+    symbol: m.instrument.symbol,
+    change: m.change.value ?? 0,
+    from: m.change.from ?? 0,
+    to: m.change.to ?? 0,
+    sparkline: m.sparkline,
+  }));
 
   return (
     <>
@@ -45,43 +51,22 @@ export default async function HomePage() {
             <p className="mt-6 text-[13px] text-muted">{t('promise')}</p>
           </div>
 
-          <article aria-labelledby="lead-title" className="relative flex flex-col overflow-hidden rounded-lg bg-night p-6 text-night-ink shadow-float ring-1 ring-rule sm:p-8 animate-rise [animation-delay:80ms]">
-            <div className="flex items-center justify-between gap-3">
-              <p className="kicker text-night-ink/60">{t('leadKicker')}</p>
-              {lead.signal ? <span className="rounded-[3px] bg-signal px-1.5 py-0.5 text-[11.5px] font-medium text-signal-ink">{t('leadWhy')}</span> : null}
+          <section aria-labelledby="heat-title" className="flex min-w-0 flex-col animate-rise [animation-delay:80ms]">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 id="heat-title" className="kicker text-ink">{t('heatKicker')}</h2>
+              <Link href="/market?type=industry" className="link text-[13px]">{t('heatAll')}</Link>
             </div>
-            <div className="mt-6 flex items-baseline gap-3">
-              <span className="font-mono text-sm text-night-ink/70">{lead.instrument.symbol}</span>
-              <h2 id="lead-title" className="font-serif text-[30px] leading-none">{lead.instrument.name}</h2>
-            </div>
-            <p className="serif-num mt-5 text-[88px] leading-[0.85] text-signal sm:text-[112px]">
-              {leadChange.value !== null ? formatChange(leadChange.value) : '—'}
-            </p>
-            <p className="num mt-3 text-[15px] text-night-ink/80">
-              {leadChange.from !== null && leadChange.to !== null ? `${leadChange.from} → ${leadChange.to} ` : null}
-              <span className="text-night-ink/60">{t('leadIn')}</span>
-            </p>
-            <div className="mt-6 [&_path]:!stroke-signal [&_circle]:!fill-signal">
-              <Sparkline values={lead.sparkline} dir={direction(leadChange.value)} label={tt('trend')} description={tt('trendDesc', { name: lead.instrument.name, first: lead.sparkline[0], last: lead.sparkline[lead.sparkline.length - 1] })} width={420} height={70} className="h-auto w-full" />
-            </div>
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-night-ink/15 pt-5">
-              <SourceBadge kind={lead.change.source} className="text-night-ink/60 [&_circle]:fill-night-ink" />
-              <div className="flex flex-wrap gap-2">
-                <Button asChild variant="signal" size="sm"><Link href={`/chat/new?instrument=${lead.instrument.slug}`}>{t('leadTalk', { name: lead.instrument.name })}</Link></Button>
-                <Button asChild variant="ghost" size="sm" className="text-night-ink hover:bg-night-ink/10"><Link href={instrumentHref(lead)}>{t('leadOpen', { name: lead.instrument.name })}<ArrowUpRight aria-hidden /></Link></Button>
-              </div>
-            </div>
-          </article>
+            <HeatmapTiles heatmap={heat} filter={DEFAULT_FILTER} label={t('heatLabel')} />
+            <HeatmapLegend heatmap={heat} filter={DEFAULT_FILTER} className="mt-4" />
+            <HeatmapTable heatmap={heat} caption={t('heatLabel')} nameHead={tt('industry')} />
+          </section>
         </Container>
       </section>
 
       <Container className="mt-14">
         <SectionHeader kicker={t('signalsKicker')} title={t('signalsTitle')} action={<Link href="/market" className="link text-sm">{t('seeMarket')}</Link>} />
-        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 scrollbar-none sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
-          {others.map(snap => (
-            <TickerCard key={snap.instrument.id} snap={snap} href={instrumentHref(snap)} className="w-[82vw] shrink-0 snap-start sm:w-auto" />
-          ))}
-        </div>
+        <p className="-mt-2 mb-4 max-w-3xl text-[13px] text-ink-2">{t('moversRule', { min: MIN_SAMPLE_DEFAULT })}</p>
+        <MoversCarousel items={movers} />
         <p className="mt-3 max-w-2xl text-[13px] text-muted">{t('signalsNote')}</p>
       </Container>
 

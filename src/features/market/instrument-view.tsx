@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { ArrowLeftRight, ChevronRight, MessageCircle } from 'lucide-react';
 import { encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
-import { chatHref } from '@/lib/links';
+import { chatHref, instrumentPath } from '@/lib/links';
 import { METRICS, signalMetric } from '@/lib/metrics/registry';
 import { formatDate } from '@/lib/time';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
@@ -20,12 +20,13 @@ import { SignalTag } from '@/components/market/signal-tag';
 import { SourceBadge } from '@/components/market/source-badge';
 import { ClientTrendChart as TrendChart } from './trend-chart-client';
 import { WatchButton } from '@/components/market/watch-button';
+import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { BeforeYouDecide, CompositionList, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
 import { chartMetricFor, hrefWith } from './logic';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
 
-/** The flagship full ticker page shared by /s/[slug] and /r/[slug]. */
+/** The flagship full ticker page shared by /s/[slug], /r/[slug] and /i/[slug]. */
 export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; filter: FilterSpec }) {
   const t = useTranslations('InstrumentPage');
   const tm = useTranslations('Metrics');
@@ -35,7 +36,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const inst = snap.instrument;
   const type = inst.type;
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
-  const base = type === 'skill' ? `/s/${inst.slug}` : `/r/${inst.slug}`;
+  const base = instrumentPath(type, inst.slug);
   const metricHref = (m: MetricKey) => `${hrefWith(base, { f, metric: m === detail.metrics.default ? undefined : m })}#now`;
   const talk = chatHref(inst.slug, filter, signal?.kind);
   const compare = hrefWith('/compare', { a: inst.slug, f });
@@ -180,6 +181,31 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         </section>
       ) : null}
 
+      {type === 'industry' ? (
+        <>
+          <section aria-labelledby="comp-h" className="mt-16">
+            <SectionHeader id="comp-h" kicker={t('compKicker.industry')} title={t('compTitle.industry')} />
+            <p className="-mt-1 mb-4 max-w-3xl text-[13px] text-muted">{t('compNote.industry', { name: inst.name })}</p>
+            {detail.heatmap ? (
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
+                <div className="min-w-0">
+                  <HeatmapTiles heatmap={detail.heatmap} filter={filter} label={t('industryHeatmapLabel', { name: inst.name })} />
+                  <HeatmapLegend heatmap={detail.heatmap} filter={filter} parentName={inst.name} className="mt-4" />
+                  <HeatmapTable heatmap={detail.heatmap} caption={t('industryHeatmapLabel', { name: inst.name })} nameHead={tt('skill')} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="kicker mb-3 text-ink">{t('industryListTitle')}</h3>
+                  <CompositionList entries={detail.composition} parent={inst} filter={filter} mode="skillsOfIndustry" />
+                </div>
+              </div>
+            ) : null}
+          </section>
+          <section aria-labelledby="loc-h" className="mt-16">
+            <SectionHeader id="loc-h" kicker={t('locKicker')} title={t('locTitle')} />
+            <LocationBars locations={detail.locations} />
+          </section>
+        </>
+      ) : (
       <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-12">
         <section aria-labelledby="comp-h">
           <SectionHeader id="comp-h" kicker={t(`compKicker.${type}`)} title={t(`compTitle.${type}`, { name: inst.name })} />
@@ -199,6 +225,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           </section>
         )}
       </div>
+      )}
 
       {type === 'skill' ? (
         <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-12">
@@ -211,12 +238,12 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             <BeforeYouDecide instrument={inst} layout="stack" />
           </section>
         </div>
-      ) : (
+      ) : type === 'role' ? (
         <section aria-labelledby="decide-h" className="mt-16">
           <SectionHeader id="decide-h" kicker={t('decideKicker')} title={t('decideTitle')} />
           <BeforeYouDecide instrument={inst} />
         </section>
-      )}
+      ) : null}
 
       <section aria-labelledby="next-h" className="mt-16 grid gap-6 rounded-lg border border-rule bg-surface p-6 sm:p-8 md:grid-cols-[minmax(0,1.4fr)_auto] md:items-end">
         <div>

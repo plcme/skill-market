@@ -3,6 +3,7 @@
     "metaTitle": {
       "skill": "Skills market",
       "role": "Roles market",
+      "industry": "Industries market",
       "all": "Market"
     },
     "metaDescription": "Every skill and role we track in Australian job ads, with the measure you choose, its change and a 12-month trend.",
@@ -14,6 +15,7 @@
     "types": {
       "skill": "Skills",
       "role": "Roles",
+      "industry": "Industries",
       "all": "All"
     },
     "sortLabel": "Order",
@@ -33,11 +35,12 @@
     "colName": "Name",
     "colTrend": "12-month trend",
     "colChangeMixed": "Change",
-    "colChangeMixedHint": "4-week change for skills, 12-month change for roles",
+    "colChangeMixedHint": "4-week change for skills and industries, 12-month change for roles",
     "count": {
       "skill": "{n, plural, one {# skill} other {# skills}}",
       "role": "{n, plural, one {# role} other {# roles}}",
-      "all": "{n, plural, one {# skill or role} other {# skills and roles}}"
+      "industry": "{n, plural, one {# industry} other {# industries}}",
+      "all": "{n, plural, one {# skill, role or industry} other {# skills, roles and industries}}"
     },
     "signalCount": "{n, plural, =0 {no signals} one {# with a signal} other {# with signals}}",
     "matching": "matching “{q}”",
@@ -70,7 +73,8 @@
   "InstrumentPage": {
     "metaTitle": {
       "skill": "{name} — skill",
-      "role": "{name} — role"
+      "role": "{name} — role",
+      "industry": "{name} — industry"
     },
     "metaDescription": "{blurb} Demand, change, entry-level share and more for {name} in Australian job ads, every number explained.",
     "notFoundTitle": "Not tracked yet",
@@ -78,13 +82,15 @@
     "crumbMarket": "Market",
     "crumbType": {
       "skill": "Skills",
-      "role": "Roles"
+      "role": "Roles",
+      "industry": "Industries"
     },
     "tracked": "Tracked since {date}",
     "aliases": "Also searched as",
     "talk": {
       "skill": "Talk to someone who uses {name}",
-      "role": "Talk to someone who does this job"
+      "role": "Talk to someone who does this job",
+      "industry": "Talk to someone working in this industry"
     },
     "talkNote": "A free 20-minute chat with a verified practitioner. Your filter goes with the request.",
     "compareWith": "Compare with…",
@@ -125,17 +131,23 @@
     "payCaveat": "Advertised base salary, not total pay. Senior roles state pay less often, so the real range is likely wider.",
     "compKicker": {
       "skill": "Composition",
-      "role": "Composition"
+      "role": "Top holdings",
+      "industry": "Skills in this industry"
     },
     "compTitle": {
       "skill": "Roles that ask for {name}",
-      "role": "What these ads ask for"
+      "role": "What these ads ask for",
+      "industry": "Skills its ads mention"
     },
     "compNote": {
       "skill": "Share of each role’s ads that mention {name}.",
-      "role": "Share of {name} ads that mention each skill."
+      "role": "The skills that make up this role: the share of {name} ads that mention each one. An ad usually asks for several skills, so shares add up to more than 100%.",
+      "industry": "Share of {name} ads that mention each skill, highest first. A list sorted by a measure, not a ranking of people."
     },
     "compositionEmpty": "We haven’t linked this to any roles or skills yet.",
+    "holdingPct": "in {pct} of these ads",
+    "industryHeatmapLabel": "Skills in {name}: tile size is job ads mentioning the skill, colour is 4-week change",
+    "industryListTitle": "Share of this industry’s ads mentioning each skill",
     "weightSentence": "{pct} of {role} ads mention {skill}.",
     "relKicker": "Co-occurrence",
     "relTitle": "Often asked for together",
@@ -204,7 +216,8 @@
     "nextKicker": "Next step",
     "nextTitle": {
       "skill": "Numbers only go so far. Ask someone who uses {name}.",
-      "role": "Numbers only go so far. Ask someone who does this job."
+      "role": "Numbers only go so far. Ask someone who does this job.",
+      "industry": "Numbers only go so far. Ask someone who works in this industry."
     },
     "nextBody": "We’ll suggest up to three verified practitioners who opted in, plus questions worth asking. It’s free, and you can decline or reschedule at any time.",
     "nextCta": "Find someone to talk to",
@@ -236,11 +249,13 @@
     "pickerSearchAny": "Search skills and roles",
     "pickerSearchType": {
       "skill": "Search skills",
-      "role": "Search roles"
+      "role": "Search roles",
+      "industry": "Search industries"
     },
     "pickerRestricted": {
       "skill": "Only skills — compare like with like.",
-      "role": "Only roles — compare like with like."
+      "role": "Only roles — compare like with like.",
+      "industry": "Only industries — compare like with like."
     },
     "pickerEmpty": "Nothing matches. Try a common alias such as “JS”.",
     "pickerClear": "Clear this side",
@@ -252,7 +267,8 @@
     "partialTitle": "Now pick something to compare {name} with",
     "partialBody": {
       "skill": "Choose another skill — perhaps one from a different elective, or one that’s often asked for alongside it.",
-      "role": "Choose another role — perhaps a direction you’re weighing up against it."
+      "role": "Choose another role — perhaps a direction you’re weighing up against it.",
+      "industry": "Choose another industry — perhaps one you’re weighing up against it."
     },
     "pairsKicker": "Start here",
     "pairsTitle": "Common comparisons",
@@ -278,7 +294,8 @@
     "overlapKicker": "Overlap",
     "overlapTitle": {
       "skill": "How they relate",
-      "role": "Skills in common"
+      "role": "Skills in common",
+      "industry": "Skills in common"
     },
     "together": {
       "often": "Often asked for together.",
@@ -289,11 +306,13 @@
     "overlapRoles": "{shared, plural, =0 {No skills in common} one {# skill in common} other {# skills in common}} out of {total} these roles ask for.",
     "sharedLabel": {
       "skill": "Roles that ask for both",
-      "role": "Both ask for"
+      "role": "Both ask for",
+      "industry": "Both mention"
     },
     "onlyLabel": {
       "skill": "Only {name}",
-      "role": "Only {name}"
+      "role": "Only {name}",
+      "industry": "Only {name}"
     },
     "none": "None",
     "effortTitle": "Effort and transferability",
@@ -320,11 +339,13 @@
     "summary": "{n, plural, =0 {No results} one {# result} other {# results}} for “{q}”",
     "count": {
       "skill": "{n, plural, one {# skill} other {# skills}}",
-      "role": "{n, plural, one {# role} other {# roles}}"
+      "role": "{n, plural, one {# role} other {# roles}}",
+      "industry": "{n, plural, one {# industry} other {# industries}}"
     },
     "group": {
       "skill": "Skills",
-      "role": "Roles"
+      "role": "Roles",
+      "industry": "Industries"
     },
     "aliasNote": "Matched “{matched}” — we list this as {name}.",
     "emptyTitle": "Nothing matches “{q}”",
@@ -367,7 +388,8 @@
     "colMetric": "Measure",
     "colType": {
       "skill": "Skills",
-      "role": "Roles"
+      "role": "Roles",
+      "industry": "Industries"
     },
     "colSource": "Source",
     "defaultFor": "Default for {type}",
@@ -406,7 +428,8 @@
     },
     "typePlural": {
       "skill": "skills",
-      "role": "roles"
+      "role": "roles",
+      "industry": "industries"
     }
   },
   "SourcesPage": {
