@@ -48,7 +48,7 @@ export default async function PeoplePage() {
         </ol>
       </Container>
 
-      <Container className="mt-16 grid gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <Container className="mt-16 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section id="start" aria-labelledby="start-h" className="scroll-mt-24">
           <SectionHeader id="start-h" kicker={t('startKicker')} title={t('startTitle')} />
           <StartFromSignal market={market} />

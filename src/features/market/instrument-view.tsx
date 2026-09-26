@@ -59,7 +59,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         </ol>
       </nav>
 
-      <header className="grid gap-8 pb-8 pt-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-12">
+      <header className="grid grid-cols-1 gap-8 pb-8 pt-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-12">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <Monogram size="lg" tone={signal ? 'signal' : 'plain'}>{inst.symbol}</Monogram>

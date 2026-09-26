@@ -85,7 +85,7 @@ export function BoardRows({ rows, filter, metric, showType = false, selectable =
 
 export function BoardCards({ rows, filter, metric, selectable = false }: { rows: InstrumentSnapshot[]; filter: FilterSpec; metric: MetricKey; selectable?: boolean }) {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map(snap => (
         <li key={snap.instrument.id} className="flex">
           <TickerCard

@@ -31,7 +31,7 @@ export function SuggestedPairs({ filter }: { filter: FilterSpec }) {
   return (
     <section aria-labelledby="pairs-h" className="mt-10">
       <SectionHeader id="pairs-h" kicker={t('pairsKicker')} title={t('pairsTitle')} />
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {SUGGESTED_PAIRS.map(([a, b]) => {
           const ia = getInstrument(a);
           const ib = getInstrument(b);

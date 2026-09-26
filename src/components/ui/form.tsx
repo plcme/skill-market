@@ -5,10 +5,10 @@ import { Check } from 'lucide-react';
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
-const control = 'w-full rounded-[5px] border border-rule bg-surface px-3 text-[15px] text-ink placeholder:text-faint transition-colors hover:border-ink/35 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 disabled:opacity-50 aria-[invalid=true]:border-down';
+const control = 'w-full rounded-[5px] border border-rule bg-surface px-3 text-base text-ink placeholder:text-faint sm:text-[15px] transition-colors hover:border-ink/35 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 disabled:opacity-50 aria-[invalid=true]:border-down';
 
 export function Input({ className, ...props }: React.ComponentProps<'input'>) {
-  return <input className={cn(control, 'h-10', className)} {...props} />;
+  return <input className={cn(control, 'h-11 sm:h-10', className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: React.ComponentProps<'textarea'>) {
@@ -17,7 +17,7 @@ export function Textarea({ className, ...props }: React.ComponentProps<'textarea
 
 export function Select({ className, children, ...props }: React.ComponentProps<'select'>) {
   return (
-    <select className={cn(control, 'h-10 appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9', "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8l4-3.5' fill='none' stroke='%238d8b81' stroke-width='1.4'/%3E%3C/svg%3E\")]", className)} {...props}>
+    <select className={cn(control, 'h-11 sm:h-10 appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9', "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8l4-3.5' fill='none' stroke='%238d8b81' stroke-width='1.4'/%3E%3C/svg%3E\")]", className)} {...props}>
       {children}
     </select>
   );
