@@ -55,8 +55,9 @@
       "admin": "Admin"
     },
     "theme": "Theme",
+    "themeSwitch": "Theme: {current}. Switch to {next}",
+    "matchDevice": "Match my device",
     "themes": {
-      "system": "System",
       "light": "Light",
       "dark": "Dark"
     },
@@ -83,8 +84,7 @@
     "tagline": "Market signals for what to learn next — and people to ask about them.",
     "promise": "Free for students. Never paid for by employers.",
     "product": "Product",
-    "data": "Data",
-    "trust": "Trust & safety",
+    "dataSafety": "Data & safety",
     "privacy": "Privacy",
     "terms": "Terms",
     "conduct": "Code of conduct",

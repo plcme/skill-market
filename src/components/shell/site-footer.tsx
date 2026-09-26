@@ -8,12 +8,15 @@ export function SiteFooter({ appName }: { appName: string }) {
   const tn = useTranslations('Nav');
   const cols: Array<{ title: string; links: Array<[string, string]> }> = [
     { title: t('product'), links: [['/market', tn('market')], ['/compare', tn('compare')], ['/people', tn('people')], ['/practitioner/join', t('practitioners')]] },
-    { title: t('data'), links: [['/sources', t('methodology')], ['/metrics/share_of_ads', t('metrics')]] },
-    { title: t('trust'), links: [['/legal/privacy', t('privacy')], ['/legal/terms', t('terms')], ['/legal/conduct', t('conduct')], ['/legal/reliability', t('reliability')]] },
+    // Sources moved here from the primary nav (GLOSSARY §4 "Data & safety").
+    {
+      title: t('dataSafety'),
+      links: [['/sources', t('methodology')], ['/metrics', t('metrics')], ['/legal/privacy', t('privacy')], ['/legal/terms', t('terms')], ['/legal/conduct', t('conduct')], ['/legal/reliability', t('reliability')]],
+    },
   ];
   return (
     <footer className="no-print mt-24 border-t-2 border-rule-strong bg-paper pb-24 md:pb-10">
-      <Container className="grid gap-10 py-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+      <Container className="grid gap-10 py-10 md:grid-cols-[1.4fr_repeat(2,1fr)]">
         <div className="max-w-sm">
           <Wordmark name={appName} />
           <p className="mt-4 font-serif text-[19px] leading-snug">{t('tagline')}</p>

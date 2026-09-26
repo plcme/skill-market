@@ -1,25 +1,27 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Monitor, Moon, Sun } from 'lucide-react';
-import type { ThemePref } from '@/lib/api/types';
+import { Moon, Sun } from 'lucide-react';
+import { toggledTheme } from '@/lib/theme';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/overlay';
 import { useTheme } from './app-provider';
 
-const ORDER: ThemePref[] = ['system', 'light', 'dark'];
-const ICON = { system: Monitor, light: Sun, dark: Moon };
-
+/**
+ * Two-state toggle: the icon shows the theme on screen now (sun = light,
+ * moon = dark); a click stores the opposite as the person's choice.
+ */
 export function ThemeToggle({ className }: { className?: string }) {
   const t = useTranslations('Nav');
-  const { theme, setTheme } = useTheme();
-  const Icon = ICON[theme];
-  const next = ORDER[(ORDER.indexOf(theme) + 1) % ORDER.length];
-  const label = `${t('theme')}: ${t(`themes.${theme}`)}`;
+  const { resolvedTheme, setTheme } = useTheme();
+  const next = toggledTheme(resolvedTheme);
+  const label = t('themeSwitch', { current: t(`themes.${resolvedTheme}`), next: t(`themes.${next}`) });
   return (
     <Tooltip content={label}>
       <Button variant="ghost" size="icon-sm" className={className} onClick={() => setTheme(next)} aria-label={label}>
-        <Icon aria-hidden />
+        {/* Icons follow html[data-theme] (set before paint), so there's no flash before hydration. */}
+        <Sun className="dark:hidden" aria-hidden />
+        <Moon className="hidden dark:block" aria-hidden />
       </Button>
     </Tooltip>
   );

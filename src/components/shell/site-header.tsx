@@ -12,7 +12,7 @@ import { Dialog, DialogTrigger, SheetContent, Menu, MenuContent, MenuItem, MenuL
 import { cn } from '@/lib/utils';
 import { useAppName } from './app-provider';
 import { openSearch } from './command-palette';
-import { accountLinks, deskFor, isActive, PRIMARY_NAV } from './nav-model';
+import { accountLinks, deskFor, isActive, mobileMenuLinks, PRIMARY_NAV } from './nav-model';
 import { ThemeToggle } from './theme-toggle';
 import { Wordmark } from './wordmark';
 
@@ -80,7 +80,7 @@ export function SiteHeader() {
                 <MenuContent>
                   <MenuLabel>{t('signedInAs', { name: session.display_name })}</MenuLabel>
                   <MenuLabel className="pt-0 font-sans text-[12px] normal-case tracking-normal">{t(`personas.${session.active}`)}</MenuLabel>
-                  <MenuSeparator />
+                  {links.length ? <MenuSeparator /> : null}
                   {links.map(l => (
                     <MenuItem key={l.href} asChild><Link href={l.href}>{t(l.key)}</Link></MenuItem>
                   ))}
@@ -105,7 +105,7 @@ export function SiteHeader() {
             </DialogTrigger>
             <SheetContent title={appName} closeLabel={tc('close')}>
               <nav aria-label={t('primary')} className="flex flex-col">
-                {[...PRIMARY_NAV, ...(desk ? [desk] : []), ...links.filter(l => l.href !== desk?.href)].map(l => (
+                {mobileMenuLinks(session).map(l => (
                   <Link key={l.href} href={l.href} aria-current={isActive(pathname, l.href) ? 'page' : undefined} className={cn('border-b border-rule py-3.5 font-serif text-[22px] aria-[current=page]:italic')}>
                     {t(l.key)}
                   </Link>

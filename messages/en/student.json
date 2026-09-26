@@ -421,7 +421,7 @@
       "plain": "The same data in plain words: tracking, skills I have, changes."
     },
     "modeSaved": "Display updated",
-    "themeHint": "System follows your device’s light or dark setting.",
+    "themeHint": "Starts out matching your device’s light or dark setting. Once you pick one, this browser remembers it.",
     "dataLede": "Your data is stored in Sydney, Australia. You can download it or delete it.",
     "exportTitle": "Download your data",
     "exportBody": "A JSON file with your profile, skills, watchlist, chat requests and the emails we’ve sent you. We also email you when it’s ready.",

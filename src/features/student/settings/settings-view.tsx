@@ -7,7 +7,8 @@ import { useTranslations } from 'next-intl';
 import { Download, Trash2 } from 'lucide-react';
 import { RequireSession } from '@/components/shell/require-session';
 import { useTheme } from '@/components/shell/app-provider';
-import type { DemoDB, DigestFrequency, StudentField, StudentProfile, StudyYear, ThemePref, UiMode, Visibility, VisaStatus } from '@/lib/api/types';
+import type { ResolvedTheme } from '@/lib/theme';
+import type { DemoDB, DigestFrequency, StudentField, StudentProfile, StudyYear, UiMode, Visibility, VisaStatus } from '@/lib/api/types';
 import { STUDENT_FIELDS } from '@/lib/api/types';
 import { DELETE_CONFIRMATION, PURGE_AFTER_DAYS, requestDeletion, requestExport, selectConsents, setUiMode, updateEmailPreferences, updateFieldVisibility, updateProfile } from '@/lib/api/privacy';
 import { useAction } from '@/lib/api/client';
@@ -168,7 +169,7 @@ function EmailPrefs({ prefs }: { prefs: StudentProfile['email_prefs'] }) {
 function Display({ mode }: { mode: UiMode }) {
   const t = useTranslations('Settings');
   const tn = useTranslations('Nav');
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const { toast } = useToast();
   const [save] = useAction(setUiMode);
   return (
@@ -185,8 +186,11 @@ function Display({ mode }: { mode: UiMode }) {
       </div>
       <div>
         <p className="mb-2 text-sm font-medium">{tn('theme')}</p>
-        <Segmented<ThemePref> label={tn('theme')} value={theme} onValueChange={setTheme} options={(['system', 'light', 'dark'] as const).map(v => ({ value: v, label: tn(`themes.${v}`) }))} />
-        <p className="mt-1.5 text-[13px] text-muted">{t('themeHint')}</p>
+        <Segmented<ResolvedTheme> label={tn('theme')} value={resolvedTheme} onValueChange={setTheme} options={(['light', 'dark'] as const).map(v => ({ value: v, label: tn(`themes.${v}`) }))} />
+        <p className="mt-1.5 text-[13px] text-muted">
+          {t('themeHint')}
+          {theme !== 'system' ? <>{' '}<button type="button" className="link" onClick={() => setTheme('system')}>{tn('matchDevice')}</button></> : null}
+        </p>
       </div>
     </div>
   );
