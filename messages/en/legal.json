@@ -17,7 +17,7 @@
         "title": "Privacy policy",
         "lede": "How {app} collects, uses, stores and deletes personal information, in line with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).",
         "sections": {
-          "who": { "heading": "Who we are", "body": { "p1": "{app} is a service for university students in Australia. It shows what employers ask for and connects students with practitioners for short conversations. It is free for students and never paid for by employers." } },
+          "who": { "heading": "Who we are", "body": { "p1": "{app} is a service for university students in Australia. It shows what employers ask for and connects students with practitioners for short conversations. It is free for students, and no one can pay to change what the market shows." } },
           "collect": { "heading": "What we collect", "body": {
             "p1": "We collect only what the service needs (APP 3):",
             "li1": "Account: your email address, a display name and your confirmation that you are 18 or older.",

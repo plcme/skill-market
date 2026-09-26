@@ -11,7 +11,7 @@
       "b2": "Skill suggestions from your degree and units — you confirm or remove every one.",
       "b3": "20-minute coffee chats with practitioners who opted in to help."
     },
-    "free": "Never paid for by employers. We don’t sell or share your data with them.",
+    "free": "No one can pay to change what the market shows. We never sell your data.",
     "formTitle": "Continue with email",
     "email": "Email",
     "emailHint": "We’ll email you a one-time sign-in link. Any email works; a uni address isn’t required.",
@@ -68,6 +68,14 @@
     "year": "Year of study",
     "yearHint": "Early years get softer suggestions.",
     "choose": "Choose…",
+    "sheet": {
+      "count": "Question {n} of {total}",
+      "answer": "Answer",
+      "change": "Change",
+      "notAnswered": "Not answered yet",
+      "next": "Next question",
+      "done": "Done"
+    },
     "years": {
       "1": "First year",
       "2": "Second year",
