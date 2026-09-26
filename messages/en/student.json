@@ -68,6 +68,14 @@
     "year": "Year of study",
     "yearHint": "Early years get softer suggestions.",
     "choose": "Choose…",
+    "sheet": {
+      "count": "Question {n} of {total}",
+      "answer": "Answer",
+      "change": "Change",
+      "notAnswered": "Not answered yet",
+      "next": "Next question",
+      "done": "Done"
+    },
     "years": {
       "1": "First year",
       "2": "Second year",
