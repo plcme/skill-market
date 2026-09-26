@@ -65,11 +65,8 @@ export function MetricValue({ reading, size = 'md', showDetail = true, className
           {t(reading.status === 'unavailable' ? 'unavailable' : 'insufficient')}
         </span>
       )}
-      {line ? (
-        // Figures' detail stays on one line (ellipsis in narrow columns); an
-        // explanation of a missing number wraps so it's never cut off.
-        <span className={cn('num max-w-full text-[12px] leading-snug text-muted', value !== null ? 'truncate' : 'text-pretty')} title={line}>{line}</span>
-      ) : null}
+      {/* Wraps in narrow columns rather than cutting off the unit or window. */}
+      {line ? <span className="num max-w-full text-pretty text-[12px] leading-snug text-muted">{line}</span> : null}
     </span>
   );
 }

@@ -63,7 +63,8 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
 
       <SignalsStrip rows={signalsNow} filter={filter} />
 
-      <CompareSelectionProvider f={f}>
+      {/* Keyed by type: switching All/Skills/Roles starts a fresh selection. */}
+      <CompareSelectionProvider key={type} f={f}>
       <section aria-labelledby="board-h" className="mt-8">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
         <div className="flex items-end justify-between gap-4 border-b border-rule">

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Checkbox as RCheckbox } from 'radix-ui';
@@ -59,17 +59,20 @@ export function CompareModeToggle({ className }: { className?: string }) {
 export function CompareCheckbox({ slug, type, name, className }: { slug: string; type: ActiveInstrumentType; name: string; className?: string }) {
   const t = useTranslations('MarketPage');
   const { active, selection, toggle } = useCompare();
+  const hintId = useId();
   if (!active) return null;
   const item = { slug, type };
   const checked = selection.some(s => s.slug === slug);
   const blocker = checked ? null : compareBlocker(selection, item);
   const hint = blocker === 'type' ? t('compareBlockedType') : blocker === 'max' ? t('compareBlockedMax', { max: COMPARE_MAX }) : undefined;
   return (
+    <>
     <RCheckbox.Root
       checked={checked}
       disabled={blocker !== null}
       onCheckedChange={() => toggle(item)}
       aria-label={t('compareSelect', { name })}
+      aria-describedby={hint ? hintId : undefined}
       title={hint}
       className={cn(
         'relative z-10 grid size-5 shrink-0 place-items-center rounded-[3px] border border-ink/50 bg-surface transition-colors disabled:cursor-not-allowed disabled:opacity-35 data-[state=checked]:border-ink data-[state=checked]:bg-ink data-[state=checked]:text-paper',
@@ -80,6 +83,9 @@ export function CompareCheckbox({ slug, type, name, className }: { slug: string;
         <Check className="size-3.5" strokeWidth={3} aria-hidden />
       </RCheckbox.Indicator>
     </RCheckbox.Root>
+    {/* Why it's disabled, for screen readers (the title tooltip is mouse-only). */}
+    {hint ? <span id={hintId} className="sr-only">{hint}</span> : null}
+    </>
   );
 }
 

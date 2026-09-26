@@ -91,6 +91,15 @@ test.describe('market board', () => {
     await expect(page.getByRole('radio', { name: 'By measure' })).toHaveAttribute('aria-checked', 'true');
   });
 
+  test('Demand column definition explains share of ads without an unnamed figure', async ({ page }) => {
+    await page.goto('/market?type=skill');
+    await page.getByRole('button', { name: 'What does Demand mean?' }).filter({ visible: true }).first().click();
+    const popover = page.getByRole('dialog').filter({ hasText: 'share of ads' });
+    await expect(popover).toBeVisible();
+    await expect(popover.getByText(/Divided by all ads in this filter/)).toBeVisible();
+    await expect(popover.getByText(/appears in [\d.]+% of all/)).toHaveCount(0);
+  });
+
   test('Filter button opens the builder and shows the scope when active', async ({ page }) => {
     await page.goto('/market?f=r.au-nt-darwin_graduate_npr');
     const button = page.getByRole('button', { name: /Filter the whole board, 3 conditions active/ });

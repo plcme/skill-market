@@ -6,6 +6,7 @@ import {
 import { getInstrument } from '@/lib/market/catalog';
 import { DEFAULT_FILTER, decodeFilter } from '@/lib/filters/spec';
 import { defaultMetric, isValidMetric, metricsFor, sharedMetrics } from '@/lib/metrics/registry';
+import { demandShare } from '@/lib/metrics/demand';
 import { getBoard, getInstrumentDetail, getMetricExamples, getSignalsNow, searchWithSnapshots } from '@/lib/queries/market';
 
 describe('URL parsing', () => {
@@ -123,11 +124,24 @@ describe('Demand is the default skill measure', () => {
       expect([g.default, ...g.common, ...g.advanced]).not.toContain('share_of_ads');
     }
     expect(sharedMetrics()).not.toContain('share_of_ads');
+    // Still computable (watchlist items, /metrics/share_of_ads)…
     expect(isValidMetric('skill', 'share_of_ads')).toBe(true);
-    expect(getBoard({ type: 'skill', metric: 'share_of_ads', filter: DEFAULT_FILTER }).metric).toBe('share_of_ads');
-    const d = getInstrumentDetail('python', DEFAULT_FILTER, 'share_of_ads');
-    expect(d?.metric).toBe('share_of_ads');
-    expect(d?.readings.share_of_ads?.status).toBe('ok');
+    // …but legacy ?metric=share_of_ads links land on the default everywhere.
+    for (const type of ['skill', 'role', 'all'] as const) {
+      expect(getBoard({ type, metric: 'share_of_ads', filter: DEFAULT_FILTER }).metric).toBe(type === 'role' ? 'growth_12m' : 'ad_count');
+    }
+    expect(getInstrumentDetail('python', DEFAULT_FILTER, 'share_of_ads')?.metric).toBe('ad_count');
+    expect(getBoard({ type: 'skill', metric: 'entry_level_share', filter: DEFAULT_FILTER }).metric).toBe('entry_level_share');
+  });
+  it('states the share of ads only for a named instrument', () => {
+    const r = getBoard({ type: 'skill', filter: DEFAULT_FILTER }).rows[0]?.metric;
+    // Column heads / section headers pass no subject → no figure.
+    expect(demandShare(r, undefined)).toBeNull();
+    const named = demandShare(r, 'Communication');
+    expect(named?.name).toBe('Communication');
+    expect(named?.share).toBeCloseTo((r?.numerator ?? 0) / (r?.denominator ?? 1));
+    expect(demandShare(getInstrumentDetail('python', DEFAULT_FILTER)?.readings.change_4w, 'Python')).toBeNull();
+    expect(demandShare(getInstrumentDetail('rust', decodeFilter('r.au-nt-darwin_graduate_npr'))?.readings.ad_count, 'Rust')).toBeNull();
   });
   it('gives the Demand reading a denominator so its share can be stated', () => {
     const r = getBoard({ type: 'skill', filter: DEFAULT_FILTER }).rows[0]?.metric;

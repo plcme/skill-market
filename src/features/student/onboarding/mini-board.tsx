@@ -46,14 +46,14 @@ export function MiniBoard({ suggestions, limit = 6 }: { suggestions: InferredSki
             <p className="kicker">{t('board.startKicker')}</p>
             <h2 id="mb-start" className="font-serif text-[24px] leading-tight">{top.length ? t('board.startTitle') : t('board.firstTitle')}</h2>
           </div>
-          {top.length ? <MetricLabel metric="share_of_ads" type="skill" short filter={DEFAULT_FILTER} className="shrink-0" /> : null}
+          {top.length ? <MetricLabel metric="ad_count" type="skill" short filter={DEFAULT_FILTER} className="shrink-0" /> : null}
         </div>
         {top.length ? (
           <ul className="divide-y divide-rule border-b border-rule">
             {top.map(s => {
               const inst = getInstrument(s.skill_slug);
               if (!inst) return null;
-              const reading = computeMetric(inst.slug, 'share_of_ads', DEFAULT_FILTER);
+              const reading = computeMetric(inst.slug, 'ad_count', DEFAULT_FILTER);
               return (
                 <li key={s.skill_slug} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3">
                   <Monogram size="sm">{inst.symbol}</Monogram>

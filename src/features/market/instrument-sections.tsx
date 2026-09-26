@@ -41,7 +41,7 @@ export function Fundamentals({ detail, filter, metricHref }: {
     const current = m === detail.metric;
     return (
       <li key={m} className={cn('flex min-w-0 flex-col gap-3 border-b border-r border-rule bg-surface p-3.5 sm:p-5', current && 'shadow-[inset_0_2px_0_var(--ink)]')}>
-        <MetricLabel metric={m} type={type} reading={r} filter={filter} />
+        <MetricLabel metric={m} type={type} reading={r} filter={filter} subject={detail.snapshot.instrument.name} />
         <Figure reading={r} />
         <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-1">
           <SourceBadge kind={r.source} short />

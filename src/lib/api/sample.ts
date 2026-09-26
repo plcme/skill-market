@@ -24,10 +24,10 @@ export function seedSampleActivity(d: DemoDB, now: number) {
   };
   const sydneyPlusRemote = decodeFilter('ohr.au-nsw-sydney*r.au_all_all');
   d.watchlist = [
-    item('w-rust', 'rust', 'watching', sydneyPlusRemote, 'share_of_ads', 18, 0.31),
-    item('w-sql', 'sql', 'held', DEFAULT_FILTER, 'share_of_ads', 21, 0.02),
-    item('w-python', 'python', 'held', DEFAULT_FILTER, 'share_of_ads', 21, 0.06),
-    item('w-dbt', 'dbt', 'watching', DEFAULT_FILTER, 'share_of_ads', 12, 0.28),
+    item('w-rust', 'rust', 'watching', sydneyPlusRemote, 'ad_count', 18, 0.31),
+    item('w-sql', 'sql', 'held', DEFAULT_FILTER, 'ad_count', 21, 0.02),
+    item('w-python', 'python', 'held', DEFAULT_FILTER, 'ad_count', 21, 0.06),
+    item('w-dbt', 'dbt', 'watching', DEFAULT_FILTER, 'ad_count', 12, 0.28),
     item('w-data-engineer', 'data-engineer', 'watching', decodeFilter('ohr.au-nsw_entry_all'), 'growth_12m', 16, 0.04),
   ];
   seedSampleChats(d, now);

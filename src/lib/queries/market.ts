@@ -30,9 +30,14 @@ export interface Board {
   as_of: string;
 }
 
+/**
+ * `?metric=` for a board. Only measures offered in that board's switcher are
+ * honoured; anything else — including legacy `share_of_ads` links — falls back
+ * to the default, the same way on the All, Skills and Roles boards.
+ */
 export function resolveBoardMetric(type: BoardType, metric?: string): MetricKey {
   if (type === 'all') return metric && sharedMetrics().includes(metric as MetricKey) ? (metric as MetricKey) : 'ad_count';
-  return metric && isValidMetric(type, metric) ? metric : defaultMetric(type);
+  return metric && isValidMetric(type, metric) && METRICS[metric].selectable ? metric : defaultMetric(type);
 }
 
 export function getBoard(query: BoardQuery): Board {
@@ -97,11 +102,11 @@ export interface InstrumentDetail {
 export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string): InstrumentDetail | null {
   const inst = getInstrument(slug);
   if (!inst) return null;
-  const metric = metricParam && isValidMetric(inst.type, metricParam) ? metricParam : defaultMetric(inst.type);
+  // Same rule as boards: legacy non-selectable metrics fall back to the default.
+  const metric = metricParam && isValidMetric(inst.type, metricParam) && METRICS[metricParam].selectable ? metricParam : defaultMetric(inst.type);
   const groups = metricsFor(inst.type);
   const readings: Partial<Record<MetricKey, MetricReading>> = {};
-  // The active metric may be a non-selectable one kept for old links (e.g. share_of_ads).
-  for (const k of new Set([metric, groups.default, ...groups.common, ...groups.advanced])) readings[k] = computeMetric(slug, k, filter);
+  for (const k of [groups.default, ...groups.common, ...groups.advanced]) readings[k] = computeMetric(slug, k, filter);
   const series = computeSeries(slug, METRICS[metric].chartable ? metric : 'ad_count', filter);
   const snap = snapshot(slug, metric, filter);
   const composition: CompositionEntry[] = inst.type === 'role'

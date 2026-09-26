@@ -81,7 +81,7 @@
       "unit": "Job ads",
       "denominator": "Not a ratio — a count of job ads",
       "method": "Each ad is counted once, however many times the skill appears in it.",
-      "shareLine": "That’s {share} of all {den} ads in this filter (share of ads).",
+      "shareLine": "{name} appears in {share} of all {den} ads in this filter (share of ads).",
       "shareLineGeneric": "Divided by all ads in this filter, the same count gives the share of ads — useful for setting aside the whole market rising or falling."
     },
     "share_of_ads": {

@@ -108,7 +108,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             </Suspense>
           </div>
           <div className="mt-6">
-            <MetricLabel metric={detail.metric} type={type} reading={reading} filter={filter} />
+            <MetricLabel metric={detail.metric} type={type} reading={reading} filter={filter} subject={inst.name} />
           </div>
           <div className="mt-2">
             {reading.status === 'ok' && METRICS[reading.metric].unit === 'change'
@@ -123,7 +123,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               if (!r) return null;
               return (
                 <div key={m} className="min-w-0">
-                  <dt><MetricLabel metric={m} type={type} reading={r} filter={filter} short /></dt>
+                  <dt><MetricLabel metric={m} type={type} reading={r} filter={filter} subject={inst.name} short /></dt>
                   <dd className="mt-1.5"><Figure reading={r} className="[&>span:first-child]:text-[24px]" /></dd>
                 </div>
               );

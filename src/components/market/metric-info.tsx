@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Info } from 'lucide-react';
 import { METRICS, metricSource } from '@/lib/metrics/registry';
+import { demandShare } from '@/lib/metrics/demand';
 import { formatCount, formatShare } from '@/lib/market/format';
 import { formatDate } from '@/lib/time';
 import type { ActiveInstrumentType, FilterSpec, MetricKey, MetricReading } from '@/lib/market/types';
@@ -13,11 +14,13 @@ import { SourceBadge } from './source-badge';
 import { FilterReadback } from './filter-readback';
 
 /** Everything that explains one number, one click away (FR-D2, UX principle 1). */
-export function MetricDefinition({ metric, type, reading, filter, compact = false }: {
+export function MetricDefinition({ metric, type, reading, filter, subject, compact = false }: {
   metric: MetricKey;
   type: ActiveInstrumentType;
   reading?: MetricReading;
   filter?: FilterSpec;
+  /** The instrument this reading belongs to; omit for column heads / section headers. */
+  subject?: string;
   compact?: boolean;
 }) {
   const t = useTranslations('Metrics');
@@ -42,9 +45,11 @@ export function MetricDefinition({ metric, type, reading, filter, compact = fals
   rows.push([t('fields.method'), t(`${metric}.method`)]);
   if (t.has(`${metric}.caveat`)) rows.push([t('fields.caveat'), t(`${metric}.caveat`)]);
   // Demand is a raw count; its share of all ads stays one line away (GLOSSARY §3).
+  // A figure is only stated when it's named; otherwise the generic line.
+  const share = metric === 'ad_count' ? demandShare(reading, subject) : null;
   const shareLine = metric === 'ad_count'
-    ? reading && reading.status === 'ok' && reading.numerator !== null && reading.denominator
-      ? t('ad_count.shareLine', { share: formatShare(reading.numerator / reading.denominator), den: formatCount(reading.denominator) })
+    ? share
+      ? t('ad_count.shareLine', { name: share.name, share: formatShare(share.share), den: formatCount(share.denominator) })
       : t('ad_count.shareLineGeneric')
     : null;
   const ignores = def.ignores.map(f => t(f === 'seniority' ? 'ignoresSeniority' : f === 'work_rights' ? 'ignoresWorkRights' : 'ignoresWorkMode'));
@@ -66,11 +71,13 @@ export function MetricDefinition({ metric, type, reading, filter, compact = fals
   );
 }
 
-export function MetricInfo({ metric, type, reading, filter, className }: {
+export function MetricInfo({ metric, type, reading, filter, subject, className }: {
   metric: MetricKey;
   type: ActiveInstrumentType;
   reading?: MetricReading;
   filter?: FilterSpec;
+  /** Instrument name when the popover belongs to one instrument's figure. */
+  subject?: string;
   className?: string;
 }) {
   const t = useTranslations('Metrics');
@@ -83,7 +90,7 @@ export function MetricInfo({ metric, type, reading, filter, className }: {
         <Info className="size-3.5" aria-hidden />
       </PopoverTrigger>
       <PopoverContent className="w-[min(400px,calc(100vw-24px))]">
-        <MetricDefinition metric={metric} type={type} reading={reading} filter={filter} compact />
+        <MetricDefinition metric={metric} type={type} reading={reading} filter={filter} subject={subject} compact />
         <Link href={`/metrics/${metric}`} className="link mt-3 inline-block text-[13px]">{t('fullDefinition')}</Link>
       </PopoverContent>
     </Popover>
@@ -91,11 +98,13 @@ export function MetricInfo({ metric, type, reading, filter, className }: {
 }
 
 /** Label with its info button — use for every column head / figure label. */
-export function MetricLabel({ metric, type, reading, filter, short = false, column = false, className }: {
+export function MetricLabel({ metric, type, reading, filter, subject, short = false, column = false, className }: {
   metric: MetricKey;
   type: ActiveInstrumentType;
   reading?: MetricReading;
   filter?: FilterSpec;
+  /** Instrument name when the label belongs to one instrument's figure. */
+  subject?: string;
   short?: boolean;
   /** Table column head: uses the metric's `column` wording when it has one (e.g. Demand → "Job ads"). */
   column?: boolean;
@@ -106,7 +115,7 @@ export function MetricLabel({ metric, type, reading, filter, short = false, colu
   return (
     <span className={cn('inline-flex items-center gap-1', className)}>
       <span className="kicker">{t(`${metric}.${key}`)}</span>
-      <MetricInfo metric={metric} type={type} reading={reading} filter={filter} />
+      <MetricInfo metric={metric} type={type} reading={reading} filter={filter} subject={subject} />
     </span>
   );
 }
