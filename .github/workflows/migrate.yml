@@ -28,7 +28,7 @@ jobs:
           TARGET: ${{ inputs.target || 'development' }}
         run: |
           if [ "$TARGET" = production ]; then test "$GITHUB_REF" = refs/heads/main; else test "$GITHUB_REF" = refs/heads/dev; fi
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
