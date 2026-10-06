@@ -27,6 +27,14 @@ export interface FilterSpec {
 
 export type SourceKind = 'official' | 'ads' | 'practitioner';
 
+/**
+ * Australian Skills Classification layer of a trackable skill. Core
+ * competencies (the third ASC layer) are not instruments — see
+ * `src/lib/market/competencies.ts`.
+ */
+export type SkillLayer = 'technology_tool' | 'specialist_task';
+export const SKILL_LAYERS: readonly SkillLayer[] = ['technology_tool', 'specialist_task'];
+
 export type LearningEffort = 'weeks' | 'months' | 'year_plus';
 export type Transferability = 'narrow' | 'moderate' | 'broad';
 
@@ -48,6 +56,8 @@ export interface Instrument {
    * granularity undecided — GLOSSARY §5); always null today and not shown in UI.
    */
   parent_id: string | null;
+  /** ASC layer for skills; null for roles and industries. */
+  skill_layer: SkillLayer | null;
   blurb: string;
   learning_effort: LearningEffort;
   transferability: Transferability;

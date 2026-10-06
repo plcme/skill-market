@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowRight, CornerDownLeft, Search } from 'lucide-react';
 import { Dialog as RDialog } from 'radix-ui';
-import { searchInstruments } from '@/lib/market/catalog';
+import { searchInstruments, type SearchHit } from '@/lib/market/catalog';
+import { competencyHref, searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import { Kbd, Monogram } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
 
@@ -15,12 +16,17 @@ export function openSearch() {
   window.dispatchEvent(new Event(OPEN_SEARCH_EVENT));
 }
 
+type PaletteItem =
+  | { kind: 'instrument'; id: string; hit: SearchHit }
+  | { kind: 'competency'; id: string; hit: CompetencyHit };
+
 const SUGGESTED = ['rust', 'dbt', 'data-analyst', 'terraform', 'cybersecurity', 'software-engineer'];
 
 /** ⌘K / "/" search with alias normalisation (FR-D6). */
 export function CommandPalette() {
   const t = useTranslations('Search');
   const tt = useTranslations('Ticker');
+  const tc = useTranslations('Competencies');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
@@ -45,15 +51,22 @@ export function CommandPalette() {
     };
   }, []);
 
-  const hits = useMemo(() => (q.trim() ? searchInstruments(q, 8) : []), [q]);
-  const suggestions = useMemo(() => SUGGESTED.flatMap(s => searchInstruments(s, 1)), []);
+  // Core competencies (ASC) are explained, not tracked: they link to the explainer.
+  const hits = useMemo<PaletteItem[]>(() => (q.trim()
+    ? [
+      ...searchCompetencies(q, 2).map(hit => ({ kind: 'competency' as const, id: `competency-${hit.slug}`, hit })),
+      ...searchInstruments(q, 8).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit })),
+    ].slice(0, 8)
+    : []), [q]);
+  const suggestions = useMemo<PaletteItem[]>(() => SUGGESTED.flatMap(s => searchInstruments(s, 1)).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit })), []);
   const list = q.trim() ? hits : suggestions;
 
   const go = (i: number) => {
-    const hit = list[i];
+    const item = list[i];
     setOpen(false);
     setQ('');
-    if (hit) router.push(instrumentPath(hit.instrument.type, hit.instrument.slug));
+    if (item?.kind === 'instrument') router.push(instrumentPath(item.hit.instrument.type, item.hit.instrument.slug));
+    else if (item?.kind === 'competency') router.push(competencyHref(item.hit.slug));
     else if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`);
   };
 
@@ -79,7 +92,7 @@ export function CommandPalette() {
               placeholder={t('placeholder')}
               aria-label={t('dialogLabel')}
               aria-controls="palette-results"
-              aria-activedescendant={list[active] ? `palette-${list[active].instrument.slug}` : undefined}
+              aria-activedescendant={list[active] ? `palette-${list[active].id}` : undefined}
               className="h-14 w-full bg-transparent text-[17px] outline-none placeholder:text-faint"
             />
             <Kbd>Esc</Kbd>
@@ -93,22 +106,34 @@ export function CommandPalette() {
               </div>
             ) : null}
             <ul id="palette-results" role="listbox" ref={listRef} aria-label={t('dialogLabel')}>
-              {list.map((h, i) => (
-                <li key={h.instrument.id} id={`palette-${h.instrument.slug}`} role="option" aria-selected={i === active}>
+              {list.map((item, i) => (
+                <li key={item.id} id={`palette-${item.id}`} role="option" aria-selected={i === active}>
                   <button
                     type="button"
                     onMouseEnter={() => setActive(i)}
                     onClick={() => go(i)}
                     className={cn('flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left', i === active && 'bg-sunken')}
                   >
-                    <Monogram size="sm">{h.instrument.symbol}</Monogram>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{h.instrument.name}</span>
-                      <span className="block truncate text-[12.5px] text-muted">
-                        {tt(h.instrument.type)} · {h.instrument.category}
-                        {h.via === 'alias' ? <span className="ml-2 text-accent">{t('matchedAlias', { alias: h.matched })}</span> : null}
-                      </span>
-                    </span>
+                    {item.kind === 'instrument' ? (
+                      <>
+                        <Monogram size="sm">{item.hit.instrument.symbol}</Monogram>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">{item.hit.instrument.name}</span>
+                          <span className="block truncate text-[12.5px] text-muted">
+                            {tt(item.hit.instrument.type)} · {item.hit.instrument.category}
+                            {item.hit.via === 'alias' ? <span className="ml-2 text-accent">{t('matchedAlias', { alias: item.hit.matched })}</span> : null}
+                          </span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Monogram size="sm">{tc('monogram')}</Monogram>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">{tc(`items.${item.hit.slug}.name`)}</span>
+                          <span className="block truncate text-[12.5px] text-muted">{t('competency')} · {tc('notTracked')}</span>
+                        </span>
+                      </>
+                    )}
                     {i === active ? <CornerDownLeft className="size-4 text-muted" aria-hidden /> : null}
                   </button>
                 </li>

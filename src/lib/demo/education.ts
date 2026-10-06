@@ -50,21 +50,21 @@ export const UNIVERSITIES: readonly University[] = [
 const S = (skill_slug: string, confidence: number): SkillPrior => ({ skill_slug, confidence });
 
 export const DEGREES: readonly Degree[] = [
-  { id: 'bach-adv-computing', name: 'Bachelor of Advanced Computing', skills: [S('python', 0.7), S('git', 0.55), S('java', 0.5), S('sql', 0.55), S('communication', 0.45), S('agile', 0.4), S('data-analysis', 0.35), S('testing', 0.35), S('linux', 0.35)] },
+  { id: 'bach-adv-computing', name: 'Bachelor of Advanced Computing', skills: [S('python', 0.7), S('git', 0.55), S('java', 0.5), S('sql', 0.55), S('agile', 0.4), S('data-analysis', 0.35), S('testing', 0.35), S('linux', 0.35)] },
   { id: 'bach-computer-science', name: 'Bachelor of Computer Science', skills: [S('python', 0.7), S('java', 0.55), S('git', 0.5), S('sql', 0.45), S('linux', 0.45), S('cpp', 0.4), S('statistics', 0.3)] },
-  { id: 'bach-it', name: 'Bachelor of Information Technology', skills: [S('javascript', 0.55), S('sql', 0.55), S('communication', 0.5), S('networking', 0.45), S('agile', 0.45), S('git', 0.4), S('project-management', 0.3)] },
-  { id: 'bach-data-science', name: 'Bachelor of Data Science', skills: [S('python', 0.75), S('statistics', 0.7), S('data-analysis', 0.65), S('sql', 0.6), S('machine-learning', 0.4), S('communication', 0.4), S('excel', 0.35)] },
-  { id: 'bach-eng-software', name: 'Bachelor of Engineering Honours (Software)', skills: [S('python', 0.6), S('java', 0.55), S('git', 0.55), S('agile', 0.5), S('communication', 0.5), S('testing', 0.45), S('cpp', 0.45)] },
-  { id: 'bach-commerce-bis', name: 'Bachelor of Commerce (Business Information Systems)', skills: [S('excel', 0.7), S('communication', 0.6), S('data-analysis', 0.5), S('sql', 0.45), S('stakeholder-management', 0.45), S('project-management', 0.4), S('powerbi', 0.35)] },
-  { id: 'bach-design-computing', name: 'Bachelor of Design Computing', skills: [S('figma', 0.7), S('ux-research', 0.55), S('communication', 0.55), S('javascript', 0.5), S('react', 0.3)] },
-  { id: 'master-it', name: 'Master of Information Technology', skills: [S('python', 0.5), S('sql', 0.5), S('communication', 0.45), S('javascript', 0.4), S('agile', 0.4), S('cybersecurity', 0.3)] },
+  { id: 'bach-it', name: 'Bachelor of Information Technology', skills: [S('javascript', 0.55), S('sql', 0.55), S('networking', 0.45), S('agile', 0.45), S('git', 0.4), S('project-management', 0.3)] },
+  { id: 'bach-data-science', name: 'Bachelor of Data Science', skills: [S('python', 0.75), S('statistics', 0.7), S('data-analysis', 0.65), S('sql', 0.6), S('machine-learning', 0.4), S('excel', 0.35)] },
+  { id: 'bach-eng-software', name: 'Bachelor of Engineering Honours (Software)', skills: [S('python', 0.6), S('java', 0.55), S('git', 0.55), S('agile', 0.5), S('testing', 0.45), S('cpp', 0.45)] },
+  { id: 'bach-commerce-bis', name: 'Bachelor of Commerce (Business Information Systems)', skills: [S('excel', 0.7), S('data-analysis', 0.5), S('sql', 0.45), S('stakeholder-management', 0.45), S('project-management', 0.4), S('powerbi', 0.35)] },
+  { id: 'bach-design-computing', name: 'Bachelor of Design Computing', skills: [S('figma', 0.7), S('ux-research', 0.55), S('javascript', 0.5), S('react', 0.3)] },
+  { id: 'master-it', name: 'Master of Information Technology', skills: [S('python', 0.5), S('sql', 0.5), S('javascript', 0.4), S('agile', 0.4), S('cybersecurity', 0.3)] },
 ];
 
 const U = (code: string, title: string, level: CourseUnit['level'], skills: SkillPrior[]): CourseUnit => ({ code, title, university_id: 'usyd', level, skills });
 
 export const COURSE_UNITS: readonly CourseUnit[] = [
   U('INFO1110', 'Introduction to Programming', 1, [S('python', 0.75), S('git', 0.3)]),
-  U('INFO1111', 'Computing 1A Professionalism', 1, [S('communication', 0.5), S('agile', 0.35), S('project-management', 0.3)]),
+  U('INFO1111', 'Computing 1A Professionalism', 1, [S('agile', 0.35), S('project-management', 0.3)]),
   U('INFO1113', 'Object-Oriented Programming', 1, [S('java', 0.75), S('git', 0.4), S('testing', 0.3)]),
   U('DATA1001', 'Foundations of Data Science', 1, [S('statistics', 0.61), S('data-analysis', 0.55), S('excel', 0.3)]),
   U('DATA1002', 'Informatics: Data and Computation', 1, [S('python', 0.6), S('data-analysis', 0.55), S('sql', 0.3)]),
@@ -79,7 +79,7 @@ export const COURSE_UNITS: readonly CourseUnit[] = [
   U('ELEC3506', 'Data Communications and the Internet', 3, [S('networking', 0.7), S('linux', 0.3)]),
   U('COMP3221', 'Distributed Systems', 3, [S('linux', 0.4), S('docker', 0.35)]),
   U('COMP3308', 'Introduction to Artificial Intelligence', 3, [S('machine-learning', 0.6), S('python', 0.5)]),
-  U('SOFT3888', 'Software Development Project', 3, [S('agile', 0.6), S('communication', 0.6), S('stakeholder-management', 0.45), S('project-management', 0.45)]),
+  U('SOFT3888', 'Software Development Project', 3, [S('agile', 0.6), S('stakeholder-management', 0.45), S('project-management', 0.45)]),
   U('COMP5318', 'Machine Learning and Data Mining', 5, [S('machine-learning', 0.75), S('python', 0.6)]),
 ];
 

@@ -98,7 +98,7 @@ export interface NextStep {
 const EFFORT_EASE: Record<LearningEffort, number> = { weeks: 1, months: 0.7, year_plus: 0.4 };
 const TRANSFER: Record<Transferability, number> = { broad: 1, moderate: 0.75, narrow: 0.5 };
 /** Broad, quick-to-start skills for students with (almost) nothing on their profile (FR-O6). */
-export const FIRST_STEPS = ['sql', 'git', 'python', 'excel', 'communication'] as const;
+export const FIRST_STEPS = ['sql', 'git', 'python', 'excel', 'agile'] as const;
 
 function toStep(skill: Instrument, because: Instrument | null, affinity: number): NextStep {
   const roles = rolesForSkill(skill.slug);

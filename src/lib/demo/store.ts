@@ -7,6 +7,7 @@ import { runScheduledJobs } from '@/lib/api/jobs';
 import { seedSampleActivity } from '@/lib/api/sample';
 import { seedPipelineRuns, seedPractitioners } from './seed';
 import { HOUR } from '@/lib/time';
+import { dropUnknownInstruments } from './sanitize';
 
 // Browser-only preview store. Plays the part of Supabase (tables + RLS) and
 // pg_cron (scheduled jobs) so every flow is interactive without a backend.
@@ -63,7 +64,7 @@ function load(): DemoDB {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as DemoDB;
-      if (parsed?.version === 1) return parsed;
+      if (parsed?.version === 1) return dropUnknownInstruments(parsed);
     }
   } catch {
     // Corrupt or blocked storage: fall back to a fresh seed.

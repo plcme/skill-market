@@ -119,7 +119,8 @@ export const SINCE_ADDED_THRESHOLD = 0.25;
 
 /** Read model for the watchlist with live values, "since added" and signals (FR-W2, FR-W3). */
 export function selectWatchlist(d: DemoDB): WatchlistRow[] {
-  return d.watchlist.map(item => {
+  // Items for instruments that left the catalogue are skipped, never thrown on.
+  return d.watchlist.filter(item => getInstrument(item.instrument_slug)).map(item => {
     const current = computeMetric(item.instrument_slug, item.metric, item.filter);
     const since = current.value !== null && item.baseline_value ? (current.value - item.baseline_value) / Math.abs(item.baseline_value) : null;
     let signal = detectSignal(item.instrument_slug, item.filter);

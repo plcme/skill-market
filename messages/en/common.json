@@ -78,7 +78,8 @@
     "seeAll": "See all results for “{q}”",
     "navigate": "to navigate",
     "select": "to open",
-    "dialogLabel": "Search skills and roles"
+    "dialogLabel": "Search skills and roles",
+    "competency": "Core competency"
   },
   "Footer": {
     "tagline": "Market signals for what to learn next — and people to ask about them.",

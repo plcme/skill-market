@@ -1,4 +1,4 @@
-import type { ActiveInstrumentType, IndustryComponent, Instrument, LearningEffort, RoleComponent, Transferability } from './types';
+import type { ActiveInstrumentType, IndustryComponent, Instrument, LearningEffort, RoleComponent, SkillLayer, Transferability } from './types';
 
 // Illustrative catalogue for the launch vertical (software / data, PRD §12.2).
 // Profile numbers are synthetic parameters for the fixture engine, not real data.
@@ -80,7 +80,6 @@ const SKILLS: Seed[] = [
   { slug: 'figma', name: 'Figma', symbol: 'FIG', category: 'Web & product', aliases: ['figma design'], blurb: 'Collaborative interface design and prototyping.', effort: 'weeks', transfer: 'moderate', p: P(0.02, 0.09, 0.01, 0.2), premium: 0 },
   { slug: 'ux-research', name: 'UX research', symbol: 'UXR', category: 'Web & product', aliases: ['user research', 'usability testing'], blurb: 'Learning what people need through interviews and testing.', effort: 'months', transfer: 'broad', p: P(0.012, -0.1, -0.52, 0.15, -0.02), premium: -0.02 },
   { slug: 'agile', name: 'Agile', symbol: 'AGL', category: 'Ways of working', aliases: ['scrum', 'kanban', 'agile methodology'], blurb: 'Iterative ways of planning and shipping work.', effort: 'weeks', transfer: 'broad', p: P(0.12, -0.05, -0.01, 0.16), premium: 0 },
-  { slug: 'communication', name: 'Communication', symbol: 'COM', category: 'Ways of working', aliases: ['written communication', 'verbal communication', 'presentation skills'], blurb: 'Explaining work clearly to different audiences.', effort: 'year_plus', transfer: 'broad', p: P(0.3, 0.01, 0, 0.2), premium: 0 },
   { slug: 'stakeholder-management', name: 'Stakeholder management', symbol: 'STK', category: 'Ways of working', aliases: ['stakeholder engagement', 'client management'], blurb: 'Working with the people who shape and depend on a project.', effort: 'year_plus', transfer: 'broad', p: P(0.14, 0.03, 0, 0.09), premium: 0.02 },
   { slug: 'project-management', name: 'Project management', symbol: 'PM', category: 'Ways of working', aliases: ['pmp', 'prince2', 'delivery management'], blurb: 'Planning scope, time and people to deliver outcomes.', effort: 'year_plus', transfer: 'broad', p: P(0.06, -0.02, 0, 0.08, 0, 0.5, 0.8), premium: 0.02 },
   { slug: 'testing', name: 'Software testing', symbol: 'QA', category: 'Web & product', aliases: ['qa', 'test automation', 'quality assurance', 'selenium'], blurb: 'Checking software works — by hand and through automation.', effort: 'weeks', transfer: 'moderate', p: P(0.05, -0.07, -0.03, 0.22, 0, 0.55, 0.9), premium: -0.03 },
@@ -142,24 +141,24 @@ const ROLES: Seed[] = [
 ];
 
 export const ROLE_COMPONENTS: Record<string, RoleComponent[]> = Object.fromEntries(Object.entries({
-  'software-engineer': { communication: 0.6, javascript: 0.55, python: 0.5, typescript: 0.45, git: 0.45, aws: 0.4, sql: 0.4, java: 0.35, cicd: 0.35, agile: 0.35, docker: 0.3, rust: 0.04, go: 0.08 },
-  'developer-programmer': { javascript: 0.5, csharp: 0.45, java: 0.45, sql: 0.45, git: 0.4, agile: 0.3, communication: 0.45 },
-  'analyst-programmer': { sql: 0.6, communication: 0.5, csharp: 0.4, java: 0.4, python: 0.3 },
-  'web-developer': { javascript: 0.85, react: 0.7, typescript: 0.5, nodejs: 0.5, git: 0.45, figma: 0.2, communication: 0.4 },
-  'data-analyst': { 'data-analysis': 0.85, sql: 0.8, communication: 0.7, excel: 0.6, powerbi: 0.5, python: 0.45, 'stakeholder-management': 0.45, statistics: 0.4, tableau: 0.3 },
-  'data-scientist': { python: 0.85, 'machine-learning': 0.75, statistics: 0.7, sql: 0.6, communication: 0.55, pytorch: 0.3, spark: 0.25, llm: 0.15 },
+  'software-engineer': { javascript: 0.55, python: 0.5, typescript: 0.45, git: 0.45, aws: 0.4, sql: 0.4, java: 0.35, cicd: 0.35, agile: 0.35, docker: 0.3, rust: 0.04, go: 0.08 },
+  'developer-programmer': { javascript: 0.5, csharp: 0.45, java: 0.45, sql: 0.45, git: 0.4, agile: 0.3 },
+  'analyst-programmer': { sql: 0.6, csharp: 0.4, java: 0.4, python: 0.3 },
+  'web-developer': { javascript: 0.85, react: 0.7, typescript: 0.5, nodejs: 0.5, git: 0.45, figma: 0.2 },
+  'data-analyst': { 'data-analysis': 0.85, sql: 0.8, excel: 0.6, powerbi: 0.5, python: 0.45, 'stakeholder-management': 0.45, statistics: 0.4, tableau: 0.3 },
+  'data-scientist': { python: 0.85, 'machine-learning': 0.75, statistics: 0.7, sql: 0.6, pytorch: 0.3, spark: 0.25, llm: 0.15 },
   'data-engineer': { sql: 0.85, python: 0.7, aws: 0.5, spark: 0.45, airflow: 0.4, dbt: 0.35, azure: 0.35, docker: 0.3, terraform: 0.2, rust: 0.05 },
   'ml-engineer': { python: 0.9, 'machine-learning': 0.85, pytorch: 0.6, llm: 0.45, docker: 0.4, aws: 0.4, kubernetes: 0.3, rust: 0.06 },
   'devops-engineer': { cicd: 0.75, docker: 0.65, aws: 0.6, kubernetes: 0.6, linux: 0.6, terraform: 0.55, git: 0.5, azure: 0.4, python: 0.35, go: 0.2, rust: 0.05 },
   'cloud-engineer': { aws: 0.7, azure: 0.6, terraform: 0.5, linux: 0.5, kubernetes: 0.4, networking: 0.4, gcp: 0.3, go: 0.1 },
-  'cyber-security-analyst': { cybersecurity: 0.95, networking: 0.55, communication: 0.5, linux: 0.45, azure: 0.3, python: 0.3 },
-  'business-analyst': { 'stakeholder-management': 0.8, communication: 0.8, agile: 0.55, excel: 0.45, 'data-analysis': 0.4, sql: 0.35, 'project-management': 0.3 },
-  'product-manager': { communication: 0.8, 'stakeholder-management': 0.75, agile: 0.6, 'data-analysis': 0.35, 'ux-research': 0.3, figma: 0.2 },
-  'ux-designer': { figma: 0.85, 'ux-research': 0.75, communication: 0.6, agile: 0.35, javascript: 0.15 },
+  'cyber-security-analyst': { cybersecurity: 0.95, networking: 0.55, linux: 0.45, azure: 0.3, python: 0.3 },
+  'business-analyst': { 'stakeholder-management': 0.8, agile: 0.55, excel: 0.45, 'data-analysis': 0.4, sql: 0.35, 'project-management': 0.3 },
+  'product-manager': { 'stakeholder-management': 0.75, agile: 0.6, 'data-analysis': 0.35, 'ux-research': 0.3, figma: 0.2 },
+  'ux-designer': { figma: 0.85, 'ux-research': 0.75, agile: 0.35, javascript: 0.15 },
   'software-tester': { testing: 0.9, agile: 0.5, cicd: 0.4, javascript: 0.3, python: 0.3, sql: 0.3 },
   'database-administrator': { sql: 0.9, postgresql: 0.55, linux: 0.4, azure: 0.3, aws: 0.3 },
   'network-engineer': { networking: 0.9, linux: 0.5, cybersecurity: 0.4, azure: 0.25 },
-  'ict-project-manager': { 'project-management': 0.9, communication: 0.8, 'stakeholder-management': 0.8, agile: 0.6 },
+  'ict-project-manager': { 'project-management': 0.9, 'stakeholder-management': 0.8, agile: 0.6 },
   'registered-nurse': { 'clinical-assessment': 0.82, 'medication-administration': 0.74, 'wound-care': 0.46 },
   'aged-care-worker': { 'medication-administration': 0.52, 'wound-care': 0.22, 'clinical-assessment': 0.18 },
   accountant: { xero: 0.48, excel: 0.62, myob: 0.3, 'financial-modelling': 0.24, sap: 0.1 },
@@ -206,6 +205,23 @@ export const INDUSTRY_COMPONENTS: Record<string, IndustryComponent[]> = Object.f
 
 export const TRACKING_SINCE = '2024-06-03';
 
+/**
+ * Australian Skills Classification layer per skill. Rule: a work activity or
+ * method (what you do) is a `specialist_task`; a named software product,
+ * platform, language or framework (what you use) is a `technology_tool`.
+ * Anything not listed here is a technology tool.
+ */
+const SPECIALIST_TASKS: ReadonlySet<string> = new Set([
+  'data-analysis', 'statistics', 'machine-learning', 'llm', 'agile', 'project-management', 'stakeholder-management',
+  'testing', 'ux-research', 'cicd', 'financial-modelling', 'estimating', 'clinical-assessment', 'medication-administration',
+  'wound-care', 'lesson-planning', 'curriculum-design', 'inventory-management', 'visual-merchandising', 'policy-analysis',
+  'records-management', 'lean-six-sigma', 'cybersecurity', 'networking', 'plc-programming',
+]);
+
+export function skillLayerOf(slug: string): SkillLayer {
+  return SPECIALIST_TASKS.has(slug) ? 'specialist_task' : 'technology_tool';
+}
+
 function toInstrument(seed: Seed, type: ActiveInstrumentType): Instrument {
   return {
     id: `${type}:${seed.slug}`,
@@ -218,6 +234,7 @@ function toInstrument(seed: Seed, type: ActiveInstrumentType): Instrument {
     anzsco: seed.anzsco ?? null,
     anzsic: seed.anzsic ?? null,
     parent_id: null,
+    skill_layer: type === 'skill' ? skillLayerOf(seed.slug) : null,
     blurb: seed.blurb,
     learning_effort: seed.effort,
     transferability: seed.transfer,

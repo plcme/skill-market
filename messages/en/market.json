@@ -270,7 +270,11 @@
     "entryShare": "Entry-level",
     "whereLabel": "Where",
     "anzsco": "ANZSCO {code}",
-    "noAnzsco": "Industry title — no single ANZSCO code"
+    "noAnzsco": "Industry title — no single ANZSCO code",
+    "layer": {
+      "technology_tool": "Technology tool",
+      "specialist_task": "Specialist task"
+    }
   },
   "Chart": {
     "showTable": "Show data table",
@@ -309,5 +313,73 @@
     "colChange": "4-week change",
     "changeCell": "{change} ({from} → {to})",
     "thinCell": "Too few ads (under {min})"
+  },
+  "Competencies": {
+    "title": "Core competencies",
+    "kicker": "Everyday abilities",
+    "illustrative": "Illustrative — based on the ASC core competency scale",
+    "attribution": "Framework: Australian Skills Classification, Jobs and Skills Australia",
+    "notTracked": "Every job uses these, so we don’t track demand for them.",
+    "scaleNote": "Levels run from 1 (basic) to 10 (highly complex) and describe how much of each ability the work calls for. They are not a judgement of any person.",
+    "roleNote": "How much of each everyday ability {name} work typically calls for.",
+    "level": "{level} / 10",
+    "levelLabel": "{name}: level {level} of 10",
+    "listLabel": "Core competency levels for {name}",
+    "explainerLink": "What core competencies are",
+    "type": "Core competency",
+    "count": "{n, plural, one {# core competency} other {# core competencies}}",
+    "matched": "Matched “{matched}”",
+    "searchNote": "These ten abilities come from the Australian Skills Classification. Every job uses them, so we don’t track demand for them — role pages show how much of each a role calls for.",
+    "guideTitle": "Core competencies",
+    "guideKicker": "Not tracked",
+    "guideLede": "The Australian Skills Classification describes work in three layers. We track the two that move with the market — specialist tasks (what you do) and technology tools (what you use). The third layer is ten core competencies that every job uses.",
+    "guideLayers": {
+      "specialist_task": "Specialist tasks — work activities such as analysing data or managing projects. Tracked.",
+      "technology_tool": "Technology tools — named software and platforms such as Excel or AWS. Tracked.",
+      "core": "Core competencies — the ten abilities below. Not tracked; role pages show them as levels."
+    },
+    "items": {
+      "digital-engagement": {
+        "name": "Digital engagement",
+        "blurb": "Using digital devices, software and online systems to get work done safely."
+      },
+      "initiative-innovation": {
+        "name": "Initiative and innovation",
+        "blurb": "Spotting what needs doing and finding new or better ways to do it."
+      },
+      "learning": {
+        "name": "Learning",
+        "blurb": "Picking up new knowledge and skills and applying them at work."
+      },
+      "numeracy": {
+        "name": "Numeracy",
+        "blurb": "Working with numbers, measurements and data to make decisions."
+      },
+      "oral-communication": {
+        "name": "Oral communication",
+        "blurb": "Speaking and listening so that information and ideas are understood."
+      },
+      "planning-organising": {
+        "name": "Planning and organising",
+        "blurb": "Setting priorities, managing time and organising tasks and resources."
+      },
+      "problem-solving": {
+        "name": "Problem solving",
+        "blurb": "Working out what is wrong and choosing a way to fix it."
+      },
+      "reading": {
+        "name": "Reading",
+        "blurb": "Understanding written information such as instructions, reports and policies."
+      },
+      "teamwork": {
+        "name": "Teamwork",
+        "blurb": "Working with others towards a shared goal."
+      },
+      "writing": {
+        "name": "Writing",
+        "blurb": "Producing written text that is clear for its audience and purpose."
+      }
+    },
+    "monogram": "ASC"
   }
 }

@@ -1,6 +1,6 @@
 import { getInstrument } from '@/lib/market/catalog';
 import { METRICS } from '@/lib/metrics/registry';
-import type { ActiveInstrumentType, Instrument, MetricKey } from '@/lib/market/types';
+import type { ActiveInstrumentType, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
 import type { BoardSort, BoardType } from '@/lib/queries/market';
 
 // Pure helpers for the public market pages: URL parsing, href building and the
@@ -29,6 +29,17 @@ export function boardTypeParam(type: BoardType): BoardType | undefined {
 /** Only "by measure" and "by change" — no A–Z (GLOSSARY §2); old `?sort=az|name` falls back. */
 export function parseSort(v: string | string[] | undefined): BoardSort {
   return firstParam(v) === 'change' ? 'change' : 'value';
+}
+
+/** Skills board ASC layer: `?layer=tool|task`; anything else = all skills. */
+export function parseLayer(v: string | string[] | undefined): SkillLayer | null {
+  const s = firstParam(v);
+  return s === 'tool' ? 'technology_tool' : s === 'task' ? 'specialist_task' : null;
+}
+
+export function layerParam(layer: SkillLayer | null): string | undefined {
+  if (!layer) return undefined;
+  return layer === 'technology_tool' ? 'tool' : 'task';
 }
 
 export type BoardView = 'list' | 'cards';

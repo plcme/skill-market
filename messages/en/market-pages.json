@@ -68,7 +68,17 @@
     "compareClear": "Clear",
     "compareExit": "Stop selecting",
     "compareBlockedType": "Compare works within one type: skills with skills, roles with roles.",
-    "compareBlockedMax": "You can compare {max} at a time."
+    "compareBlockedMax": "You can compare {max} at a time.",
+    "layerLabel": "Skill layer",
+    "layer": {
+      "all": "All skills",
+      "technology_tool": "Tools",
+      "specialist_task": "Tasks"
+    },
+    "layerNote": {
+      "technology_tool": "Named software, platforms and languages.",
+      "specialist_task": "Work activities and methods, such as analysing data or managing projects."
+    }
   },
   "InstrumentPage": {
     "metaTitle": {
@@ -345,7 +355,8 @@
     "group": {
       "skill": "Skills",
       "role": "Roles",
-      "industry": "Industries"
+      "industry": "Industries",
+      "competency": "Core competencies"
     },
     "aliasNote": "Matched “{matched}” — we list this as {name}.",
     "emptyTitle": "Nothing matches “{q}”",

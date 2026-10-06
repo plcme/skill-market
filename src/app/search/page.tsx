@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { ArrowRight, Search, SearchX } from 'lucide-react';
 import { decodeFilter, encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
-import { getInstrument } from '@/lib/market/catalog';
+import { getInstrument, normaliseQuery } from '@/lib/market/catalog';
+import { competencyHref, type CompetencyHit } from '@/lib/market/competencies';
 import { defaultMetric } from '@/lib/metrics/registry';
 import { searchWithSnapshots, type SearchResult } from '@/lib/queries/market';
 import type { ActiveInstrumentType, FilterSpec } from '@/lib/market/types';
@@ -38,6 +39,29 @@ async function ResultGroup({ type, results, filter, q }: { type: ActiveInstrumen
   );
 }
 
+/** ASC core competencies: explained, never tickers (no demand metrics). */
+async function CompetencyGroup({ hits }: { hits: CompetencyHit[] }) {
+  const t = await getTranslations('SearchPage');
+  const tc = await getTranslations('Competencies');
+  return (
+    <section aria-labelledby="results-competency" className="mt-10">
+      <SectionHeader id="results-competency" kicker={tc('count', { n: hits.length })} title={t('group.competency')} />
+      <ul className="divide-y divide-rule border-b border-rule">
+        {hits.map(h => (
+          <li key={h.slug} className="relative py-3 hover:bg-surface">
+            <Link href={competencyHref(h.slug)} className="font-medium after:absolute after:inset-0">{tc(`items.${h.slug}.name`)}</Link>
+            <span className="kicker ml-3">{tc('type')}</span>
+            <p className="mt-0.5 text-[13.5px] text-ink-2">{tc(`items.${h.slug}.blurb`)}</p>
+            <p className="mt-0.5 text-[12.5px] text-muted">{tc('matched', { matched: h.matched })}</p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 max-w-3xl text-[13px] text-muted">{tc('searchNote')}</p>
+      <p className="mt-1 text-[12.5px] text-muted">{tc('attribution')}{' · '}<Link href="/metrics#core-competencies" className="link">{tc('explainerLink')}</Link></p>
+    </section>
+  );
+}
+
 export default async function SearchPage({ searchParams }: PageProps<'/search'>) {
   const t = await getTranslations('SearchPage');
   const tt = await getTranslations('Ticker');
@@ -45,8 +69,10 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
   const q = (firstParam(sp.q) ?? '').trim().slice(0, 80);
   const filter = decodeFilter(firstParam(sp.f));
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
-  const results = q ? searchWithSnapshots(q, filter) : { skills: [], roles: [], industries: [] };
-  const total = results.skills.length + results.roles.length + results.industries.length;
+  const results = q ? searchWithSnapshots(q, filter) : { skills: [], roles: [], industries: [], competencies: [] };
+  const total = results.skills.length + results.roles.length + results.industries.length + results.competencies.length;
+  // "communication" is a core competency first and foremost: lead with it on an exact alias match.
+  const competencyFirst = results.competencies.some(c => c.matched === normaliseQuery(q));
 
   const suggestions = (
     <div className="mt-10 grid gap-10 md:grid-cols-2">
@@ -106,9 +132,11 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
         </>
       ) : (
         <>
+          {competencyFirst ? <CompetencyGroup hits={results.competencies} /> : null}
           {results.skills.length ? <ResultGroup type="skill" results={results.skills} filter={filter} q={q} /> : null}
           {results.roles.length ? <ResultGroup type="role" results={results.roles} filter={filter} q={q} /> : null}
           {results.industries.length ? <ResultGroup type="industry" results={results.industries} filter={filter} q={q} /> : null}
+          {!competencyFirst && results.competencies.length ? <CompetencyGroup hits={results.competencies} /> : null}
           <p className="mt-8 text-[13px] text-muted">
             {t('missing')}{' '}
             <Link href={hrefWith('/market', { f })} className="link">{t('browseAll')}</Link>

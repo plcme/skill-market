@@ -114,8 +114,8 @@ describe('industries as instruments', () => {
         expect(getInstrument(c.skill_slug)?.type).toBe('skill');
         expect(c.weight).toBeGreaterThan(0);
         expect(c.weight).toBeLessThanOrEqual(1);
-        // Generic soft skills are undecided (GLOSSARY §5) and stay out of industries.
-        expect(['communication', 'stakeholder-management']).not.toContain(c.skill_slug);
+        // Core competencies are not instruments; generic people skills stay out of industries.
+        expect(c.skill_slug).not.toBe('stakeholder-management');
       }
       expect(comps.map(c => c.weight)).toEqual([...comps.map(c => c.weight)].sort((a, b) => b - a));
     }

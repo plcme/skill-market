@@ -72,7 +72,7 @@ const PEOPLE: SeedPractitioner[] = [
   {
     id: 'p-grace', display_name: 'Grace Liu', current_title: 'Data Analyst', current_role_slug: 'data-analyst',
     employer: 'Saltbush Retail', work_email_domain: 'saltbush.example', verification: 'verified', entry_year: 2025,
-    location_id: 'au-nsw-sydney-cbd', skills: ['sql', 'excel', 'powerbi', 'data-analysis', 'python', 'communication'],
+    location_id: 'au-nsw-sydney-cbd', skills: ['sql', 'excel', 'powerbi', 'data-analysis', 'python'],
     topics: ['grad_programs', 'internships', 'choosing_electives', 'interview_prep'],
     path: 'Summer internship in penultimate year led to a graduate offer.',
     bio: 'I look after pricing dashboards for 300 stores. Very happy to talk internships.',
@@ -99,7 +99,7 @@ const PEOPLE: SeedPractitioner[] = [
   {
     id: 'p-hana', display_name: 'Hana Kobayashi', current_title: 'Product Designer', current_role_slug: 'ux-designer',
     employer: 'Tessellate Studio', work_email_domain: 'tessellate.example', verification: 'verified', entry_year: 2023,
-    location_id: 'au-vic-melbourne-cbd', skills: ['figma', 'ux-research', 'communication', 'agile'],
+    location_id: 'au-vic-melbourne-cbd', skills: ['figma', 'ux-research', 'agile'],
     topics: ['portfolio', 'switching_into_tech', 'interview_prep'],
     path: 'Design degree, then a junior UX role at a consultancy.',
     bio: 'I design and research for health apps. The UX market is tough right now — happy to be honest about it.',
@@ -108,7 +108,7 @@ const PEOPLE: SeedPractitioner[] = [
   {
     id: 'p-sofia', display_name: 'Sofia Rossi', current_title: 'Product Manager', current_role_slug: 'product-manager',
     employer: 'Bluegum Software', work_email_domain: 'bluegum.example', verification: 'verified', entry_year: 2022,
-    location_id: 'au-vic-melbourne-cbd', skills: ['stakeholder-management', 'agile', 'communication', 'data-analysis'],
+    location_id: 'au-vic-melbourne-cbd', skills: ['stakeholder-management', 'agile', 'data-analysis'],
     topics: ['switching_into_tech', 'day_to_day', 'first_90_days'],
     path: 'Associate product manager program after a Commerce/Science double degree.',
     bio: 'Currently paused while I’m on leave.',
