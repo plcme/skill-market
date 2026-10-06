@@ -245,7 +245,7 @@ export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange:
           <p className="mt-1.5 text-[13px] text-muted">{t('workRightsHint')}</p>
         </div>
       </div>
-      <div aria-live="polite" className="rounded-md bg-signal-soft px-4 py-3 text-sm">
+      <div aria-live="polite" className="rounded-md bg-accent-soft px-4 py-3 text-sm">
         <p className="kicker mb-1">{t('currentlyShowing')}</p>
         <p className="text-ink" data-testid="filter-readback">{valid ? describeFilter(value, copy) : '…'}</p>
       </div>

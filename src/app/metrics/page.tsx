@@ -97,7 +97,7 @@ export default async function MetricsIndexPage() {
         <p className="mt-4 max-w-2xl rounded-md bg-sunken px-4 py-3 text-[14px] text-ink">{tc('notTracked')}</p>
         <dl className="mt-6 grid gap-x-10 gap-y-5 sm:grid-cols-2">
           {CORE_COMPETENCIES.map(c => (
-            <div key={c.slug} id={`competency-${c.slug}`} className="scroll-mt-24 border-t border-rule pt-3 target:bg-signal-soft">
+            <div key={c.slug} id={`competency-${c.slug}`} className="scroll-mt-24 border-t border-rule pt-3 target:-mx-2 target:rounded-md target:bg-accent-soft target:px-2 target:pb-2">
               <dt className="font-serif text-[20px] leading-tight">{tc(`items.${c.slug}.name`)}</dt>
               <dd className="mt-1 text-[13.5px] text-ink-2">{tc(`items.${c.slug}.blurb`)}</dd>
             </div>
