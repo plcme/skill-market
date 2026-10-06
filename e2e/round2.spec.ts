@@ -76,3 +76,18 @@ test('skills board narrows to tools or tasks', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Data analysis' }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Python', exact: true })).toHaveCount(0);
 });
+
+test('long boards hydrate without console errors in dark mode', async ({ page }) => {
+  // Regression: a theme context flipping during hydration re-rendered every
+  // dehydrated Suspense boundary and hit React's nested-update limit.
+  const errors: string[] = [];
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('pageerror', e => errors.push(String(e)));
+  await page.emulateMedia({ colorScheme: 'dark' });
+  for (const path of ['/market', '/market?type=skill']) {
+    await page.goto(path, { waitUntil: 'networkidle' });
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.getByRole('button', { name: 'Theme: Dark. Switch to Light' }).filter({ visible: true })).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});
