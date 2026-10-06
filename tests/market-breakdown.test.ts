@@ -80,6 +80,9 @@ describe('computeBreakdown — measures', () => {
     expect(v[0]).toBeLessThan(v[3]);
     expect(role.salary_stated?.with_salary).toBeGreaterThan(0);
     expect(role.salary_stated?.with_salary).toBeLessThan(role.salary_stated?.total ?? 0);
+    // One sample statement per page: matches the Median salary card exactly.
+    const card = computeMetric('data-analyst', 'salary_median', DEFAULT_FILTER);
+    expect(role.salary_stated).toEqual({ with_salary: card.numerator, total: card.denominator });
     const skill = computeBreakdown('python', 'salary_median', DEFAULT_FILTER, 'experience');
     expect(skill.kind).toBe('stack');
     expect(skill.measure).toBe('ad_count');

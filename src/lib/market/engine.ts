@@ -274,6 +274,9 @@ function employerStats(count: number, slug: string): { distinct: number; top5: n
 
 const STATE_SALARY: Record<string, number> = { 'au-nsw': 1.06, 'au-vic': 1.0, 'au-qld': 0.94, 'au-wa': 0.98, 'au-sa': 0.9, 'au-act': 1.04, 'au-tas': 0.86, 'au-nt': 0.92, nz: 0.82 };
 
+/** Share of ads that state a salary (fixture). One constant so every salary sample on a page agrees. */
+export const SALARY_STATED_SHARE = 0.44;
+
 export function computeMetric(slug: string, metric: MetricKey, filter: FilterSpec): MetricReading {
   const inst = getInstrument(slug);
   if (!inst) throw new Error(`Unknown instrument ${slug}`);
@@ -336,7 +339,7 @@ export function computeMetric(slug: string, metric: MetricKey, filter: FilterSpe
     case 'salary_p10_p90': {
       const salary = salaryOf(slug);
       const year = sum(lastN(counts, 52));
-      const withSalary = Math.round(year * 0.44);
+      const withSalary = Math.round(year * SALARY_STATED_SHARE);
       if (!salary) return reading(metric, type, { sample_n: 0, status: 'unavailable' });
       const cells = expandFilterToCells(filter);
       const leaves = [...new Set(cells.pairs.map(p => p.leaf))];
@@ -349,7 +352,7 @@ export function computeMetric(slug: string, metric: MetricKey, filter: FilterSpe
     }
     case 'skill_premium': {
       const premium = premiumOf(slug) ?? 0;
-      const year = Math.round(sum(lastN(counts, 52)) * 0.44);
+      const year = Math.round(sum(lastN(counts, 52)) * SALARY_STATED_SHARE);
       return reading(metric, type, { value: premium, numerator: year, sample_n: year });
     }
     case 'skills_per_ad': {
@@ -530,7 +533,6 @@ const SALARY_ADJ: Record<BreakdownBucketKey, number> = {
   requires_pr: 1.04, not_stated: 0.97, sponsorship_ok: 1.09,
   onsite: 0.97, hybrid: 1.02, remote: 1.05,
 };
-const SALARY_STATED_SHARE = 0.44;
 
 /** Buckets of a dimension inside the filter, each with its unrounded weekly counts. */
 function bucketCounts(slug: string, filter: FilterSpec, by: BreakdownDimension): { all: BreakdownBucketKey[]; rows: Array<{ key: BreakdownBucketKey; raw: number[] }> } {
@@ -597,8 +599,6 @@ export function computeBreakdown(slug: string, metric: MetricKey, filter: Filter
   const growthPerWeek = 0.03 / 52;
   const min = def.min_sample;
   const insufficient: BreakdownBucketKey[] = [];
-  let withSalary = 0;
-  let totalAds = 0;
   const buckets: BreakdownBucket[] = counts.map(c => {
     // A rolling 12-month median moves slowly: gentle drift plus a small seasonal wave.
     const phase = rng(`salary:${slug}:${c.key}`)() * Math.PI * 2;
@@ -611,12 +611,13 @@ export function computeBreakdown(slug: string, metric: MetricKey, filter: Filter
     });
     const year = sum(lastN(c.weekly, 52));
     const stated = Math.round(year * SALARY_STATED_SHARE);
-    withSalary += stated;
-    totalAds += year;
     const value = series[WEEKS - 1]?.value ?? null;
     const latest = reading('salary_median', type, { value, numerator: stated, denominator: year, sample_n: stated });
     if (latest.status !== 'ok') insufficient.push(c.key);
     return { key: c.key, series, latest, share: null };
   });
-  return { by, kind, measure, requested: metric, buckets, total: null, filtered_to, estimated, salary_stated: { with_salary: withSalary, total: totalAds }, insufficient };
+  // Same sample statement as the page's Median salary card (computeMetric), so the page shows one number.
+  const overall = computeMetric(slug, 'salary_median', filter);
+  const salary_stated = { with_salary: overall.numerator ?? 0, total: overall.denominator ?? 0 };
+  return { by, kind, measure, requested: metric, buckets, total: null, filtered_to, estimated, salary_stated, insufficient };
 }
