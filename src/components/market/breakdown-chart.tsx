@@ -56,7 +56,14 @@ function spread(ys: Array<{ key: BreakdownBucketKey; y: number }>, gap: number, 
  * gaps where the sample is too small. Direct labels at the right edge where
  * they fit, a legend with latest values below, and a data-table view.
  */
-export function BreakdownChart({ breakdown, caption, height = 280, className }: { breakdown: Breakdown; caption: string; height?: number; className?: string }) {
+export function BreakdownChart({ breakdown, caption, graduateOnly = false, height = 280, className }: {
+  breakdown: Breakdown;
+  caption: string;
+  /** Filter is "Graduate roles only": the Entry band holds graduate ads, so say so. */
+  graduateOnly?: boolean;
+  height?: number;
+  className?: string;
+}) {
   const t = useTranslations('Breakdown');
   const tc = useTranslations('Chart');
   const [range, setRange] = useState<Range>('1y');
@@ -72,7 +79,9 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
   const thin = new Set(stack ? breakdown.insufficient : []);
   const minSample = breakdown.buckets[0]?.latest.min_sample ?? 30;
   const cellText = (v: number | null) => (v == null ? '—' : stack && v < minSample ? t('notEnough') : fmt(v));
-  const label = (k: BreakdownBucketKey) => t(`buckets.${k}`);
+  const relabel = graduateOnly && breakdown.by === 'experience';
+  const label = (k: BreakdownBucketKey) => (relabel && k === 'entry' ? t('graduateBucket') : t(`buckets.${k}`));
+  const short = (k: BreakdownBucketKey) => (relabel && k === 'entry' ? t('graduateShort') : t(`short.${k}`));
 
   useEffect(() => {
     const el = wrap.current;
@@ -263,7 +272,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
             {endLabels.map(l => (
               <g key={l.key} aria-hidden>
                 <line x1={m.l + innerW + 4} x2={m.l + innerW + 12} y1={l.y} y2={l.y} className={TONE[l.key].stroke} strokeWidth={3} />
-                <text x={m.l + innerW + 16} y={l.y} dy="0.32em" className="fill-ink-2 text-[11.5px]">{t(`short.${l.key}`)}</text>
+                <text x={m.l + innerW + 16} y={l.y} dy="0.32em" className="fill-ink-2 text-[11.5px]">{short(l.key)}</text>
               </g>
             ))}
             {cursor !== null ? (
@@ -288,7 +297,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
               const v = valueAt(k, cursor);
               return (
                 <p key={b.key} className="num mt-0.5 flex justify-between gap-3">
-                  <span className="truncate text-paper/80">{t(`short.${b.key}`)}</span>
+                  <span className="truncate text-paper/80">{short(b.key)}</span>
                   <span className="font-medium">{cellText(v)}</span>
                 </p>
               );
@@ -339,7 +348,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
               <thead className="sticky top-0 bg-sunken">
                 <tr>
                   <th scope="col" className="kicker px-3 py-2 text-left">{tc('week')}</th>
-                  {buckets.map(b => <th key={b.key} scope="col" className="kicker px-3 py-2 text-right">{t(`short.${b.key}`)}</th>)}
+                  {buckets.map(b => <th key={b.key} scope="col" className="kicker px-3 py-2 text-right">{short(b.key)}</th>)}
                   {stack ? <th scope="col" className="kicker px-3 py-2 text-right">{t('total')}</th> : null}
                 </tr>
               </thead>

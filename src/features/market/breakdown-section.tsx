@@ -55,6 +55,8 @@ export function BreakdownSection({ breakdown, type, filter, subject, reading }: 
   const dim = t(`dimsLower.${by}`);
   const caption = breakdown.kind === 'stack' ? t('captionStack', { dimension: dim }) : t('captionLines', { dimension: dim });
   const latest = breakdown.buckets[0]?.latest;
+  // Experience filtered to graduate ads: name what is actually inside, not the 0–2 yrs band.
+  const graduateOnly = by === 'experience' && filter.seniority === 'graduate';
   return (
     <section id="breakdown" aria-labelledby="breakdown-h" className="mt-12 scroll-mt-24">
       <SectionHeader id="breakdown-h" kicker={t('kicker')} title={t('title')} />
@@ -79,7 +81,9 @@ export function BreakdownSection({ breakdown, type, filter, subject, reading }: 
         </div>
         <div className="mb-4 flex flex-col gap-1 text-[13px] text-ink-2" aria-live="polite">
           {breakdown.measure !== breakdown.requested ? <p>{t('fallback', { metric: tm(`${breakdown.requested}.label`) })}</p> : null}
-          {breakdown.filtered_to ? <p>{t('filteredTo', { buckets: breakdown.filtered_to.map(k => t(`buckets.${k}`)).join(', ') })}</p> : null}
+          {breakdown.filtered_to ? (
+            <p>{graduateOnly ? t('filteredToGraduate') : t('filteredTo', { buckets: breakdown.filtered_to.map(k => t(`buckets.${k}`)).join(', ') })}</p>
+          ) : null}
           {breakdown.kind === 'stack' ? <p className="text-muted">{t('stackNote')}</p> : null}
           {breakdown.salary_stated ? (
             <p className="text-muted">{t('salaryStated', { with: formatCount(breakdown.salary_stated.with_salary), total: formatCount(breakdown.salary_stated.total) })}</p>
@@ -88,7 +92,7 @@ export function BreakdownSection({ breakdown, type, filter, subject, reading }: 
             <p className="text-warn">{t(breakdown.kind === 'stack' ? 'thin' : 'gaps', { buckets: breakdown.insufficient.map(k => t(`buckets.${k}`)).join(', '), min: breakdown.buckets[0]?.latest.min_sample ?? 30 })}</p>
           ) : null}
         </div>
-        <BreakdownChart key={`${by}-${breakdown.kind}`} breakdown={breakdown} caption={caption} />
+        <BreakdownChart key={`${by}-${breakdown.kind}`} breakdown={breakdown} caption={caption} graduateOnly={graduateOnly} />
         {latest ? (
           <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-rule pt-3 text-[12.5px] text-muted">
             <SourceBadge kind={latest.source} />
