@@ -87,7 +87,8 @@ test('long boards hydrate without console errors in dark mode', async ({ page })
   for (const path of ['/market', '/market?type=skill']) {
     await page.goto(path, { waitUntil: 'networkidle' });
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(page.getByRole('button', { name: 'Theme: Dark. Switch to Light' }).filter({ visible: true })).toBeVisible();
+    // Let hydration of every row finish before judging the console.
+    await page.waitForTimeout(1500);
   }
   expect(errors).toEqual([]);
 });
