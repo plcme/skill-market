@@ -49,11 +49,12 @@
 
 | token | 用途 | 浅色 | 深色 |
 |---|---|---|---|
-| `series-ord-1..4` | **有序**维度（Experience：Entry → Expert），由浅到深 | `#c9d1f5 #8c9ce6 #4a62d8 #1e2f8f` | `#2a3366 #4c5cb0 #8396f0 #c3cdff` |
+| `series-ord-1..4` | **有序**维度（Experience：Entry → Expert），由浅到深 | `#7486dd #5068d6 #2f45b8 #1b2a7a` | `#5263c2 #7385e6 #9fb0ff #cdd6ff` |
 | `series-cat-1..3` | **无序**维度（Work rights、Work mode） | `#2a45d0 #b0761c #2c7a74` | `#9daeff #e0aa52 #6cc4bb` |
 | `faint` | "Not stated / 未说明"这类桶 | 永远是灰 | 永远是灰 |
 
 规则：
+- **每个 series 色对 `surface` 的对比度 ≥ 3:1**（WCAG 1.4.11，图形对象），由单测守住。最浅一档也要看得见，不能为了"渐变好看"牺牲可读性。
 - 有序维度用单色渐变，无序维度用分类色，**不要混用**。
 - 一张图最多 4 个序列。超过 4 个时，合并成 "Other"，或者改用表格。
 - 单序列图一律用 `ink`；两个对象对比时，用 `ink` 对 `accent`。
