@@ -29,14 +29,15 @@ const TONE: Record<BreakdownBucketKey, { fill: string; stroke: string; bg: strin
 /** Lines also differ by dash pattern so colour is never the only cue. */
 const DASH = [undefined, '7 3', '2 3', '10 3 2 3'] as const;
 
-function niceTicks(min: number, max: number, count = 4): number[] {
+function niceTicks(min: number, max: number, count = 4, minStep = 0): number[] {
   const span = max - min || Math.abs(max) || 1;
   const raw = span / count;
   const mag = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) ?? raw;
+  const step = Math.max(minStep, [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) ?? raw);
   const start = Math.floor(min / step) * step;
   const ticks: number[] = [];
-  for (let v = start; v <= max + step * 0.5; v += step) ticks.push(Number(v.toFixed(10)));
+  // Keep going until a tick sits at or above the max, so nothing is drawn above the axis.
+  for (let v = start; ticks.length < 2 || ticks[ticks.length - 1] < max; v += step) ticks.push(Number(v.toFixed(10)));
   return ticks;
 }
 
@@ -116,7 +117,9 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
   const values = stack
     ? (stacked ?? []).flatMap(tops => (tops ? [tops[tops.length - 1] ?? 0] : [])).concat((total ?? []).flatMap(p => (p.value == null ? [] : [p.value])))
     : buckets.flatMap(b => b.points.flatMap(p => (p.value == null ? [] : [p.value])));
-  const hasData = values.length > 1;
+  // Every band below the threshold: nothing honest to draw, say so instead of an axis of tiny numbers.
+  const allThin = stack && breakdown.buckets.length > 0 && breakdown.buckets.every(b => thin.has(b.key));
+  const hasData = values.length > 1 && !allThin;
   const directLabels = width >= 520;
   const m = { l: 52, r: directLabels ? 104 : 10, t: 12, b: 28 };
   const innerW = width - m.l - m.r;
@@ -125,7 +128,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
   const hi = hasData ? Math.max(...values) : 1;
   const pad = (hi - lo) * 0.12 || hi * 0.1 || 1;
   // DESIGN §6.2: counts and areas start at 0; salary lines may not.
-  const ticks = niceTicks(stack ? 0 : Math.max(0, lo - pad), hi + pad);
+  const ticks = niceTicks(stack ? 0 : Math.max(0, lo - pad), hi + pad, 4, stack ? 1 : 0);
   const yMin = stack ? 0 : ticks[0];
   const yMax = ticks[ticks.length - 1];
   const x = (i: number) => m.l + (n <= 1 ? 0 : (i / (n - 1)) * innerW);
@@ -288,7 +291,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
             ) : null}
           </svg>
         ) : (
-          <p className="grid place-items-center rounded-md border border-dashed border-rule text-sm text-muted" style={{ height }}>{tc('noData')}</p>
+          <p className="grid place-items-center rounded-md border border-dashed border-rule px-4 text-center text-sm text-muted" style={{ height }}>{allThin ? t('allThin') : tc('noData')}</p>
         )}
         {cursor !== null && dates[cursor] ? (
           <div aria-hidden className="pointer-events-none absolute top-0 w-[200px] rounded-[4px] bg-ink px-2.5 py-2 text-[12px] text-paper shadow-float" style={{ left: tipLeft }}>

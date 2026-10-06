@@ -454,6 +454,7 @@
     "thin": "Fewer than {min} ads in the last 4 weeks for {buckets}, so we don’t give a number — the band is hatched to show roughly where those ads sit.",
     "filteredToGraduate": "Filtered to graduate ads by your filter.",
     "graduateBucket": "Graduate ads",
-    "graduateShort": "Graduate"
+    "graduateShort": "Graduate",
+    "allThin": "Too few ads under this filter to split them reliably. Widen the filter to see the breakdown."
   }
 }
