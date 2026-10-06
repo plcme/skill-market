@@ -8,7 +8,8 @@
 | 中文 | 界面用词（UI） | 代码 / 数据 | 说明 | 状态 |
 |---|---|---|---|---|
 | 标的 | target（对外尽量不直接出现，用具体类型名） | `instrument`，类型 `instrument_type` | 可被追踪、可 watch 的对象 | 已定 |
-| 技能 | Skill | `instrument_type = 'skill'` | 具体可学、可验证的能力，如 SQL、Excel、AutoCAD。泛化软技能（communication 等）是否算 skill 见 §5 | 部分未定 |
+| 技能 | Skill | `instrument_type = 'skill'` + `skill_layer` | 具体可学、可验证的能力。按 ASC 分两层：**Technology tool**（`technology_tool`，如 SQL、Excel、AutoCAD）和 **Specialist task**（`specialist_task`，如 data analysis、project management） | 原型（2026-10-06，参考 ASC） |
+| 核心能力 | Core competency | `competencies.ts`（不是 instrument） | ASC 的 10 项通用能力（Oral communication、Teamwork 等）。每份工作都用，**不追踪需求、不配指标**；只在 role 页按 1–10 展示强度。Communication 归这里 | 原型（2026-10-06） |
 | 职位 | Role | `instrument_type = 'role'` | 一组技能的加权组合（`RoleComponent.weight`），即"skill ETF"；ANZSCO 编码 | 已定 |
 | 行业 | Industry | `instrument_type = 'industry'` | ANZSIC 第一层（Division，19 个） | 已定（2026-09-26） |
 | 细分行业 | Sub-industry | `instrument_type = 'industry'` + `parent_id` | ANZSIC 下一层；数据模型预留，界面暂不展示 | 颗粒度未定 |
@@ -21,7 +22,9 @@
 |---|---|---|---|
 | 筛选 | Filter | `FilterSpec`（`rules[]`、`seniority`、`work_rights`） | **作用于整张表**的范围：地区、工作方式、资历、工作权利。改筛选 = 改分母 |
 | 纵轴变量 / 度量 | Measure | `MetricKey`（注册表 `src/lib/metrics/registry.ts`） | 每个标的显示的那个数字，也是图表的 y 轴 |
-| 拆分 / 分布 | Breakdown | 尚无（设计中） | 把一个 measure 按某个维度切开（如 PR / 非 PR、entry / senior）。**可相加的量用堆叠面积，不可相加的量（中位数、占比）用多条线** |
+| 拆分 / 分布 | Breakdown | `?by=experience\|rights\|mode`，注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开，可切换。维度：Experience · Work rights · Work mode（地点不是维度）。**可相加的量用堆叠面积，不可相加的量（中位数、占比）用多条线**。详见 `docs/DESIGN.md` §6.3 |
+| 经验段 | Entry / Mid / Senior / Expert | `experience`：0–2 / 3–5 / 6–9 / 10+ 年 | Expert = 用户说的 "master level"（10 年以上）；界面不用 Master 以免和硕士学位混淆 |
+| 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}` |
 | 排序 | Sort | `sort`：`value` / `change` | 只有"按度量""按变化"两种；不提供 A–Z |
 | 视图 | View | `view`：`list` / `cards` | 列表或卡片 |
 | 信号 | Signal | `Signal`（`rise` / `fall` / `entry_open` / `since_added`） | 满足阈值的显著变化；不代表"应该去学" |
@@ -52,7 +55,6 @@
 
 ## 5. 未定概念（不得擅自落地）
 
-- **什么算 skill**：候选框架为 Jobs and Skills Australia 的 Australian Skills Classification（core competencies / specialist tasks / technology tools 三层）。倾向：后两层做成可追踪标的，core competencies 另行展示、不配指标。待用户拍板。
-- **Breakdown 的具体维度与图形**：等"什么算 skill"与数据可得性确认后设计。
+- **什么算 skill**：按 ASC 三层做原型（见 §1），看过效果后定稿。
+- **Breakdown**：v1 原型见 §2，看过效果后定稿。
 - **细分行业颗粒度**：ANZSIC Subdivision 还是 Group。
-- **"master level"**：资历分层中的含义待用户澄清。
