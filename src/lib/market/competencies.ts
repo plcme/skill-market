@@ -116,6 +116,11 @@ export function searchCompetencies(q: string, limit = 3): CompetencyHit[] {
   return [...exact, ...prefix].slice(0, limit);
 }
 
+/** True when the query is exactly one of the competency's aliases: only then does it lead search results. */
+export function isExactCompetencyHit(hit: CompetencyHit, q: string): boolean {
+  return hit.matched === normaliseQuery(q);
+}
+
 /** Where a competency is explained (anchor on the metrics guide). */
 export function competencyHref(slug: CompetencySlug): string {
   return `/metrics#competency-${slug}`;

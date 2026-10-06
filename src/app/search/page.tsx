@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { ArrowRight, Search, SearchX } from 'lucide-react';
 import { decodeFilter, encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
-import { getInstrument, normaliseQuery } from '@/lib/market/catalog';
-import { competencyHref, type CompetencyHit } from '@/lib/market/competencies';
+import { getInstrument } from '@/lib/market/catalog';
+import { competencyHref, isExactCompetencyHit, type CompetencyHit } from '@/lib/market/competencies';
 import { defaultMetric } from '@/lib/metrics/registry';
 import { searchWithSnapshots, type SearchResult } from '@/lib/queries/market';
 import type { ActiveInstrumentType, FilterSpec } from '@/lib/market/types';
@@ -72,7 +72,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
   const results = q ? searchWithSnapshots(q, filter) : { skills: [], roles: [], industries: [], competencies: [] };
   const total = results.skills.length + results.roles.length + results.industries.length + results.competencies.length;
   // "communication" is a core competency first and foremost: lead with it on an exact alias match.
-  const competencyFirst = results.competencies.some(c => c.matched === normaliseQuery(q));
+  const competencyFirst = results.competencies.some(c => isExactCompetencyHit(c, q));
 
   const suggestions = (
     <div className="mt-10 grid gap-10 md:grid-cols-2">

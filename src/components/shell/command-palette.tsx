@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { ArrowRight, CornerDownLeft, Search } from 'lucide-react';
 import { Dialog as RDialog } from 'radix-ui';
 import { searchInstruments, type SearchHit } from '@/lib/market/catalog';
-import { competencyHref, searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
+import { competencyHref, isExactCompetencyHit, searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import { Kbd, Monogram } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
 
@@ -52,12 +52,15 @@ export function CommandPalette() {
   }, []);
 
   // Core competencies (ASC) are explained, not tracked: they link to the explainer.
-  const hits = useMemo<PaletteItem[]>(() => (q.trim()
-    ? [
-      ...searchCompetencies(q, 2).map(hit => ({ kind: 'competency' as const, id: `competency-${hit.slug}`, hit })),
-      ...searchInstruments(q, 8).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit })),
-    ].slice(0, 8)
-    : []), [q]);
+  // Same ordering as /search: an exact alias match ("communication") leads; prefix matches follow the instruments.
+  const hits = useMemo<PaletteItem[]>(() => {
+    if (!q.trim()) return [];
+    const competencies = searchCompetencies(q, 2).map(hit => ({ kind: 'competency' as const, id: `competency-${hit.slug}`, hit }));
+    const exact = competencies.filter(c => isExactCompetencyHit(c.hit, q));
+    const rest = competencies.filter(c => !isExactCompetencyHit(c.hit, q));
+    const instruments = searchInstruments(q, 8).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit }));
+    return [...exact, ...instruments, ...rest].slice(0, 8);
+  }, [q]);
   const suggestions = useMemo<PaletteItem[]>(() => SUGGESTED.flatMap(s => searchInstruments(s, 1)).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit })), []);
   const list = q.trim() ? hits : suggestions;
 

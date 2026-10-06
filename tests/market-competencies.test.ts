@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getInstrument, instrumentsOfType, ROLE_COMPONENTS, INDUSTRY_COMPONENTS, searchInstruments, skillLayerOf } from '@/lib/market/catalog';
-import { COMPETENCY_SCALE_MAX, CORE_COMPETENCIES, competencyHref, competencyLevels, searchCompetencies } from '@/lib/market/competencies';
+import { COMPETENCY_SCALE_MAX, CORE_COMPETENCIES, competencyHref, competencyLevels, isExactCompetencyHit, searchCompetencies } from '@/lib/market/competencies';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard, searchWithSnapshots } from '@/lib/queries/market';
 import { layerParam, parseLayer } from '@/features/market/logic';
@@ -62,6 +62,11 @@ describe('core competencies are not instruments', () => {
     expect(searchCompetencies('co')).toEqual([]);
     expect(searchCompetencies('kubernetes')).toEqual([]);
     expect(competencyHref('teamwork')).toBe('/metrics#competency-teamwork');
+    // Only an exact alias leads results; "pro" → Problem solving is a prefix hit and ranks after instruments.
+    expect(isExactCompetencyHit(searchCompetencies('Communication ')[0], 'Communication ')).toBe(true);
+    const pro = searchCompetencies('pro')[0];
+    expect(pro?.slug).toBe('problem-solving');
+    expect(isExactCompetencyHit(pro, 'pro')).toBe(false);
     const res = searchWithSnapshots('communication', DEFAULT_FILTER);
     expect(res.competencies.map(c => c.slug)).toContain('oral-communication');
     expect(res.skills).toHaveLength(0);
