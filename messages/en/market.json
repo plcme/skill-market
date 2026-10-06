@@ -9,7 +9,8 @@
       "modes": { "onsite": "on-site", "hybrid": "hybrid", "remote": "remote" },
       "seniority": { "all": "All levels", "entry": "Entry-level only", "graduate": "Graduate roles only" },
       "workRights": { "all": "", "no_pr_required": "No PR or citizenship requirement stated" },
-      "separator": " · "
+      "separator": " · ",
+      "ruleRemoteAnywhere": "remote roles anywhere in Australia"
     },
     "title": "Filter",
     "button": "Filter",
@@ -43,7 +44,16 @@
     "modeRequired": "Pick at least one work mode.",
     "placeRequired": "Pick at least one place.",
     "maxRules": "You can combine up to {max} rules.",
-    "currentlyShowing": "Currently showing"
+    "currentlyShowing": "Currently showing",
+    "remoteAnywhere": "Also include remote jobs anywhere in Australia",
+    "remoteAnywhereHint": "Adds remote roles from every state on top of the places above.",
+    "remoteAnywhereCovered": "Already included — your places and work modes cover remote roles across Australia.",
+    "placesHint": "Pick any mix of countries, states, cities or regions.",
+    "workModeLegend": "Work mode",
+    "advanced": "Advanced: combine your own rules",
+    "advancedHint": "Each rule is one way of working in one or more places; an ad counts if it matches any rule.",
+    "advancedLocked": "These rules can’t be shown with the simple controls. Reset, or keep editing them here.",
+    "simpleBack": "Back to simple controls"
   },
   "Metrics": {
     "switcher": "Measure",

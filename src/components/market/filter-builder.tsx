@@ -2,12 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { MapPin, Plus, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { ChevronDown, MapPin, Plus, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { Dialog, DialogTrigger, SheetContent, Popover, PopoverContent, PopoverTrigger } from '@/components/ui/overlay';
 import { Button } from '@/components/ui/button';
-import { ChipToggleGroup, Input, Segmented } from '@/components/ui/form';
-import { LOCATIONS, getLocation } from '@/lib/filters/locations';
-import { activeConditionCount, cloneFilter, DEFAULT_FILTER, describeFilter, isDefaultFilter, MAX_RULES, normaliseFilter } from '@/lib/filters/spec';
+import { Checkbox, ChipToggleGroup, Input, Segmented, Switch } from '@/components/ui/form';
+import { LOCATIONS, ancestorsOf, getLocation } from '@/lib/filters/locations';
+import {
+  activeConditionCount, cloneFilter, DEFAULT_FILTER, describeFilter, fromSimpleFilter, isDefaultFilter, MAX_RULES, normaliseFilter,
+  remoteAnywhereRedundant, toSimpleFilter, type SimpleFilter,
+} from '@/lib/filters/spec';
 import type { FilterRule, FilterSpec, Seniority, WorkMode, WorkRights } from '@/lib/market/types';
 import { WORK_MODES } from '@/lib/market/types';
 import { cn } from '@/lib/utils';
@@ -86,64 +89,165 @@ function RuleEditor({ rule, index, canRemove, onChange, onRemove }: {
       />
       {rule.work_modes.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('modeRequired')}</p> : null}
       <p className="mb-2 mt-4 text-[13px] font-medium">{t('places')}</p>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {rule.location_ids.map(id => {
-          const loc = getLocation(id);
-          return (
-            <span key={id} className="inline-flex h-7 items-center gap-1 rounded-full bg-ink pl-2.5 pr-1 text-[13px] text-paper">
-              <MapPin className="size-3" aria-hidden />
-              {loc?.name ?? id}
-              <button type="button" onClick={() => onChange({ ...rule, location_ids: rule.location_ids.filter(x => x !== id) })} aria-label={t('removePlace', { place: loc?.name ?? id })} className="grid size-5 place-items-center rounded-full hover:bg-paper/20">
-                <X className="size-3" aria-hidden />
-              </button>
-            </span>
-          );
-        })}
-        <PlacePicker selected={rule.location_ids} onAdd={id => onChange({ ...rule, location_ids: [...rule.location_ids, id] })} />
-      </div>
+      <PlaceChips places={rule.location_ids} onChange={location_ids => onChange({ ...rule, location_ids })} />
       {rule.location_ids.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('placeRequired')}</p> : null}
     </fieldset>
   );
 }
 
-/** Rule-based filter editor (FR-F1–F5). Single rule by default; more are opt-in. */
+function PlaceChips({ places, onChange }: { places: string[]; onChange: (next: string[]) => void }) {
+  const t = useTranslations('Filter');
+  // Picking a place replaces any selected ancestor or descendant of it, so
+  // "Australia" → add "Sydney" means Sydney, not Australia-and-Sydney.
+  const add = (id: string) => {
+    const lineage = new Set(ancestorsOf(id).map(a => a.id));
+    onChange([...places.filter(p => !lineage.has(p) && !ancestorsOf(p).some(a => a.id === id)), id]);
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {places.map(id => {
+        const loc = getLocation(id);
+        return (
+          <span key={id} className="inline-flex h-7 items-center gap-1 rounded-full bg-ink pl-2.5 pr-1 text-[13px] text-paper">
+            <MapPin className="size-3" aria-hidden />
+            {loc?.name ?? id}
+            <button type="button" onClick={() => onChange(places.filter(x => x !== id))} aria-label={t('removePlace', { place: loc?.name ?? id })} className="grid size-5 place-items-center rounded-full hover:bg-paper/20">
+              <X className="size-3" aria-hidden />
+            </button>
+          </span>
+        );
+      })}
+      <PlacePicker selected={places} onAdd={add} />
+    </div>
+  );
+}
+
+/** B2 primary controls: places × work modes, plus "remote anywhere in Australia". */
+function SimpleControls({ simple, onChange }: { simple: SimpleFilter; onChange: (next: SimpleFilter) => void }) {
+  const t = useTranslations('Filter');
+  const redundant = remoteAnywhereRedundant(simple.places, simple.modes);
+  const toggleMode = (mode: WorkMode, on: boolean) => onChange({ ...simple, modes: WORK_MODES.filter(m => (m === mode ? on : simple.modes.includes(m))) });
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <p className="mb-1 text-[13px] font-medium">{t('places')}</p>
+        <p className="mb-2 text-[13px] text-muted">{t('placesHint')}</p>
+        <PlaceChips places={simple.places} onChange={places => onChange({ ...simple, places })} />
+        {simple.places.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('placeRequired')}</p> : null}
+      </div>
+      <fieldset>
+        <legend className="mb-2 text-[13px] font-medium">{t('workModeLegend')}</legend>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {WORK_MODES.map(m => (
+            <Checkbox key={m} label={t(`modes.${m}`)} checked={simple.modes.includes(m)} onCheckedChange={v => toggleMode(m, v === true)} />
+          ))}
+        </div>
+        {simple.modes.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('modeRequired')}</p> : null}
+      </fieldset>
+      <Switch
+        label={t('remoteAnywhere')}
+        description={redundant ? t('remoteAnywhereCovered') : t('remoteAnywhereHint')}
+        checked={redundant || simple.includeRemoteAnywhere}
+        disabled={redundant}
+        onCheckedChange={v => onChange({ ...simple, includeRemoteAnywhere: v })}
+        className="rounded-md border border-rule bg-paper/50 p-3"
+      />
+    </div>
+  );
+}
+
+function AdvancedRules({ value, onChange }: { value: FilterSpec; onChange: (f: FilterSpec) => void }) {
+  const t = useTranslations('Filter');
+  const setRule = (i: number, r: FilterRule) => onChange({ ...value, rules: value.rules.map((x, k) => (k === i ? r : x)) });
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[13px] text-muted">{t('advancedHint')}</p>
+      {value.rules.map((rule, i) => (
+        <RuleEditor key={i} rule={rule} index={i} canRemove={value.rules.length > 1} onChange={r => setRule(i, r)} onRemove={() => onChange({ ...value, rules: value.rules.filter((_, k) => k !== i) })} />
+      ))}
+      {value.rules.length > 1 ? <p className="text-[13px] text-muted">{t('unionNote')}</p> : null}
+      {value.rules.length < MAX_RULES ? (
+        <button type="button" onClick={() => onChange({ ...value, rules: [...value.rules, { work_modes: ['remote'], location_ids: ['au'] }] })} className="flex items-start gap-2 rounded-md border border-dashed border-rule px-4 py-3 text-left text-sm hover:border-ink/40 hover:bg-surface">
+          <Plus className="mt-0.5 size-4 text-muted" aria-hidden />
+          <span>
+            <span className="font-medium">{t('addRule')}</span>
+            <span className="block text-[13px] text-muted">{t('addRuleHint')}</span>
+          </span>
+        </button>
+      ) : <p className="text-[13px] text-muted">{t('maxRules', { max: MAX_RULES })}</p>}
+    </div>
+  );
+}
+
+/**
+ * Filter editor (FR-F1–F5). Simple controls by default (places, work mode,
+ * remote-anywhere switch); the multi-rule builder sits behind "Advanced" and
+ * opens by itself when a spec can't be expressed simply, so any URL stays editable.
+ */
 export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange: (f: FilterSpec) => void }) {
   const t = useTranslations('Filter');
   const copy = useFilterCopy();
-  const setRule = (i: number, r: FilterRule) => onChange({ ...value, rules: value.rules.map((x, k) => (k === i ? r : x)) });
+  // The simple controls keep their own state so a half-edited draft (no work
+  // mode ticked yet) isn't normalised away; it re-derives when `value` changes
+  // from outside (e.g. Reset).
+  const [local, setLocal] = useState<{ from: FilterSpec; simple: SimpleFilter | null }>(() => ({ from: value, simple: toSimpleFilter(value) }));
+  let simple = local.simple;
+  if (local.from !== value) {
+    simple = toSimpleFilter(value);
+    setLocal({ from: value, simple });
+  }
+  const [advancedOpen, setAdvancedOpen] = useState(() => simple === null);
+  const advanced = advancedOpen || simple === null;
+  const emit = (spec: FilterSpec, nextSimple: SimpleFilter | null) => {
+    setLocal({ from: spec, simple: nextSimple });
+    onChange(spec);
+  };
+  const setSimple = (next: SimpleFilter) => emit(fromSimpleFilter(next, value), next);
+  const setScope = (patch: Partial<Pick<FilterSpec, 'seniority' | 'work_rights'>>) => {
+    const scope = { seniority: value.seniority, work_rights: value.work_rights, ...patch };
+    if (!advanced && simple) emit(fromSimpleFilter(simple, scope), simple);
+    else onChange({ ...value, ...scope });
+  };
   const valid = value.rules.every(r => r.work_modes.length && r.location_ids.length);
+  const canGoSimple = valid && toSimpleFilter(value) !== null;
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3">
-        {value.rules.map((rule, i) => (
-          <RuleEditor key={i} rule={rule} index={i} canRemove={value.rules.length > 1} onChange={r => setRule(i, r)} onRemove={() => onChange({ ...value, rules: value.rules.filter((_, k) => k !== i) })} />
-        ))}
-        {value.rules.length > 1 ? <p className="text-[13px] text-muted">{t('unionNote')}</p> : null}
-        {value.rules.length < MAX_RULES ? (
-          <button type="button" onClick={() => onChange({ ...value, rules: [...value.rules, { work_modes: ['remote'], location_ids: ['au'] }] })} className="flex items-start gap-2 rounded-md border border-dashed border-rule px-4 py-3 text-left text-sm hover:border-ink/40 hover:bg-surface">
-            <Plus className="mt-0.5 size-4 text-muted" aria-hidden />
-            <span>
-              <span className="font-medium">{t('addRule')}</span>
-              <span className="block text-[13px] text-muted">{t('addRuleHint')}</span>
-            </span>
-          </button>
-        ) : <p className="text-[13px] text-muted">{t('maxRules', { max: MAX_RULES })}</p>}
+      {!advanced && simple ? <SimpleControls simple={simple} onChange={setSimple} /> : null}
+      <div className={cn(!advanced && 'border-t border-rule pt-4')}>
+        <button
+          type="button"
+          aria-expanded={advanced}
+          aria-controls="filter-advanced"
+          disabled={advanced && !canGoSimple}
+          onClick={() => {
+            if (advanced) {
+              setLocal({ from: value, simple: toSimpleFilter(value) });
+              setAdvancedOpen(false);
+            } else setAdvancedOpen(true);
+          }}
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-2 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <ChevronDown className={cn('size-4 transition-transform', advanced && 'rotate-180')} aria-hidden />
+          {advanced ? t('simpleBack') : t('advanced')}
+        </button>
+        {advanced && !canGoSimple && valid ? <p className="mt-1.5 text-[13px] text-muted">{t('advancedLocked')}</p> : null}
+        {advanced ? <div id="filter-advanced" className="mt-3"><AdvancedRules value={value} onChange={onChange} /></div> : null}
       </div>
       <div className="grid gap-5 border-t border-rule pt-5">
         <div>
           <p className="mb-2 text-[13px] font-medium">{t('seniority')}</p>
-          <Segmented<Seniority> label={t('seniority')} value={value.seniority} onValueChange={v => onChange({ ...value, seniority: v })} options={(['all', 'entry', 'graduate'] as const).map(v => ({ value: v, label: t(`seniorityOptions.${v}`) }))} />
+          <Segmented<Seniority> label={t('seniority')} value={value.seniority} onValueChange={v => setScope({ seniority: v })} options={(['all', 'entry', 'graduate'] as const).map(v => ({ value: v, label: t(`seniorityOptions.${v}`) }))} />
           <p className="mt-1.5 text-[13px] text-muted">{t('seniorityHint')}</p>
         </div>
         <div>
           <p className="mb-2 text-[13px] font-medium">{t('workRights')}</p>
-          <Segmented<WorkRights> label={t('workRights')} value={value.work_rights} onValueChange={v => onChange({ ...value, work_rights: v })} options={(['all', 'no_pr_required'] as const).map(v => ({ value: v, label: t(`workRightsOptions.${v}`) }))} />
+          <Segmented<WorkRights> label={t('workRights')} value={value.work_rights} onValueChange={v => setScope({ work_rights: v })} options={(['all', 'no_pr_required'] as const).map(v => ({ value: v, label: t(`workRightsOptions.${v}`) }))} />
           <p className="mt-1.5 text-[13px] text-muted">{t('workRightsHint')}</p>
         </div>
       </div>
       <div aria-live="polite" className="rounded-md bg-signal-soft px-4 py-3 text-sm">
         <p className="kicker mb-1">{t('currentlyShowing')}</p>
-        <p className="text-ink">{valid ? describeFilter(value, copy) : '…'}</p>
+        <p className="text-ink" data-testid="filter-readback">{valid ? describeFilter(value, copy) : '…'}</p>
       </div>
     </div>
   );
