@@ -8,7 +8,7 @@ import { decodeFilter } from '@/lib/filters/spec';
 import type { ActiveInstrumentType } from '@/lib/market/types';
 import { getInstrumentDetail } from '@/lib/queries/market';
 import { InstrumentView } from './instrument-view';
-import { firstParam, toQueryString, type SearchParamsRecord } from './logic';
+import { firstParam, parseBreakdownBy, toQueryString, type SearchParamsRecord } from './logic';
 
 // Route glue shared by /s/[slug], /r/[slug] and /i/[slug]: 404 for unknown slugs,
 // and a redirect when an instrument is opened under another type's prefix.
@@ -38,7 +38,7 @@ export async function InstrumentRoute({ type, slug, searchParams }: { type: Acti
     permanentRedirect(`${instrumentPath(inst.type, inst.slug)}${qs ? `?${qs}` : ''}`);
   }
   const filter = decodeFilter(firstParam(searchParams.f));
-  const detail = getInstrumentDetail(inst.slug, filter, firstParam(searchParams.metric));
+  const detail = getInstrumentDetail(inst.slug, filter, firstParam(searchParams.metric), parseBreakdownBy(searchParams.by));
   if (!detail) notFound();
   return <InstrumentView detail={detail} filter={filter} />;
 }

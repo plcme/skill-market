@@ -171,3 +171,47 @@ export interface DataSource {
   status: 'healthy' | 'delayed' | 'failed';
   url: string | null;
 }
+
+// --- Breakdown (GLOSSARY §2, DESIGN §6.3) -------------------------------------
+
+/** One dimension at a time; `?by=` on detail pages. Location is a filter, never a breakdown. */
+export type BreakdownDimension = 'experience' | 'rights' | 'mode';
+export const BREAKDOWN_DIMENSIONS: readonly BreakdownDimension[] = ['experience', 'rights', 'mode'];
+
+/** Years of experience asked for: entry 0–2 (incl. graduate), mid 3–5, senior 6–9, expert 10+. */
+export type ExperienceBucket = 'entry' | 'mid' | 'senior' | 'expert';
+export const EXPERIENCE_BUCKETS: readonly ExperienceBucket[] = ['entry', 'mid', 'senior', 'expert'];
+
+export type BreakdownRightsBucket = 'requires_pr' | 'not_stated' | 'sponsorship_ok';
+export type BreakdownBucketKey = ExperienceBucket | BreakdownRightsBucket | WorkMode;
+
+export interface BreakdownBucket {
+  key: BreakdownBucketKey;
+  /** Stack: 4-week rolling job ads. Lines: rolling 52-week median salary, null where the sample is too small. */
+  series: SeriesPoint[];
+  /** Latest value for the legend (job ads in the last 4 weeks, or median salary over 12 months). */
+  latest: MetricReading;
+  /** Stack only: bucket's share of the latest total (0–1); null for lines. */
+  share: number | null;
+}
+
+export interface Breakdown {
+  by: BreakdownDimension;
+  kind: 'stack' | 'lines';
+  /** The measure actually broken down (`ad_count` or `salary_median`). */
+  measure: MetricKey;
+  /** The page's selected measure; differs from `measure` when it can't be broken down. */
+  requested: MetricKey;
+  /** Buckets inside the filter, in dimension order. */
+  buckets: BreakdownBucket[];
+  /** Stack only: the unbroken total series (bands sum to it ± rounding). */
+  total: SeriesPoint[] | null;
+  /** Set when the table filter already narrows this dimension. */
+  filtered_to: BreakdownBucketKey[] | null;
+  /** Dimension is extracted from ad text (experience, work rights): show the method and "estimated". */
+  estimated: boolean;
+  /** Lines only: how many ads in the 12-month window state a salary. */
+  salary_stated: { with_salary: number; total: number } | null;
+  /** Lines only: buckets whose latest value is withheld for sample size. */
+  insufficient: BreakdownBucketKey[];
+}

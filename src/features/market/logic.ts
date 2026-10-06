@@ -1,6 +1,6 @@
 import { getInstrument } from '@/lib/market/catalog';
 import { METRICS } from '@/lib/metrics/registry';
-import type { ActiveInstrumentType, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
+import type { ActiveInstrumentType, BreakdownDimension, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
 import type { BoardSort, BoardType } from '@/lib/queries/market';
 
 // Pure helpers for the public market pages: URL parsing, href building and the
@@ -40,6 +40,12 @@ export function parseLayer(v: string | string[] | undefined): SkillLayer | null 
 export function layerParam(layer: SkillLayer | null): string | undefined {
   if (!layer) return undefined;
   return layer === 'technology_tool' ? 'tool' : 'task';
+}
+
+/** Detail-page breakdown dimension: `?by=experience|rights|mode`, default experience. */
+export function parseBreakdownBy(v: string | string[] | undefined): BreakdownDimension {
+  const s = firstParam(v);
+  return s === 'rights' || s === 'mode' ? s : 'experience';
 }
 
 export type BoardView = 'list' | 'cards';

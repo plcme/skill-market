@@ -271,7 +271,7 @@ export function CoreCompetencies({ levels, name }: { levels: CompetencyLevel[]; 
           const label = t(`items.${c.slug}.name`);
           return (
             <li key={c.slug} className="grid grid-cols-[minmax(0,9.5rem)_1fr_auto] items-center gap-3 text-sm sm:grid-cols-[minmax(0,12rem)_1fr_auto]">
-              <Link href={competencyHref(c.slug)} className="truncate text-ink-2 hover:text-ink hover:underline">{label}</Link>
+              <Link href={competencyHref(c.slug)} className="leading-tight text-ink-2 hover:text-ink hover:underline">{label}</Link>
               <span className="grid h-2.5 grid-cols-10 gap-[2px]" aria-hidden>
                 {Array.from({ length: COMPETENCY_SCALE_MAX }, (_, i) => (
                   <span key={i} className={cn('rounded-[1px]', i < c.level ? 'bg-ink/75' : 'bg-sunken')} />

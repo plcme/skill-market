@@ -23,6 +23,7 @@ import { WatchButton } from '@/components/market/watch-button';
 import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
+import { BreakdownSection } from './breakdown-section';
 import { chartMetricFor, hrefWith } from './logic';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
@@ -169,6 +170,16 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           ) : null}
         </Card>
       </section>
+
+      <Suspense fallback={<div className="skeleton mt-12 h-[520px] w-full" />}>
+        <BreakdownSection
+          breakdown={detail.breakdown}
+          type={type}
+          filter={filter}
+          subject={inst.name}
+          reading={detail.readings[detail.breakdown.measure]}
+        />
+      </Suspense>
 
       <MyNotes slug={inst.slug} name={inst.name} />
 

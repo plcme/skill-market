@@ -32,6 +32,12 @@ export interface MetricDefinition {
    * metric's definition instead of being a user-facing measure (GLOSSARY §3).
    */
   selectable: boolean;
+  /**
+   * How a breakdown splits this measure: additive counts stack (bands sum to
+   * the total), non-additive values draw one line per bucket. null = the
+   * breakdown section falls back to Job ads (GLOSSARY §2).
+   */
+  breakdown: 'stack' | 'lines' | null;
 }
 
 /** Every active type: skill, role and industry. */
@@ -41,20 +47,20 @@ const ADS = { skill: 'ads', role: 'ads', industry: 'ads' } as const;
 export const MIN_SAMPLE_DEFAULT = 30;
 
 export const METRICS: Record<MetricKey, MetricDefinition> = {
-  ad_count: { key: 'ad_count', applies_to: ALL, default_for: ['skill', 'industry'], tier: 'common', unit: 'count', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: true },
-  share_of_ads: { key: 'share_of_ads', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: false },
-  change_4w: { key: 'change_4w', applies_to: ALL, default_for: [], tier: 'common', unit: 'change', source: ADS, window_days: 56, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 56, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true },
-  growth_12m: { key: 'growth_12m', applies_to: ALL, default_for: ['role'], tier: 'common', unit: 'change', source: { skill: 'ads', role: 'official', industry: 'ads' }, window_days: 728, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 730, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true },
-  entry_level_share: { key: 'entry_level_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['seniority'], chartable: true, neutral: true, selectable: true },
-  no_pr_required_share: { key: 'no_pr_required_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_rights'], chartable: true, neutral: true, selectable: true },
-  employer_concentration: { key: 'employer_concentration', applies_to: ALL, default_for: [], tier: 'common', unit: 'employers', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
-  salary_median: { key: 'salary_median', applies_to: ['role'], default_for: [], tier: 'common', unit: 'aud', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
-  salary_p10_p90: { key: 'salary_p10_p90', applies_to: ['role'], default_for: [], tier: 'advanced', unit: 'aud_range', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
-  skill_premium: { key: 'skill_premium', applies_to: ['skill'], default_for: [], tier: 'advanced', unit: 'premium', source: { skill: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT * 2, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
-  remote_share: { key: 'remote_share', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_mode'], chartable: true, neutral: true, selectable: true },
-  contract_share: { key: 'contract_share', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: [], chartable: false, neutral: true, selectable: true },
-  skills_per_ad: { key: 'skills_per_ad', applies_to: ['role'], default_for: [], tier: 'advanced', unit: 'ratio', source: { role: 'ads' }, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: [], chartable: false, neutral: true, selectable: true },
-  volatility: { key: 'volatility', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'cv', source: ADS, window_days: 84, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 84, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true },
+  ad_count: { key: 'ad_count', applies_to: ALL, default_for: ['skill', 'industry'], tier: 'common', unit: 'count', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: true, breakdown: 'stack' },
+  share_of_ads: { key: 'share_of_ads', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: true, neutral: true, selectable: false, breakdown: null },
+  change_4w: { key: 'change_4w', applies_to: ALL, default_for: [], tier: 'common', unit: 'change', source: ADS, window_days: 56, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 56, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true, breakdown: null },
+  growth_12m: { key: 'growth_12m', applies_to: ALL, default_for: ['role'], tier: 'common', unit: 'change', source: { skill: 'ads', role: 'official', industry: 'ads' }, window_days: 728, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 730, text_derived: false, ignores: [], chartable: true, neutral: false, selectable: true, breakdown: null },
+  entry_level_share: { key: 'entry_level_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['seniority'], chartable: true, neutral: true, selectable: true, breakdown: null },
+  no_pr_required_share: { key: 'no_pr_required_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_rights'], chartable: true, neutral: true, selectable: true, breakdown: null },
+  employer_concentration: { key: 'employer_concentration', applies_to: ALL, default_for: [], tier: 'common', unit: 'employers', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
+  salary_median: { key: 'salary_median', applies_to: ['role'], default_for: [], tier: 'common', unit: 'aud', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: 'lines' },
+  salary_p10_p90: { key: 'salary_p10_p90', applies_to: ['role'], default_for: [], tier: 'advanced', unit: 'aud_range', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
+  skill_premium: { key: 'skill_premium', applies_to: ['skill'], default_for: [], tier: 'advanced', unit: 'premium', source: { skill: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT * 2, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
+  remote_share: { key: 'remote_share', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_mode'], chartable: true, neutral: true, selectable: true, breakdown: null },
+  contract_share: { key: 'contract_share', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
+  skills_per_ad: { key: 'skills_per_ad', applies_to: ['role'], default_for: [], tier: 'advanced', unit: 'ratio', source: { role: 'ads' }, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
+  volatility: { key: 'volatility', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'cv', source: ADS, window_days: 84, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 84, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
 };
 
 export const METRIC_KEYS = Object.keys(METRICS) as MetricKey[];

@@ -1,4 +1,4 @@
-import { computeMetric, computeSeries, computeSparkline, correlation, DATA_AS_OF, detectSignal, industrySkillReadings, locationBreakdown, snapshot, SOURCE_IDS } from '@/lib/market/engine';
+import { computeBreakdown, computeMetric, computeSeries, computeSparkline, correlation, DATA_AS_OF, detectSignal, industrySkillReadings, locationBreakdown, snapshot, SOURCE_IDS } from '@/lib/market/engine';
 import { cooccurrence, getInstrument, INDUSTRY_COMPONENTS, INSTRUMENTS, instrumentsOfType, relatedSkills, ROLE_COMPONENTS, rolesForSkill, searchInstruments, type SearchHit } from '@/lib/market/catalog';
 import { searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import type { HeatTile, Heatmap } from '@/lib/market/heatmap';
@@ -6,7 +6,7 @@ import { pickMovers } from '@/lib/market/movers';
 import { METRICS, defaultMetric, isValidMetric, metricsFor, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
 import { sortValue } from '@/lib/market/format';
 import type {
-  ActiveInstrumentType, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
+  ActiveInstrumentType, Breakdown, BreakdownDimension, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
 } from '@/lib/market/types';
 
 // Public read model (RSC). Today backed by the fixture engine; the production
@@ -109,11 +109,13 @@ export interface InstrumentDetail {
   /** Skill → often asked together. */
   related: CompositionEntry[];
   locations: Array<{ location_id: string; name: string; count: number }>;
+  /** The selected measure split by one dimension (`?by=`, default experience). */
+  breakdown: Breakdown;
   signal: Signal | null;
   as_of: string;
 }
 
-export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string): InstrumentDetail | null {
+export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension = 'experience'): InstrumentDetail | null {
   const inst = getInstrument(slug);
   if (!inst) return null;
   // Same rule as boards: legacy non-selectable metrics fall back to the default.
@@ -143,6 +145,7 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
     heatmap: inst.type === 'industry' ? getIndustrySkillHeatmap(slug, filter) : null,
     related,
     locations: locationBreakdown(slug, filter),
+    breakdown: computeBreakdown(slug, metric, filter, by),
     signal: snap.signal,
     as_of: DATA_AS_OF,
   };
