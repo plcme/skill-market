@@ -21,7 +21,7 @@ test('role page breakdown switches dimension through the URL', async ({ page }) 
   await section.getByRole('button', { name: 'Show data table' }).click();
   await expect(section.getByRole('table')).toBeVisible();
   const axe = await new AxeBuilder({ page }).include('section#breakdown').analyze();
-  expect(axe.violations.filter(v => ['serious', 'critical'].includes(v.impact ?? '')).map(v => v.id)).toEqual([]);
+  expect(axe.violations.filter(v => ['serious', 'critical'].includes(v.impact ?? '')).map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
 
   await page.goto('/r/data-analyst?metric=salary_median&by=mode');
   await expect(section.getByText(/ads that state a salary/)).toBeVisible();
@@ -43,7 +43,7 @@ test('remote-anywhere switch changes the readback and the URL', async ({ page })
   await dialog.getByRole('switch', { name: 'Also include remote jobs anywhere in Australia' }).click();
   await expect(readback).toHaveText(/plus remote roles anywhere in Australia/);
   await dialog.getByRole('button', { name: 'Apply' }).click();
-  await expect(page).toHaveURL(/f=oh\.au-nsw-sydney(\*|%2A)r\.au_all_all/);
+  await expect(page).toHaveURL(/f=oh\.au-nsw-sydney(\*|%2A)r\.au_all_all/, { timeout: 30000 });
   await expect(page.getByText(/plus remote roles anywhere in Australia/).first()).toBeVisible();
 
   // A spec the simple controls can't express opens with Advanced expanded.

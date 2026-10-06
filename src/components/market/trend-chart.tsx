@@ -227,7 +227,7 @@ export function TrendChart({ lines, metric, caption, defaultRange = '1y', height
           {showTable ? t('hideTable') : t('showTable')}
         </Button>
         {showTable ? (
-          <div className="mt-2 max-h-72 overflow-auto rounded-md border border-rule">
+          <div tabIndex={0} role="region" aria-label={caption} className="mt-2 max-h-72 overflow-auto rounded-md border border-rule focus-visible:outline-offset-2">
             <table className="w-full text-[13px]">
               <caption className="sr-only">{caption}</caption>
               <thead className="sticky top-0 bg-sunken">
