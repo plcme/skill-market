@@ -181,7 +181,7 @@ export function search(q: string): { skills: SearchHit[]; roles: SearchHit[]; in
 
 export function getSources(): DataSource[] {
   return [
-    { id: SOURCE_IDS.ads, kind: 'ads', name: 'Adzuna AU job ads (fixture)', licence: 'Commercial API terms — pending confirmation (PRD Q6)', cadence: 'Daily, 05:00 AEST', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'healthy', url: null },
+    { id: SOURCE_IDS.ads, kind: 'ads', name: 'Australian job ads (illustrative fixture)', licence: 'Sources and licences being finalised — see Data & safety', cadence: 'Daily, 05:00 AEST', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'healthy', url: null },
     { id: SOURCE_IDS.official, kind: 'official', name: 'JSA Internet Vacancy Index (fixture)', licence: 'CC BY 4.0 (to be re-checked)', cadence: 'Monthly', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'delayed', url: null },
     { id: SOURCE_IDS.practitioner, kind: 'practitioner', name: 'Coffee-chat debriefs', licence: 'Platform data, shown only in aggregate', cadence: 'Continuous', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'healthy', url: null },
   ];

@@ -15,7 +15,7 @@ import type {
 export const DATA_AS_OF = '2026-09-21';
 export const WEEKS = 104;
 const UNIVERSE_WEEKLY = 3400;
-export const SOURCE_IDS = { ads: 'adzuna-au-fixture', official: 'jsa-ivi-fixture', practitioner: 'platform-debriefs' } as const;
+export const SOURCE_IDS = { ads: 'job-ads-fixture', official: 'jsa-ivi-fixture', practitioner: 'platform-debriefs' } as const;
 
 function hashString(s: string): number {
   let h = 2166136261;

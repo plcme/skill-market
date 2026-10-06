@@ -228,7 +228,7 @@
     },
     "kindsShort": { "official": "Official", "ads": "Job ads", "practitioner": "People" },
     "names": {
-      "adzuna-au-fixture": "Job ads (illustrative fixture)",
+      "job-ads-fixture": "Job ads (illustrative fixture)",
       "jsa-ivi-fixture": "Occupation vacancy series (illustrative fixture)",
       "platform-debriefs": "Coffee-chat debriefs"
     },
