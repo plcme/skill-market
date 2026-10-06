@@ -212,6 +212,9 @@ export interface Breakdown {
   estimated: boolean;
   /** Lines only: how many ads in the 12-month window state a salary. */
   salary_stated: { with_salary: number; total: number } | null;
-  /** Lines only: buckets whose latest value is withheld for sample size. */
+  /**
+   * Buckets whose latest value is withheld for sample size. Stack: band drawn
+   * hatched, no number anywhere for weeks below the threshold. Lines: gaps.
+   */
   insufficient: BreakdownBucketKey[];
 }

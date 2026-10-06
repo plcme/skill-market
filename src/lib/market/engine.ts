@@ -587,7 +587,8 @@ export function computeBreakdown(slug: string, metric: MetricKey, filter: Filter
         share: totalLast4 > 0 ? last4 / totalLast4 : null,
       };
     });
-    return { by, kind, measure, requested: metric, buckets, total, filtered_to, estimated, salary_stated: null, insufficient: [] };
+    const insufficient = buckets.filter(b => b.latest.status !== 'ok').map(b => b.key);
+    return { by, kind, measure, requested: metric, buckets, total, filtered_to, estimated, salary_stated: null, insufficient };
   }
 
   // Lines: rolling 52-week median salary per bucket (same window as the metric).

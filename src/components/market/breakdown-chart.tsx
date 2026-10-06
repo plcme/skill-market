@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { formatAud, formatCount, formatShare } from '@/lib/market/format';
 import { formatDayStable } from '@/lib/time';
@@ -14,17 +14,17 @@ const RANGE_WEEKS: Record<Range, number> = { '3m': 13, '6m': 26, '1y': 52, '2y':
 
 // DESIGN §2.2: ordered ramp for Experience, categorical for rights / mode,
 // "Not stated" always faint. Literal class names so Tailwind can see them.
-const TONE: Record<BreakdownBucketKey, { fill: string; stroke: string; bg: string }> = {
-  entry: { fill: 'fill-series-ord-1', stroke: 'stroke-series-ord-1', bg: 'bg-series-ord-1' },
-  mid: { fill: 'fill-series-ord-2', stroke: 'stroke-series-ord-2', bg: 'bg-series-ord-2' },
-  senior: { fill: 'fill-series-ord-3', stroke: 'stroke-series-ord-3', bg: 'bg-series-ord-3' },
-  expert: { fill: 'fill-series-ord-4', stroke: 'stroke-series-ord-4', bg: 'bg-series-ord-4' },
-  requires_pr: { fill: 'fill-series-cat-1', stroke: 'stroke-series-cat-1', bg: 'bg-series-cat-1' },
-  not_stated: { fill: 'fill-faint', stroke: 'stroke-faint', bg: 'bg-faint' },
-  sponsorship_ok: { fill: 'fill-series-cat-2', stroke: 'stroke-series-cat-2', bg: 'bg-series-cat-2' },
-  onsite: { fill: 'fill-series-cat-1', stroke: 'stroke-series-cat-1', bg: 'bg-series-cat-1' },
-  hybrid: { fill: 'fill-series-cat-2', stroke: 'stroke-series-cat-2', bg: 'bg-series-cat-2' },
-  remote: { fill: 'fill-series-cat-3', stroke: 'stroke-series-cat-3', bg: 'bg-series-cat-3' },
+const TONE: Record<BreakdownBucketKey, { fill: string; stroke: string; bg: string; text: string }> = {
+  entry: { fill: 'fill-series-ord-1', stroke: 'stroke-series-ord-1', bg: 'bg-series-ord-1', text: 'text-series-ord-1' },
+  mid: { fill: 'fill-series-ord-2', stroke: 'stroke-series-ord-2', bg: 'bg-series-ord-2', text: 'text-series-ord-2' },
+  senior: { fill: 'fill-series-ord-3', stroke: 'stroke-series-ord-3', bg: 'bg-series-ord-3', text: 'text-series-ord-3' },
+  expert: { fill: 'fill-series-ord-4', stroke: 'stroke-series-ord-4', bg: 'bg-series-ord-4', text: 'text-series-ord-4' },
+  requires_pr: { fill: 'fill-series-cat-1', stroke: 'stroke-series-cat-1', bg: 'bg-series-cat-1', text: 'text-series-cat-1' },
+  not_stated: { fill: 'fill-faint', stroke: 'stroke-faint', bg: 'bg-faint', text: 'text-faint' },
+  sponsorship_ok: { fill: 'fill-series-cat-2', stroke: 'stroke-series-cat-2', bg: 'bg-series-cat-2', text: 'text-series-cat-2' },
+  onsite: { fill: 'fill-series-cat-1', stroke: 'stroke-series-cat-1', bg: 'bg-series-cat-1', text: 'text-series-cat-1' },
+  hybrid: { fill: 'fill-series-cat-2', stroke: 'stroke-series-cat-2', bg: 'bg-series-cat-2', text: 'text-series-cat-2' },
+  remote: { fill: 'fill-series-cat-3', stroke: 'stroke-series-cat-3', bg: 'bg-series-cat-3', text: 'text-series-cat-3' },
 };
 /** Lines also differ by dash pattern so colour is never the only cue. */
 const DASH = [undefined, '7 3', '2 3', '10 3 2 3'] as const;
@@ -66,6 +66,12 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
   const wrap = useRef<HTMLDivElement>(null);
   const stack = breakdown.kind === 'stack';
   const fmt = (v: number) => (stack ? formatCount(v) : formatAud(v));
+  const hatchId = useId().replace(/:/g, '');
+  // Stack: a band below the sample threshold is drawn hatched and never gets a number
+  // (legend, end label, tooltip and table agree). Weeks below the threshold read "Not enough ads".
+  const thin = new Set(stack ? breakdown.insufficient : []);
+  const minSample = breakdown.buckets[0]?.latest.min_sample ?? 30;
+  const cellText = (v: number | null) => (v == null ? '—' : stack && v < minSample ? t('notEnough') : fmt(v));
   const label = (k: BreakdownBucketKey) => t(`buckets.${k}`);
 
   useEffect(() => {
@@ -149,7 +155,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
         const y0 = y(k === 0 ? 0 : tops[k - 1] ?? 0);
         const y1 = y(tops[k] ?? 0);
         return { key: b.key, y: (y0 + y1) / 2, h: y0 - y1 };
-      }).filter(l => l.h >= 13);
+      }).filter(l => l.h >= 13 && !thin.has(l.key));
       return spread(raw.map(({ key, y: yy }) => ({ key, y: yy })), 13, m.t + 6, m.t + innerH);
     }
     const raw = buckets.flatMap(b => {
@@ -191,7 +197,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
   };
   const valueAt = (k: number, i: number) => buckets[k]?.points[i]?.value ?? null;
   const readout = cursor !== null && dates[cursor]
-    ? `${formatDayStable(dates[cursor])}: ${buckets.map((b, k) => `${label(b.key)} ${valueAt(k, cursor) == null ? '—' : fmt(valueAt(k, cursor) as number)}`).join(', ')}`
+    ? `${formatDayStable(dates[cursor])}: ${buckets.map((b, k) => `${label(b.key)} ${cellText(valueAt(k, cursor))}`).join(', ')}`
     : '';
   const tipLeft = cursor !== null ? Math.min(width - 210, Math.max(0, x(cursor) - 100)) : 0;
   const ariaBuckets = breakdown.buckets.map(b => `${label(b.key)} ${b.latest.value == null ? t('notEnough') : fmt(b.latest.value)}`).join(', ');
@@ -229,7 +235,24 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
             ))}
             {stack ? (
               <>
-                {bands.map(b => <path key={b.key} d={b.d} className={cn(TONE[b.key].fill, 'stroke-surface')} strokeWidth={1} strokeLinejoin="round" />)}
+                <defs>
+                  {[...thin].map(key => (
+                    <pattern key={key} id={`${hatchId}-${key}`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                      <rect width="6" height="6" className="fill-surface" />
+                      <line x1="0" y1="0" x2="0" y2="6" className={TONE[key].stroke} strokeWidth={2.5} />
+                    </pattern>
+                  ))}
+                </defs>
+                {bands.map(b => (
+                  <path
+                    key={b.key}
+                    d={b.d}
+                    fill={thin.has(b.key) ? `url(#${hatchId}-${b.key})` : undefined}
+                    className={cn(!thin.has(b.key) && TONE[b.key].fill, 'stroke-surface')}
+                    strokeWidth={1}
+                    strokeLinejoin="round"
+                  />
+                ))}
                 {total ? <path d={linePath(total)} fill="none" className="stroke-ink" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" /> : null}
               </>
             ) : (
@@ -266,7 +289,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
               return (
                 <p key={b.key} className="num mt-0.5 flex justify-between gap-3">
                   <span className="truncate text-paper/80">{t(`short.${b.key}`)}</span>
-                  <span className="font-medium">{v == null ? '—' : fmt(v)}</span>
+                  <span className="font-medium">{cellText(v)}</span>
                 </p>
               );
             })}
@@ -289,7 +312,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
             return (
               <li key={b.key} className="flex min-w-0 items-center gap-2.5 text-[13px]">
                 {stack
-                  ? <span aria-hidden className={cn('size-3 shrink-0 rounded-[2px]', TONE[b.key].bg)} />
+                  ? <span aria-hidden className={cn('size-3 shrink-0 rounded-[2px]', thin.has(b.key) ? cn('border border-current bg-[repeating-linear-gradient(45deg,currentColor_0_2px,transparent_2px_5px)]', TONE[b.key].text) : TONE[b.key].bg)} />
                   : <svg aria-hidden width="20" height="8" className="shrink-0"><line x1="1" x2="19" y1="4" y2="4" className={TONE[b.key].stroke} strokeWidth={2.5} strokeDasharray={DASH[k % DASH.length]} strokeLinecap="round" /></svg>}
                 <span className="min-w-0 flex-1 truncate text-ink-2">{label(b.key)}</span>
                 <span className="num whitespace-nowrap text-ink">
@@ -324,7 +347,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, className }: 
                 {dates.map((d, i) => ({ d, i })).reverse().map(({ d, i }) => (
                   <tr key={d} className="border-t border-rule">
                     <th scope="row" className="whitespace-nowrap px-3 py-1.5 text-left font-normal text-ink-2">{formatDayStable(d)}</th>
-                    {buckets.map((b, k) => <td key={b.key} className="px-3 py-1.5 text-right">{valueAt(k, i) == null ? '—' : fmt(valueAt(k, i) as number)}</td>)}
+                    {buckets.map((b, k) => <td key={b.key} className="px-3 py-1.5 text-right">{cellText(valueAt(k, i))}</td>)}
                     {stack ? <td className="px-3 py-1.5 text-right font-medium">{total?.[i]?.value == null ? '—' : fmt(total[i].value as number)}</td> : null}
                   </tr>
                 ))}

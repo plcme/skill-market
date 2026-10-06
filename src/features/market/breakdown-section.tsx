@@ -84,7 +84,9 @@ export function BreakdownSection({ breakdown, type, filter, subject, reading }: 
           {breakdown.salary_stated ? (
             <p className="text-muted">{t('salaryStated', { with: formatCount(breakdown.salary_stated.with_salary), total: formatCount(breakdown.salary_stated.total) })}</p>
           ) : null}
-          {breakdown.insufficient.length ? <p className="text-warn">{t('gaps', { buckets: breakdown.insufficient.map(k => t(`buckets.${k}`)).join(', ') })}</p> : null}
+          {breakdown.insufficient.length ? (
+            <p className="text-warn">{t(breakdown.kind === 'stack' ? 'thin' : 'gaps', { buckets: breakdown.insufficient.map(k => t(`buckets.${k}`)).join(', '), min: breakdown.buckets[0]?.latest.min_sample ?? 30 })}</p>
+          ) : null}
         </div>
         <BreakdownChart key={`${by}-${breakdown.kind}`} breakdown={breakdown} caption={caption} />
         {latest ? (

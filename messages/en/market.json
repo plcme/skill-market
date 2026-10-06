@@ -450,6 +450,7 @@
     "total": "All job ads",
     "notEnough": "Not enough ads",
     "chartLabel": "{caption}. {buckets}.",
-    "illustrative": "Illustrative fixture data."
+    "illustrative": "Illustrative fixture data.",
+    "thin": "Fewer than {min} ads in the last 4 weeks for {buckets}, so we don’t give a number — the band is hatched to show roughly where those ads sit."
   }
 }

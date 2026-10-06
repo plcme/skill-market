@@ -54,6 +54,18 @@ describe('computeBreakdown — stacked job ads', () => {
   });
 });
 
+describe('computeBreakdown — thin stacked bands', () => {
+  it('flags every stacked bucket whose latest 4 weeks are below the sample threshold', () => {
+    const b = computeBreakdown('python', 'ad_count', decodeFilter('r.au-nt-darwin_all_all'), 'experience');
+    expect(b.insufficient.length).toBeGreaterThan(0);
+    for (const k of b.buckets) {
+      expect(b.insufficient.includes(k.key)).toBe(k.latest.status !== 'ok');
+      if (k.latest.status !== 'ok') expect(k.latest.value).toBeNull();
+    }
+    expect(computeBreakdown('python', 'ad_count', DEFAULT_FILTER, 'mode').insufficient).toEqual([]);
+  });
+});
+
 describe('computeBreakdown — filter narrowing', () => {
   it('shows only buckets inside the filter and says so', () => {
     const entry = computeBreakdown('python', 'ad_count', decodeFilter('ohr.au_entry_all'), 'experience');
