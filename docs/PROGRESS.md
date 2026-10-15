@@ -30,7 +30,7 @@
 | # | 问题 | 提出方 | 建议 | 状态 |
 |---|---|---|---|---|
 | 1 | 产品名（PRD Q1） | PRD | 先用 `APP_NAME=skill-market`；M8 买域名前定 | 待定（不阻塞 M0–M7） |
-| 2 | Adzuna 商用与存储条款（PRD Q6） | PRD / 架构 §6.2 | 按"派生字段长期、原文 30 天"实现；若条款禁止存储则原文 0 天 | **阻塞 M1**，由 Codex 在 SETUP §6 核实 |
+| 2 | Adzuna 商用与存储条款（PRD Q6） | PRD / 架构 §6.2；`docs/research/data-sources.md` | **已核实：免费 API 禁止商业机构以聚合形式（职位计数、平均薪资）持续使用，限额 250 次/天**。建议 M1 主力改为 ATS 公开 API + JSA IVI 校准，覆盖率 `coverage_ratio` 成为一等指标；Adzuna 由用户发邮件争取书面授权 | **阻塞 M1，待用户拍板**（需重写架构 §6.2/§6.7 与 M1 范围） |
 | 3 | 错误监控接 Sentry（EU，PII scrub）还是不接 | 架构 §12 #19 | 接 | 待定（M8 前） |
 | 4 | 备份强度：每日 schema+公共数据 artifact、每周全量加密 dump 到 Storage | 架构 §12 #20 | 接受 | 待定（M8 前） |
 | 5 | Vercel Hobby 禁止商用：上线前升 Pro（USD 20/月）还是迁 Cloudflare Workers（免费） | 架构 §11 | 先在 Hobby 完成 M0–M8 开发与内测；上线决定时再选；架构保证零改动 | 待定（M8） |
@@ -38,6 +38,8 @@
 | 7 | 架构对 PRD 的调整（技能级信号用 `change_4w`、`no_pr_required_share` 定义、从业者时段模型、18+ 只勾选、不做密码登录、MVP 不接 LLM、供给门开关） | 架构 §1 与 §12 | 默认执行 | 待用户否决或默认通过 |
 | 8 | 需要新增的环境变量：`NEXT_PUBLIC_APP_NAME`（建议替换现有 `APP_NAME`）、`NEXT_PUBLIC_APP_URL`、`JOBS_SECRET`、`ADZUNA_DAILY_CALL_BUDGET`、`ADZUNA_CATEGORY`、`MIN_SAMPLE_N`、`SENTRY_DSN`（若接） | 架构附录 B | 由用户 / Codex 写入 `.env.example` | 待办（M0 前至少前三个） |
 | 9 | 新增人类事项：Supabase 需要**两个**项目（prod + dev）；Supabase Vault 写入 `jobs_url` / `jobs_secret`；免费拨测账号（UptimeRobot 类）用于健康检查与防闲置暂停 | 架构 §3.3 §5.4 §8.3 | 加入 SETUP_CHECKLIST | 待办 |
+| 11 | 非 tech 行业上线策略：带覆盖说明上线，还是等中小企业来源（Employment Hero 等）谈成再开放 | data-sources §4.4 | 带说明上线 | 待定 |
+| 12 | 上线前人工核实：JSA IVI/ASC 许可；Greenhouse/Lever/Ashby/Workable/SmartRecruiters/Workday 条款；PageUp、APSJobs、州政府职位板 | data-sources §6 | 加入 SETUP_CHECKLIST（用户/Codex） | 待办 |
 | 10 | 其余 PRD Q2/Q3/Q4/Q5/Q7/Q8 | PRD | 按 PRD 建议默认执行（见架构 §12） | 默认通过 |
 
 ## 前端反馈第 1 轮（2026-09-26）
@@ -47,14 +49,28 @@
 | 批次 | 分支 | 内容 | 状态 |
 |---|---|---|---|
 | C1 术语表 | `dev` | `docs/GLOSSARY.md`，CLAUDE.md 指向它 | 完成 |
-| A 快修 | `fe-feedback-r1` | All 置前；Filter 收成右侧按钮；删分类 bubble；删 A–Z、搜索前置；Share of ads → Demand / Job ads；修 ticker 名字列被挤；主题切换去掉 System 态（默认跟随系统，手动点选后记住）；导航只留 Market/People，Compare 并入盘面多选，Sources 移页脚 "Data & safety"；头像菜单去掉重复的 My desk | 进行中 |
-| B Industry | `fe-industry`（worktree） | industry 标的（ANZSIC Division）、`/i/[slug]` 行业页与行业内技能、非 tech fixture；landing 右侧改 industry 热力图，下方 1 主卡 + 2～3 小卡轮播；Role 页 "Top holdings" | A 合并后开始 |
-| C2 适配 | `fe-responsive`（worktree） | 375 / 768 全页面适配与截图测试；手机 onboarding 用 bottom sheet | A 合并后开始 |
+| A 快修 | `fe-feedback-r1` | All 置前；Filter 收成右侧按钮；删分类 bubble；删 A–Z、搜索前置；Share of ads → Demand / Job ads；修 ticker 名字列被挤；主题切换去掉 System 态（默认跟随系统，手动点选后记住）；导航只留 Market/People，Compare 并入盘面多选，Sources 移页脚 "Data & safety"；头像菜单去掉重复的 My desk | 已合并 dev（审查 2 轮，Round 1 退回 1 阻断；reviewer 因 Fable 额度用尽，经用户同意改用 Opus） |
+| B Industry | `fe-industry`（worktree） | industry 标的（ANZSIC Division）、`/i/[slug]` 行业页与行业内技能、非 tech fixture；landing 右侧改 industry 热力图，下方 1 主卡 + 2～3 小卡轮播；Role 页 "Top holdings" | 已合并 dev（审查 1 轮通过） |
+| C2 适配 | `fe-responsive`（worktree） | 375 / 768 全页面适配与截图测试；手机 onboarding 用 bottom sheet；付费方文案同步为中立防火墙表述 | 已合并 dev（审查 1 轮通过） |
 
-本轮不动（待拍板）：标语与开场动画；"什么算 skill"（候选 ASC 三层框架）与 Communication 类软技能；skill 薪资与 breakdown 设计；LinkedIn 证书导入；Twitter 书签交互（待用户发链接）；"master level" 含义；细分行业颗粒度。
+本轮不动（待拍板）：标语与开场动画；"什么算 skill"（候选 ASC 三层框架）与 Communication 类软技能；skill 薪资与 breakdown 设计；LinkedIn 证书导入；Twitter 书签交互（待用户发链接）；"master level" 含义；细分行业颗粒度；watchlist "加入以来变化"改用 Demand 原始计数后会混入全市场涨落（原 share 口径可扣除），旧 `share_of_ads` watch 条目需迁移并重置 baseline；对比页上限 2（`/compare` 仅支持 a/b）。
+
+## 前端反馈第 2 轮（2026-10-06）
+
+用户决定：先写 DESIGN.md；A2 来源文案去 Adzuna 化；A3 覆盖率提示暂不做；A4 清理 worktree 等用户看完 preview；B1 breakdown 先做原型；B2 地点 = 表级筛选 + 全澳 remote 开关（通过）；C2 动效之后逐项来；C3 参考 ASC 做技能分层原型；C4 master level = 10 年以上（界面叫 Expert）；C5 首页新闻点评不做。
+
+| 项 | 分支 | 状态 |
+|---|---|---|
+| `docs/DESIGN.md` v1 + GLOSSARY 同步 | `dev` | 完成，海报待 DESIGN 确认后做 |
+| A2 + C3 + B2 + B1 | `fe-r2`（worktree `../skill-market-r2`） | 实现中 |
 
 ## 日志
 
+- 2026-10-15：清理 worktree 与分支（第 2 轮 A4）。删除已合并的 worktree `../skill-market-{fe2,industry,responsive}`、`.claude/worktrees/frontend-discussion-2a2f02`，本地分支 `frontend-v2`、`fe-r1-fixes`、`fe-responsive`、`fe-industry`、`fe-feedback-r1`、`m0-foundation`、`claude/frontend-discussion-2a2f02`，远程分支 `origin/frontend-v2`、`origin/m0-foundation`；丢弃前端 v1 stash 与本地 `tmp/`、`output/`。保留 `fe-r2`（`../skill-market-r2`，未合并）。
+
+- 2026-09-26：用户决定放开付费方限制（任何人都可以是付费者）。已改 `docs/PRD.md`（§2 利益立场、§3.1、§5.3、§12.1）与 `CLAUDE.md` 已定约束；新增"中立防火墙"：收入不影响盘面、利益披露、隐私不出售。MVP 仍不收费。界面文案里"Never paid for by employers"等承诺待前端下一轮同步（`messages/en/{common,home,student,legal,market-pages}.json`）。
+
+- 2026-09-26：前端反馈第 1 轮 A/B/C2 全部合并 dev（d63e6b7），含合并后修复（/metrics 手机溢出、Reset filter 测试加固、B 审查建议）。lint/typecheck/157 单测/build 通过；e2e 110 条中 107 过，3 条长路由巡检用例在高负载（load 30–60）下超时、单独重跑 6/6 通过。reviewer 全部临时改用 Opus（Fable 额度用尽，用户同意）。子 agent 用量约 1.2M tokens，估算本轮 ≈ AUD 25–35（未核实，请对照控制台）。
 - 2026-09-26：前端反馈第 1 轮定稿（见上节）。新增 `docs/GLOSSARY.md`。
 
 - 2026-09-24：用户要求在新 worktree 另起分支、按主会话审美重做完整交互前端并写接口报告。分支 `frontend-v2`（`../skill-market-fe2`，基于 `a0428bd`）：主会话完成设计系统（编辑式纸墨风格、Newsreader/Geist 自托管字体、浅深色 token）、合成市场引擎、筛选/指标注册表、应用外壳与首页；三个并行子 agent 分别完成公开盘面、学生侧、咖啡聊/从业者/后台/法律页；主会话集成并在浏览器中逐页核查（1440/375/深色）。lint、typecheck、118 项单测、45 路由生产构建、32 项 Playwright + axe 通过。接口契约见 `docs/FRONTEND_API_REPORT.md`，其 §9 列出需后端补的字段（待拍板）。未合并 dev/main，未推送。
