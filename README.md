@@ -44,4 +44,4 @@ pnpm test:e2e
 
 Supabase 客户端与 session 刷新遵循 [官方 SSR 指南](https://supabase.com/docs/guides/auth/server-side/creating-a-client?framework=nextjs)。UI 基础采用 [shadcn/ui](https://ui.shadcn.com/) 的本地组件方式、Radix Slot 与 Tailwind CSS；M0 没有业务表单或市场页面。
 
-后续 M1 先使用合成测试数据；Adzuna/JSA/ABS 许可核实后再决定真实采集与保存策略。
+后续 M1 先使用合成测试数据；招聘广告来源与 JSA/ABS 数据的许可核实后，再决定真实采集与保存策略。

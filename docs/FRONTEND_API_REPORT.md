@@ -44,11 +44,11 @@ pnpm test:unit && pnpm build && pnpm test:e2e
 | 路由 | 身份 | 主要 FR | 数据来源 |
 |---|---|---|---|
 | `/` | 公开 | FR-M1、R7 | `getIndustryHeatmap`（hero 行业热力图）、`getMovers`（信号轮播）、`getBoard`、`getTape` |
-| `/market?type=all\|skill\|role\|industry&metric&f&sort=value\|change&view&q` | 公开 | FR-M1/M2/M4/M6、FR-F1–F5 | `getBoard`、`getSignalsNow` |
-| `/s/[slug]`、`/r/[slug]`、`/i/[slug]`（类型不符时 308 重定向到正确前缀） | 公开 | FR-M2/M3、FR-D2–D5、FR-R1（本人复盘记录） | `getInstrumentDetail`、`selectDebriefsFor` |
+| `/market?type=all\|skill\|role\|industry&metric&f&sort=value\|change&view&q&layer=tool\|task`（`layer` 仅 Skills 页生效） | 公开 | FR-M1/M2/M4/M6、FR-F1–F5 | `getBoard`、`getSignalsNow` |
+| `/s/[slug]`、`/r/[slug]`、`/i/[slug]`（`?by=experience\|rights\|mode` 选择 breakdown 维度；类型不符时 308 重定向到正确前缀；未知 slug 若恰为核心能力别名，如 `/s/communication`，307 到 `/metrics#competency-…`，否则 404） | 公开 | FR-M2/M3、FR-D2–D5、FR-R1（本人复盘记录） | `getInstrumentDetail`、`selectDebriefsFor` |
 | `/compare?a&b&f` | 公开 | FR-M5 | `getComparison` |
 | `/search?q` | 公开 | FR-D6 | `searchWithSnapshots` |
-| `/metrics`、`/metrics/[key]` | 公开 | FR-D2、FR-M4 | registry、`getMetricExamples` |
+| `/metrics`、`/metrics/[key]` | 公开 | FR-D2、FR-M4 | registry、`getMetricExamples`；`/metrics#core-competencies`（ASC 核心能力说明，`#competency-<slug>` 锚点） |
 | `/sources` | 公开 | FR-D1/D5、§11 | `getSources` |
 | `/people` | 公开 | §8.1、R4 | `getBoard`、`selectSupply` |
 | `/auth/login`、`/auth/callback`、`/auth/signout` | 公开 | FR-A1/A2/A6 | auth actions |
@@ -83,10 +83,10 @@ type FilterSpec = { rules: { work_modes: ('onsite'|'hybrid'|'remote')[]; locatio
 
 | 函数 | 返回 | 说明 |
 |---|---|---|
-| `getBoard({type: 'all'\|'skill'\|'role'\|'industry', metric?, filter, sort?: 'value'\|'change', q?})` | `Board { type, metric, sort, rows: InstrumentSnapshot[], signals, as_of }` | 不再有 category 与 name（A–Z）排序；旧 `?sort=az\|name` 回退为 `value`。无效或不可选 metric 回退到默认（skill→`ad_count`，role→`growth_12m`，industry→`ad_count`，all→`ad_count`，all 只接受三类共同适用的 `sharedMetrics()`） |
-| `getInstrumentDetail(slug, filter, metric?)` | `InstrumentDetail \| null` | 含 `readings`（该类型全部有效指标）、104 周 `series`、`composition`（role→技能权重，即 Top holdings / industry→技能权重 / skill→岗位）、`heatmap`（仅 industry：行业内技能热力图，其他类型为 `null`）、`related`、`locations`（按州）、`signal` |
+| `getBoard({type: 'all'\|'skill'\|'role'\|'industry', metric?, filter, sort?: 'value'\|'change', q?, layer?: SkillLayer \| null})` | `Board { type, metric, sort, layer, rows: InstrumentSnapshot[], signals, as_of }` | 不再有 category 与 name（A–Z）排序；旧 `?sort=az\|name` 回退为 `value`。无效或不可选 metric 回退到默认（skill→`ad_count`，role→`growth_12m`，industry→`ad_count`，all→`ad_count`，all 只接受三类共同适用的 `sharedMetrics()`） |
+| `getInstrumentDetail(slug, filter, metric?, by: BreakdownDimension = 'experience')` | `InstrumentDetail \| null` | 含 `breakdown: Breakdown`（见 §11.4）、`readings`（该类型全部有效指标）、104 周 `series`、`composition`（role→技能权重，即 Top holdings / industry→技能权重 / skill→岗位）、`heatmap`（仅 industry：行业内技能热力图，其他类型为 `null`）、`related`、`locations`（按州）、`signal` |
 | `getComparison(a, b, filter)` | `Comparison \| null` | `correlation`（近 52 周 Pearson）、`overlap`、`shared/onlyA/onlyB` |
-| `search(q)` / `searchWithSnapshots(q, filter)` | 按 `skills`/`roles`/`industries` 分组的命中，含 `matched`、`via: name\|alias\|symbol\|prefix` | 别名归一（FR-D6） |
+| `search(q)` / `searchWithSnapshots(q, filter)` | 按 `skills`/`roles`/`industries` 分组的命中，含 `matched`、`via: name\|alias\|symbol\|prefix`；另有 `competencies: CompetencyHit[]` | 别名归一（FR-D6）；核心能力不是标的，只链接到说明页 |
 | `getSignalsNow(filter, limit=12)` | `InstrumentSnapshot[]` | 当前筛选下有信号的标的，按幅度排序 |
 | `getTape(limit=16)` | `TapeEntry[]` | 顶部行情条：全国 4 周变化，信号优先 |
 | `getIndustryHeatmap(filter)` | `Heatmap`（`kind='industries'`） | 全部行业，按 job ads 降序 |
@@ -250,3 +250,46 @@ type FilterSpec = { rules: { work_modes: ('onsite'|'hybrid'|'remote')[]; locatio
 - "All" 盘面的变化列混合了技能 / 行业的 4 周变化与岗位的 12 个月变化（列头有说明）；首页轮播则对三类统一使用 4 周变化。
 - 法律页为草稿，需法律审阅。
 - 如需与设计稿核对：本分支未更新 Figma。
+
+## 11. 前端反馈第 2 轮（分支 `fe-r2`）
+
+### 11.1 数据来源文案中性化（A2）
+- `SOURCE_IDS.ads = 'job-ads-fixture'`（原 `adzuna-au-fixture`）；`Sources.names` 的 key 同步改名。旧 key 不再存在。
+- `getSources()` ads 条目：`name = 'Australian job ads (illustrative fixture)'`，`licence = 'Sources and licences being finalised — see Data & safety'`。`src`、`messages`、`tests`、`e2e` 中不再出现任何具体招聘广告供应商名称。
+
+### 11.2 ASC 技能分层（C3）
+- `Instrument.skill_layer: SkillLayer | null`，`SkillLayer = 'technology_tool' | 'specialist_task'`（`SKILL_LAYERS`）；role / industry 恒为 `null`。规则：工作活动或方法 = `specialist_task`，具名软件/平台/语言/框架 = `technology_tool`；`catalog.ts` 中 `SPECIALIST_TASKS` 集合 + `skillLayerOf(slug)`。后端 `instruments` 表需新增 `skill_layer` 列。
+- 盘面 Skills 页：`?layer=tool|task`（`parseLayer` / `layerParam`，`src/features/market/logic.ts`），控件 `SkillLayerSwitch`（`board-controls.tsx`，role="radio" 的 `Segmented`，标签 "All skills · Tools · Tasks"）。技能详情页 kicker 显示层级（"Skill · Technology tool · …"）。
+- **`communication` 不再是标的**（从 catalog、role 构成、演示种子、教育推断、`FIRST_STEPS` 中移除，`FIRST_STEPS` 末项改为 `agile`）。
+- 核心能力：`src/lib/market/competencies.ts`
+  - `CORE_COMPETENCIES: { slug: CompetencySlug; aliases }[]`（10 项，ASC 顺序）；名称与说明在 `messages` 的 `Competencies.items.<slug>.{name,blurb}`。
+  - `competencyLevels(roleSlug) → { slug, level(1–10) }[] | null`（仅 role，**示意 fixture**，非 ASC 数据集）；`COMPETENCY_SCALE_MAX = 10`。
+  - `searchCompetencies(q, limit=3) → { slug, matched }[]`（≥ 3 字符，精确别名优先于前缀）；`competencyHref(slug) = /metrics#competency-<slug>`。
+  - 界面：role 页 "Core competencies" 区块（`CoreCompetencies`，按 ASC 顺序不排序，条形 + "n / 10"）；`/search` 新分组 "Core competencies"（精确命中时排在最前）；⌘K 面板同样返回核心能力条目；`/metrics#core-competencies` 说明 "Every job uses these, so we don't track demand for them."；凡出现处带 "Framework: Australian Skills Classification, Jobs and Skills Australia"。
+- 旧数据降级：`dropUnknownInstruments(db)`（`src/lib/demo/sanitize.ts`）在加载 localStorage 时删除指向不存在标的的 watchlist / skills / waitlist / alias_overrides 行与从业者技能；`selectWatchlist` 也跳过未知 slug。聊天记录保留 slug 文本。
+
+### 11.3 简单地点筛选 + 远程开关（B2）
+- `FilterSpec` 与 `?f=` 编码**不变**。新增纯函数（`src/lib/filters/spec.ts`）：
+  - `REMOTE_ANYWHERE_RULE = { work_modes: ['remote'], location_ids: ['au'] }`，`isRemoteAnywhereRule(rule)`。
+  - `SimpleFilter = { places: string[]; modes: WorkMode[]; includeRemoteAnywhere: boolean }`。
+  - `toSimpleFilter(spec) → SimpleFilter | null`：单条规则，或"一条主规则 + 远程全澳规则"（顺序不限）可表达；其他返回 `null`。
+  - `fromSimpleFilter(simple, { seniority, work_rights }) → FilterSpec`（不做 normalise，便于表单校验）。
+  - `remoteAnywhereRedundant(places, modes)`：主规则已覆盖全澳远程时为 true，开关禁用并说明原因。
+  - `FilterCopy.ruleRemoteAnywhere`（可选）：第二条及以后的远程全澳规则回读为 "remote roles anywhere in Australia"。
+- 筛选面板：Places（多选、选择某地会替换其祖先/子孙）→ Work mode（三个 checkbox）→ 开关 "Also include remote jobs anywhere in Australia" → Level → Work rights → 回读（`data-testid="filter-readback"`）。原多规则编辑器移入 "Advanced" 折叠区；`toSimpleFilter` 为 `null` 的 URL 打开时自动展开 Advanced，且此时不能切回简单模式。
+- 地点不是 breakdown 维度；详情页"按州分布"面板保留。
+
+### 11.4 Breakdown 原型（B1）
+- 类型（`src/lib/market/types.ts`）：`BreakdownDimension = 'experience' | 'rights' | 'mode'`（`BREAKDOWN_DIMENSIONS`）；`ExperienceBucket = 'entry' | 'mid' | 'senior' | 'expert'`（0–2 / 3–5 / 6–9 / 10+ 年；界面 "Expert · 10+ yrs"）；`BreakdownBucketKey`；
+  `Breakdown { by, kind: 'stack'|'lines', measure, requested, buckets: { key, series: SeriesPoint[], latest: MetricReading, share }[], total: SeriesPoint[] | null, filtered_to: BreakdownBucketKey[] | null, estimated, salary_stated: { with_salary, total } | null, insufficient: BreakdownBucketKey[] }`。
+- 注册表新增 `MetricDefinition.breakdown: 'stack' | 'lines' | null`：`ad_count = 'stack'`，`salary_median = 'lines'`，其余 `null`（breakdown 区显示 Job ads 并注明 "Breakdown shows Job ads"）。
+- `computeBreakdown(slug, metric, filter, by)`（`engine.ts`）：
+  - stack：各桶 4 周滚动广告数，之和 = 不拆分的总线（± 每周取整）；`latest` 为近 4 周 `ad_count`，`share` 为占比。
+  - lines（仅 role）：各桶滚动 52 周薪资中位数；声明薪资的样本 < `min_sample` 时该点为 `null`（断开不插值），`insufficient` 列出最新值不足的桶。
+  - 筛选优先：`seniority`、`work_rights`、规则里实际出现的工作方式会限制可见桶，`filtered_to` 非空时界面写 "Filtered to …"。
+  - Experience：把原 `other` 资历桶按 `experienceSplit(entryShare)` 拆为 mid / senior / expert（entry 占比越低越偏资深，fixture）。`Seniority` 筛选类型不变。
+  - Experience 与 Work rights 为文本抽取 → `estimated: true`，界面显示 "Estimated" 与方法弹层。
+- 界面：`BreakdownSection`（`src/features/market/breakdown-section.tsx`，`section#breakdown`，紧接主图之下，skill / role / industry 三类页面都有）+ `BreakdownChart`（`src/components/market/breakdown-chart.tsx`：堆叠面积 / 多线、右端直接标注、下方图例含最新值与占比、"Show data table"）。维度切换写入 `?by=`（默认 experience 时省略）。
+- 颜色 token（`theme.css`，浅/深两套，Tailwind 工具类 `fill-/stroke-/bg-series-ord-1..4`、`series-cat-1..3`）：Experience 用有序色阶；Work rights = cat-1 / `faint`（Not stated）/ cat-2；Work mode = cat-1..3；堆叠带之间 1px `surface` 描边；多线另以虚线样式区分。
+- 后端需要：按 cell 再细分"经验年限桶"（目前 cell 只有 graduate / entry_other / other），以及按桶的薪资样本计数。
+

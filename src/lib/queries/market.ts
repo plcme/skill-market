@@ -1,11 +1,12 @@
-import { computeMetric, computeSeries, computeSparkline, correlation, DATA_AS_OF, detectSignal, industrySkillReadings, locationBreakdown, snapshot, SOURCE_IDS } from '@/lib/market/engine';
+import { computeBreakdown, computeMetric, computeSeries, computeSparkline, correlation, DATA_AS_OF, detectSignal, industrySkillReadings, locationBreakdown, snapshot, SOURCE_IDS } from '@/lib/market/engine';
 import { cooccurrence, getInstrument, INDUSTRY_COMPONENTS, INSTRUMENTS, instrumentsOfType, relatedSkills, ROLE_COMPONENTS, rolesForSkill, searchInstruments, type SearchHit } from '@/lib/market/catalog';
+import { searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import type { HeatTile, Heatmap } from '@/lib/market/heatmap';
 import { pickMovers } from '@/lib/market/movers';
 import { METRICS, defaultMetric, isValidMetric, metricsFor, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
 import { sortValue } from '@/lib/market/format';
 import type {
-  ActiveInstrumentType, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal,
+  ActiveInstrumentType, Breakdown, BreakdownDimension, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
 } from '@/lib/market/types';
 
 // Public read model (RSC). Today backed by the fixture engine; the production
@@ -21,12 +22,16 @@ export interface BoardQuery {
   filter: FilterSpec;
   sort?: BoardSort;
   q?: string;
+  /** Skills board only: narrow to one ASC layer (`?layer=tool|task`). Ignored for other types. */
+  layer?: SkillLayer | null;
 }
 
 export interface Board {
   type: BoardType;
   metric: MetricKey;
   sort: BoardSort;
+  /** Applied ASC layer (skills board only), null = all skills. */
+  layer: SkillLayer | null;
   rows: InstrumentSnapshot[];
   signals: number;
   as_of: string;
@@ -46,7 +51,8 @@ export function getBoard(query: BoardQuery): Board {
   const metric = resolveBoardMetric(query.type, query.metric);
   const sort = query.sort ?? 'value';
   const needle = query.q?.trim().toLowerCase() ?? '';
-  const pool = INSTRUMENTS.filter(i => query.type === 'all' || i.type === query.type);
+  const layer = query.type === 'skill' ? query.layer ?? null : null;
+  const pool = INSTRUMENTS.filter(i => (query.type === 'all' || i.type === query.type) && (!layer || i.skill_layer === layer));
   const rows = pool
     .filter(i => !needle || i.name.toLowerCase().includes(needle) || i.aliases.some(a => a.includes(needle)) || i.symbol.toLowerCase() === needle)
     .map(i => snapshot(i.slug, metric, query.filter));
@@ -54,7 +60,7 @@ export function getBoard(query: BoardQuery): Board {
     if (sort === 'change') return sortValue(b.change) - sortValue(a.change);
     return sortValue(b.metric) - sortValue(a.metric);
   });
-  return { type: query.type, metric, sort, rows, signals: rows.filter(r => r.signal).length, as_of: DATA_AS_OF };
+  return { type: query.type, metric, sort, layer, rows, signals: rows.filter(r => r.signal).length, as_of: DATA_AS_OF };
 }
 
 export interface TapeEntry {
@@ -103,11 +109,13 @@ export interface InstrumentDetail {
   /** Skill → often asked together. */
   related: CompositionEntry[];
   locations: Array<{ location_id: string; name: string; count: number }>;
+  /** The selected measure split by one dimension (`?by=`, default experience). */
+  breakdown: Breakdown;
   signal: Signal | null;
   as_of: string;
 }
 
-export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string): InstrumentDetail | null {
+export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension = 'experience'): InstrumentDetail | null {
   const inst = getInstrument(slug);
   if (!inst) return null;
   // Same rule as boards: legacy non-selectable metrics fall back to the default.
@@ -137,6 +145,7 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
     heatmap: inst.type === 'industry' ? getIndustrySkillHeatmap(slug, filter) : null,
     related,
     locations: locationBreakdown(slug, filter),
+    breakdown: computeBreakdown(slug, metric, filter, by),
     signal: snap.signal,
     as_of: DATA_AS_OF,
   };
@@ -170,9 +179,10 @@ export function getComparison(aSlug: string, bSlug: string, filter: FilterSpec):
   return { a, b, correlation: correlation(aSlug, bSlug, filter), overlap, shared, onlyA, onlyB };
 }
 
-export function search(q: string): { skills: SearchHit[]; roles: SearchHit[]; industries: SearchHit[] } {
+export function search(q: string): { skills: SearchHit[]; roles: SearchHit[]; industries: SearchHit[]; competencies: CompetencyHit[] } {
   const hits = searchInstruments(q, 40);
   return {
+    competencies: searchCompetencies(q),
     skills: hits.filter(h => h.instrument.type === 'skill'),
     roles: hits.filter(h => h.instrument.type === 'role'),
     industries: hits.filter(h => h.instrument.type === 'industry'),
@@ -181,7 +191,7 @@ export function search(q: string): { skills: SearchHit[]; roles: SearchHit[]; in
 
 export function getSources(): DataSource[] {
   return [
-    { id: SOURCE_IDS.ads, kind: 'ads', name: 'Adzuna AU job ads (fixture)', licence: 'Commercial API terms — pending confirmation (PRD Q6)', cadence: 'Daily, 05:00 AEST', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'healthy', url: null },
+    { id: SOURCE_IDS.ads, kind: 'ads', name: 'Australian job ads (illustrative fixture)', licence: 'Sources and licences being finalised — see Data & safety', cadence: 'Daily, 05:00 AEST', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'healthy', url: null },
     { id: SOURCE_IDS.official, kind: 'official', name: 'JSA Internet Vacancy Index (fixture)', licence: 'CC BY 4.0 (to be re-checked)', cadence: 'Monthly', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'delayed', url: null },
     { id: SOURCE_IDS.practitioner, kind: 'practitioner', name: 'Coffee-chat debriefs', licence: 'Platform data, shown only in aggregate', cadence: 'Continuous', last_run_at: `${DATA_AS_OF}T19:05:00+10:00`, status: 'healthy', url: null },
   ];
@@ -205,11 +215,15 @@ export interface SearchResult {
   snapshot: InstrumentSnapshot;
 }
 
-/** `/search?q=`: alias-aware hits with a ticker snapshot each, grouped by type (FR-D6). */
-export function searchWithSnapshots(q: string, filter: FilterSpec): { skills: SearchResult[]; roles: SearchResult[]; industries: SearchResult[] } {
-  const { skills, roles, industries } = search(q);
+/**
+ * `/search?q=`: alias-aware hits with a ticker snapshot each, grouped by type
+ * (FR-D6). ASC core competencies come back separately: they link to an
+ * explainer, never to a ticker.
+ */
+export function searchWithSnapshots(q: string, filter: FilterSpec): { skills: SearchResult[]; roles: SearchResult[]; industries: SearchResult[]; competencies: CompetencyHit[] } {
+  const { skills, roles, industries, competencies } = search(q);
   const withSnap = (hit: SearchHit): SearchResult => ({ hit, snapshot: snapshot(hit.instrument.slug, defaultMetric(hit.instrument.type), filter) });
-  return { skills: skills.map(withSnap), roles: roles.map(withSnap), industries: industries.map(withSnap) };
+  return { skills: skills.map(withSnap), roles: roles.map(withSnap), industries: industries.map(withSnap), competencies };
 }
 
 const METRIC_EXAMPLES: Record<ActiveInstrumentType, readonly string[]> = {

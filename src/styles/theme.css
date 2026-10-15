@@ -41,6 +41,14 @@
   --src-practitioner: #a8501a;
   --night: #141518;
   --night-ink: #f3f1ea;
+  /* Chart series (DESIGN §2.2): ordered ramp for Experience, categorical for rights / mode. */
+  --series-ord-1: #7486dd;
+  --series-ord-2: #5068d6;
+  --series-ord-3: #2f45b8;
+  --series-ord-4: #1b2a7a;
+  --series-cat-1: #2a45d0;
+  --series-cat-2: #b0761c;
+  --series-cat-3: #2c7a74;
   --overlay: rgb(18 19 22 / 0.42);
   --shadow: 0 1px 0 rgb(18 19 22 / 0.04), 0 12px 32px -12px rgb(18 19 22 / 0.18);
 }
@@ -74,6 +82,13 @@
   --src-practitioner: #f29a5e;
   --night: #1b1c19;
   --night-ink: #eeece4;
+  --series-ord-1: #5263c2;
+  --series-ord-2: #7385e6;
+  --series-ord-3: #9fb0ff;
+  --series-ord-4: #cdd6ff;
+  --series-cat-1: #9daeff;
+  --series-cat-2: #e0aa52;
+  --series-cat-3: #6cc4bb;
   --overlay: rgb(0 0 0 / 0.6);
   --shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
 }
@@ -107,6 +122,13 @@
   --color-overlay: var(--overlay);
   --color-night: var(--night);
   --color-night-ink: var(--night-ink);
+  --color-series-ord-1: var(--series-ord-1);
+  --color-series-ord-2: var(--series-ord-2);
+  --color-series-ord-3: var(--series-ord-3);
+  --color-series-ord-4: var(--series-ord-4);
+  --color-series-cat-1: var(--series-cat-1);
+  --color-series-cat-2: var(--series-cat-2);
+  --color-series-cat-3: var(--series-cat-3);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
   --font-serif: "Newsreader Variable", "Iowan Old Style", Charter, Georgia, serif;

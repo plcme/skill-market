@@ -3,9 +3,10 @@ import { getLocation, LEAF_IDS, stateOf } from '@/lib/filters/locations';
 import { METRICS, metricSource, signalMetric } from '@/lib/metrics/registry';
 import { getInstrument, INSTRUMENTS, premiumOf, profileOf, salaryOf, type SkillProfile } from './catalog';
 import type {
-  ActiveInstrumentType, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading,
-  SeriesPoint, Signal, WorkMode,
+  ActiveInstrumentType, Breakdown, BreakdownBucket, BreakdownBucketKey, BreakdownDimension, ExperienceBucket, FilterSpec, Instrument,
+  InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, WorkMode,
 } from './types';
+import { EXPERIENCE_BUCKETS, WORK_MODES } from './types';
 
 // Deterministic synthetic market (illustrative only). Each instrument has a weekly
 // national series; cells are weighted by location × work mode × seniority × work
@@ -15,7 +16,7 @@ import type {
 export const DATA_AS_OF = '2026-09-21';
 export const WEEKS = 104;
 const UNIVERSE_WEEKLY = 3400;
-export const SOURCE_IDS = { ads: 'adzuna-au-fixture', official: 'jsa-ivi-fixture', practitioner: 'platform-debriefs' } as const;
+export const SOURCE_IDS = { ads: 'job-ads-fixture', official: 'jsa-ivi-fixture', practitioner: 'platform-debriefs' } as const;
 
 function hashString(s: string): number {
   let h = 2166136261;
@@ -175,20 +176,29 @@ function bucketSum<K extends string>(weights: Record<K, number>, keys: readonly 
 interface Slice {
   seniority?: readonly SeniorityBucket[];
   rights?: readonly RightsBucket[];
+  /** Override work modes across every place in the filter (ignores the filter's modes). */
   modes?: readonly WorkMode[];
+  /** Keep only the filter's own (place, mode) cells with these modes. */
+  keepModes?: readonly WorkMode[];
 }
 
-/** Weekly counts for an instrument under a filter (optionally overriding buckets). */
-function weeklyCounts(slug: string, filter: FilterSpec, slice: Slice = {}): number[] {
+/** Unrounded weekly counts for an instrument under a filter (optionally overriding buckets). */
+function weeklyRaw(slug: string, filter: FilterSpec, slice: Slice = {}): number[] {
   const m = modelOf(slug);
   const cells = expandFilterToCells(filter);
+  const pairs = slice.modes ? uniquePairs(cells, slice.modes) : cells.pairs;
   const effective: CellSet = {
-    pairs: slice.modes ? uniquePairs(cells, slice.modes) : cells.pairs,
+    pairs: slice.keepModes ? pairs.filter(p => slice.keepModes?.includes(p.mode)) : pairs,
     seniority: [...(slice.seniority ?? cells.seniority)],
     rights: [...(slice.rights ?? cells.rights)],
   };
   const rightsW = bucketSum(rightsWeights(m.p), effective.rights);
-  return m.weekly.map((n, w) => Math.round(n * pairWeight(m, effective, w) * bucketSum(seniorityWeights(m.p, w), effective.seniority) * rightsW));
+  return m.weekly.map((n, w) => n * pairWeight(m, effective, w) * bucketSum(seniorityWeights(m.p, w), effective.seniority) * rightsW);
+}
+
+/** Weekly counts for an instrument under a filter (optionally overriding buckets). */
+function weeklyCounts(slug: string, filter: FilterSpec, slice: Slice = {}): number[] {
+  return weeklyRaw(slug, filter, slice).map(Math.round);
 }
 
 function uniquePairs(cells: CellSet, modes: readonly WorkMode[]): CellSet['pairs'] {
@@ -264,6 +274,9 @@ function employerStats(count: number, slug: string): { distinct: number; top5: n
 
 const STATE_SALARY: Record<string, number> = { 'au-nsw': 1.06, 'au-vic': 1.0, 'au-qld': 0.94, 'au-wa': 0.98, 'au-sa': 0.9, 'au-act': 1.04, 'au-tas': 0.86, 'au-nt': 0.92, nz: 0.82 };
 
+/** Share of ads that state a salary (fixture). One constant so every salary sample on a page agrees. */
+export const SALARY_STATED_SHARE = 0.44;
+
 export function computeMetric(slug: string, metric: MetricKey, filter: FilterSpec): MetricReading {
   const inst = getInstrument(slug);
   if (!inst) throw new Error(`Unknown instrument ${slug}`);
@@ -326,7 +339,7 @@ export function computeMetric(slug: string, metric: MetricKey, filter: FilterSpe
     case 'salary_p10_p90': {
       const salary = salaryOf(slug);
       const year = sum(lastN(counts, 52));
-      const withSalary = Math.round(year * 0.44);
+      const withSalary = Math.round(year * SALARY_STATED_SHARE);
       if (!salary) return reading(metric, type, { sample_n: 0, status: 'unavailable' });
       const cells = expandFilterToCells(filter);
       const leaves = [...new Set(cells.pairs.map(p => p.leaf))];
@@ -339,7 +352,7 @@ export function computeMetric(slug: string, metric: MetricKey, filter: FilterSpe
     }
     case 'skill_premium': {
       const premium = premiumOf(slug) ?? 0;
-      const year = Math.round(sum(lastN(counts, 52)) * 0.44);
+      const year = Math.round(sum(lastN(counts, 52)) * SALARY_STATED_SHARE);
       return reading(metric, type, { value: premium, numerator: year, sample_n: year });
     }
     case 'skills_per_ad': {
@@ -496,4 +509,116 @@ export function industrySkillReadings(industrySlug: string, skillSlug: string, w
 
 export function allSlugs(type?: ActiveInstrumentType): string[] {
   return INSTRUMENTS.filter(i => !type || i.type === type).map(i => i.slug);
+}
+
+// --- Breakdown (B1 prototype) ---------------------------------------------------
+
+/**
+ * Split of the non-entry ads (`other` seniority bucket) into mid / senior /
+ * expert. Instruments with fewer entry-level ads skew more senior. Fixture
+ * proportions, shaped like ads that state years of experience.
+ */
+export function experienceSplit(entryShare: number): Record<Exclude<ExperienceBucket, 'entry'>, number> {
+  const s = Math.min(1, Math.max(0, (0.3 - entryShare) / 0.25));
+  const mid = 0.5 - 0.14 * s;
+  const senior = 0.34 + 0.06 * s;
+  return { mid, senior, expert: 1 - mid - senior };
+}
+
+const RIGHTS_ORDER: readonly RightsBucket[] = ['requires_pr', 'not_stated', 'sponsorship_ok'];
+
+/** Salary multipliers per bucket relative to the role's all-levels median (fixture). */
+const SALARY_ADJ: Record<BreakdownBucketKey, number> = {
+  entry: 0.7, mid: 0.94, senior: 1.14, expert: 1.36,
+  requires_pr: 1.04, not_stated: 0.97, sponsorship_ok: 1.09,
+  onsite: 0.97, hybrid: 1.02, remote: 1.05,
+};
+
+/** Buckets of a dimension inside the filter, each with its unrounded weekly counts. */
+function bucketCounts(slug: string, filter: FilterSpec, by: BreakdownDimension): { all: BreakdownBucketKey[]; rows: Array<{ key: BreakdownBucketKey; raw: number[] }> } {
+  const cells = expandFilterToCells(filter);
+  if (by === 'mode') {
+    const present = WORK_MODES.filter(mode => cells.pairs.some(p => p.mode === mode));
+    return { all: [...WORK_MODES], rows: present.map(mode => ({ key: mode, raw: weeklyRaw(slug, filter, { keepModes: [mode] }) })) };
+  }
+  if (by === 'rights') {
+    const present = RIGHTS_ORDER.filter(r => cells.rights.includes(r));
+    return { all: [...RIGHTS_ORDER], rows: present.map(r => ({ key: r, raw: weeklyRaw(slug, filter, { rights: [r] }) })) };
+  }
+  const rows: Array<{ key: BreakdownBucketKey; raw: number[] }> = [];
+  const entry = cells.seniority.filter(b => b !== 'other');
+  if (entry.length) rows.push({ key: 'entry', raw: weeklyRaw(slug, filter, { seniority: entry }) });
+  if (cells.seniority.includes('other')) {
+    const other = weeklyRaw(slug, filter, { seniority: ['other'] });
+    const split = experienceSplit(profileOf(slug).entry);
+    for (const key of ['mid', 'senior', 'expert'] as const) rows.push({ key, raw: other.map(n => n * split[key]) });
+  }
+  return { all: [...EXPERIENCE_BUCKETS], rows };
+}
+
+/**
+ * Split the current measure by one dimension (GLOSSARY §2 "Breakdown").
+ * Additive `ad_count` → stacked bands that sum to the unbroken total.
+ * Non-additive `salary_median` (roles only) → one line per bucket, with gaps
+ * where too few ads state a salary. Any other measure falls back to job ads.
+ * Respects the table filter: only buckets inside it are returned.
+ */
+export function computeBreakdown(slug: string, metric: MetricKey, filter: FilterSpec, by: BreakdownDimension): Breakdown {
+  const inst = getInstrument(slug);
+  if (!inst) throw new Error(`Unknown instrument ${slug}`);
+  const type = inst.type;
+  const def = METRICS[metric];
+  const kind = def.breakdown && def.applies_to.includes(type) && (def.breakdown !== 'lines' || salaryOf(slug)) ? def.breakdown : 'stack';
+  const measure: MetricKey = kind === 'lines' ? metric : 'ad_count';
+  const { all, rows } = bucketCounts(slug, filter, by);
+  const filtered_to = rows.length < all.length ? rows.map(r => r.key) : null;
+  const estimated = by !== 'mode';
+  const counts = rows.map(r => ({ key: r.key, weekly: r.raw.map(Math.round) }));
+
+  if (kind === 'stack') {
+    const total = rollingSum(weeklyCounts(slug, filter)).map((value, i) => ({ date: weekDate(i), value }));
+    const totalLast4 = sum(counts.map(c => sum(lastN(c.weekly, 4))));
+    const buckets: BreakdownBucket[] = counts.map(c => {
+      const last4 = sum(lastN(c.weekly, 4));
+      return {
+        key: c.key,
+        series: rollingSum(c.weekly).map((value, i) => ({ date: weekDate(i), value })),
+        latest: reading('ad_count', type, { value: last4, numerator: last4, denominator: totalLast4, sample_n: last4 }),
+        share: totalLast4 > 0 ? last4 / totalLast4 : null,
+      };
+    });
+    const insufficient = buckets.filter(b => b.latest.status !== 'ok').map(b => b.key);
+    return { by, kind, measure, requested: metric, buckets, total, filtered_to, estimated, salary_stated: null, insufficient };
+  }
+
+  // Lines: rolling 52-week median salary per bucket (same window as the metric).
+  const salary = salaryOf(slug);
+  const cells = expandFilterToCells(filter);
+  const leaves = [...new Set(cells.pairs.map(p => p.leaf))];
+  const placeAdj = leaves.length ? leaves.reduce((a, l) => a + (STATE_SALARY[stateOf(l) ?? 'au-vic'] ?? 1), 0) / leaves.length : 1;
+  const senAdj = by === 'experience' ? 1 : filter.seniority === 'graduate' ? 0.62 : filter.seniority === 'entry' ? 0.7 : 1;
+  const growthPerWeek = 0.03 / 52;
+  const min = def.min_sample;
+  const insufficient: BreakdownBucketKey[] = [];
+  const buckets: BreakdownBucket[] = counts.map(c => {
+    // A rolling 12-month median moves slowly: gentle drift plus a small seasonal wave.
+    const phase = rng(`salary:${slug}:${c.key}`)() * Math.PI * 2;
+    const base = (salary?.median ?? 0) * placeAdj * senAdj * SALARY_ADJ[c.key];
+    const series: SeriesPoint[] = c.weekly.map((_, i) => {
+      if (i < 51) return { date: weekDate(i), value: null };
+      const stated = Math.round(sum(c.weekly.slice(i - 51, i + 1)) * SALARY_STATED_SHARE);
+      const v = base * (1 + growthPerWeek * (i - (WEEKS - 1))) * (1 + 0.006 * Math.sin(i / 9 + phase));
+      return { date: weekDate(i), value: stated >= min ? Math.round(v / 500) * 500 : null };
+    });
+    const year = sum(lastN(c.weekly, 52));
+    const stated = Math.round(year * SALARY_STATED_SHARE);
+    const value = series[WEEKS - 1]?.value ?? null;
+    const latest = reading('salary_median', type, { value, numerator: stated, denominator: year, sample_n: stated });
+    if (latest.status !== 'ok') insufficient.push(c.key);
+    return { key: c.key, series, latest, share: null };
+  });
+  // Same sample statement as the page's Median salary card (computeMetric), so the page shows one number.
+  const overall = computeMetric(slug, 'salary_median', filter);
+  const salary_stated = { with_salary: overall.numerator ?? 0, total: overall.denominator ?? 0 };
+  return { by, kind, measure, requested: metric, buckets, total: null, filtered_to, estimated, salary_stated, insufficient };
 }

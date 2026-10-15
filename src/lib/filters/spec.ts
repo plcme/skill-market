@@ -145,6 +145,8 @@ export interface FilterCopy {
   showing: string; // "Showing {rules}"
   ruleAllModes: string; // "all roles in {places}"
   ruleModes: string; // "{modes} roles in {places}"
+  /** "remote roles anywhere in Australia" — for the add-on rule of the simple filter (optional for older copy). */
+  ruleRemoteAnywhere?: string;
   joinRules: string; // ", plus "
   or: string; // " or "
   modes: Record<WorkMode, string>;
@@ -165,7 +167,8 @@ function joinOr(items: string[], or: string): string {
 /** FR-F3: every filter state has a plain-English readback. */
 export function describeFilter(spec: FilterSpec, copy: FilterCopy): string {
   const n = normaliseFilter(spec);
-  const rules = n.rules.map(rule => {
+  const rules = n.rules.map((rule, i) => {
+    if (i > 0 && copy.ruleRemoteAnywhere && isRemoteAnywhereRule(rule)) return copy.ruleRemoteAnywhere;
     const places = joinOr(rule.location_ids.map(id => getLocation(id)?.name ?? id), copy.or);
     if (rule.work_modes.length === WORK_MODES.length) return fillTemplate(copy.ruleAllModes, { places });
     const modes = joinOr(rule.work_modes.map(m => copy.modes[m]), copy.or);
@@ -174,4 +177,59 @@ export function describeFilter(spec: FilterSpec, copy: FilterCopy): string {
   const parts = [fillTemplate(copy.showing, { rules: rules.join(copy.joinRules) }), copy.seniority[n.seniority]];
   if (n.work_rights !== 'all') parts.push(copy.workRights[n.work_rights]);
   return parts.filter(Boolean).join(copy.separator);
+}
+
+// --- Simple filter (B2) -------------------------------------------------------
+// The filter panel's primary controls: one set of places × work modes, plus a
+// switch that adds "remote anywhere in Australia" as a second OR-ed rule. Any
+// spec these controls can't express stays editable in the Advanced rule builder.
+
+/** The add-on rule behind "Also include remote jobs anywhere in Australia". */
+export const REMOTE_ANYWHERE_RULE: Readonly<FilterRule> = Object.freeze({ work_modes: ['remote'], location_ids: ['au'] }) as FilterRule;
+
+export function isRemoteAnywhereRule(rule: FilterRule): boolean {
+  const modes = WORK_MODES.filter(m => rule.work_modes.includes(m));
+  const places = normaliseLocationIds(rule.location_ids);
+  return modes.length === 1 && modes[0] === 'remote' && places.length === 1 && places[0] === 'au';
+}
+
+export interface SimpleFilter {
+  /** Location ids at any level of the tree. */
+  places: string[];
+  modes: WorkMode[];
+  /** Adds REMOTE_ANYWHERE_RULE next to the places × modes rule. */
+  includeRemoteAnywhere: boolean;
+}
+
+/**
+ * True when places × modes already cover remote roles across all of Australia,
+ * so the remote-anywhere switch would add nothing (the UI disables it).
+ */
+export function remoteAnywhereRedundant(places: readonly string[], modes: readonly WorkMode[]): boolean {
+  return modes.includes('remote') && normaliseLocationIds([...places]).includes('au');
+}
+
+/** Express a spec with the simple controls, or null when it needs the Advanced rule builder. */
+export function toSimpleFilter(spec: FilterSpec): SimpleFilter | null {
+  const { rules } = normaliseFilter(spec);
+  const simple = (rule: FilterRule, includeRemoteAnywhere: boolean): SimpleFilter => ({
+    places: [...rule.location_ids],
+    modes: [...rule.work_modes],
+    includeRemoteAnywhere: includeRemoteAnywhere && !remoteAnywhereRedundant(rule.location_ids, rule.work_modes),
+  });
+  if (rules.length === 1) return simple(rules[0], false);
+  if (rules.length !== 2) return null;
+  const extra = rules.findIndex(isRemoteAnywhereRule);
+  if (extra < 0) return null;
+  return simple(rules[1 - extra], true);
+}
+
+/** Build a spec from the simple controls; seniority and work rights come from `base`. */
+export function fromSimpleFilter(simple: SimpleFilter, base: Pick<FilterSpec, 'seniority' | 'work_rights'>): FilterSpec {
+  const primary: FilterRule = { work_modes: WORK_MODES.filter(m => simple.modes.includes(m)), location_ids: normaliseLocationIds(simple.places) };
+  const rules = [primary];
+  if (simple.includeRemoteAnywhere && !remoteAnywhereRedundant(primary.location_ids, primary.work_modes)) {
+    rules.push({ work_modes: [...REMOTE_ANYWHERE_RULE.work_modes], location_ids: [...REMOTE_ANYWHERE_RULE.location_ids] });
+  }
+  return { rules, seniority: base.seniority, work_rights: base.work_rights };
 }

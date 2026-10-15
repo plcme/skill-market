@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { Check, Minus } from 'lucide-react';
 import { ACTIVE_INSTRUMENT_TYPES, type MetricKey } from '@/lib/market/types';
+import { CORE_COMPETENCIES } from '@/lib/market/competencies';
 import { METRIC_KEYS, METRICS, type MetricTier } from '@/lib/metrics/registry';
 import { Badge, Container, PageHeader, SectionHeader } from '@/components/ui/primitives';
 import { SourceMark } from '@/components/market/source-badge';
@@ -18,6 +19,7 @@ export default async function MetricsIndexPage() {
   const t = await getTranslations('MetricPage');
   const tm = await getTranslations('Metrics');
   const ts = await getTranslations('Sources');
+  const tc = await getTranslations('Competencies');
   const byTier = (tier: MetricTier): MetricKey[] => METRIC_KEYS.filter(k => METRICS[k].tier === tier);
 
   return (
@@ -86,6 +88,23 @@ export default async function MetricsIndexPage() {
           </table>
         </section>
       ))}
+      <section id="core-competencies" aria-labelledby="core-h" className="mb-14 scroll-mt-24">
+        <SectionHeader id="core-h" kicker={tc('guideKicker')} title={tc('guideTitle')} />
+        <p className="-mt-1 max-w-2xl text-[14px] leading-relaxed text-ink-2">{tc('guideLede')}</p>
+        <ul className="mt-4 flex max-w-2xl flex-col gap-1.5 text-[13.5px] text-ink-2">
+          {(['specialist_task', 'technology_tool', 'core'] as const).map(k => <li key={k} className="border-l-2 border-rule pl-3">{tc(`guideLayers.${k}`)}</li>)}
+        </ul>
+        <p className="mt-4 max-w-2xl rounded-md bg-sunken px-4 py-3 text-[14px] text-ink">{tc('notTracked')}</p>
+        <dl className="mt-6 grid gap-x-10 gap-y-5 sm:grid-cols-2">
+          {CORE_COMPETENCIES.map(c => (
+            <div key={c.slug} id={`competency-${c.slug}`} className="scroll-mt-24 border-t border-rule pt-3 target:-mx-2 target:rounded-md target:bg-accent-soft target:px-2 target:pb-2">
+              <dt className="font-serif text-[20px] leading-tight">{tc(`items.${c.slug}.name`)}</dt>
+              <dd className="mt-1 text-[13.5px] text-ink-2">{tc(`items.${c.slug}.blurb`)}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-5 text-[12.5px] text-muted">{tc('attribution')}</p>
+      </section>
       <p className="max-w-2xl text-[13px] text-muted">
         {t('indexFooter')}{' '}
         <Link href="/sources" className="link">{t('sourcesLink')}</Link>

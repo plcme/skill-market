@@ -13,9 +13,9 @@ import { FilterReadback } from '@/components/market/filter-readback';
 import { MetricSwitcher } from '@/components/market/metric-switcher';
 import { SourceBadge } from '@/components/market/source-badge';
 import { BoardCards, BoardColumnHeader, BoardRows } from '@/features/market/board';
-import { BoardTextFilter, BoardViewControls, SharedMetricSelect } from '@/features/market/board-controls';
+import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitch } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
-import { BOARD_TYPES, boardTypeParam, firstParam, hrefWith, parseBoardType, parseSort, parseView } from '@/features/market/logic';
+import { BOARD_TYPES, boardTypeParam, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView } from '@/features/market/logic';
 import { SignalsStrip } from '@/features/market/signals-strip';
 import { cn } from '@/lib/utils';
 
@@ -33,17 +33,18 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
   const type = parseBoardType(sp.type);
   const sort = parseSort(sp.sort);
   const view = parseView(sp.view);
+  const layer = type === 'skill' ? parseLayer(sp.layer) : null;
   const q = firstParam(sp.q) ?? '';
   const metricParam = firstParam(sp.metric);
   const filter = decodeFilter(firstParam(sp.f));
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
 
-  const board = getBoard({ type, metric: metricParam, filter, sort, q });
+  const board = getBoard({ type, metric: metricParam, filter, sort, q, layer });
   const signalsNow = getSignalsNow(filter);
   const keep = { f, sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
   const typeHref = (next: BoardType) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
-  const resetHref = hrefWith('/market', { type: boardTypeParam(type), metric: metricParam, ...keep });
-  const resetFilterHref = hrefWith('/market', { type: boardTypeParam(type), metric: metricParam, q: q || undefined, ...keep, f: undefined });
+  const resetHref = hrefWith('/market', { type: boardTypeParam(type), metric: metricParam, layer: layerParam(layer), ...keep });
+  const resetFilterHref = hrefWith('/market', { type: boardTypeParam(type), metric: metricParam, q: q || undefined, layer: layerParam(layer), ...keep, f: undefined });
   const firstOk = board.rows.find(r => r.metric.status === 'ok') ?? board.rows[0];
   const firstChangeOk = board.rows.find(r => r.change.status === 'ok') ?? board.rows[0];
 
@@ -96,6 +97,12 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
             <FilterReadback filter={filter} className="min-w-0 sm:truncate" />
             <Link href={resetFilterHref} className="link shrink-0">{tf('scopeReset')}</Link>
           </p>
+        ) : null}
+
+        {type === 'skill' ? (
+          <Suspense fallback={<div className="mt-3 h-8" />}>
+            <SkillLayerSwitch value={layer} className="mt-3" />
+          </Suspense>
         ) : null}
 
         <Suspense fallback={<div className="mt-4 h-8" />}>

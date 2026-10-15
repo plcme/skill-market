@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ChevronDown } from 'lucide-react';
 import { instrumentPath } from '@/lib/links';
+import { COMPETENCY_SCALE_MAX, competencyHref, type CompetencyLevel } from '@/lib/market/competencies';
 import { METRICS } from '@/lib/metrics/registry';
 import { formatAud, formatCount, formatShare } from '@/lib/market/format';
 import { formatDate } from '@/lib/time';
@@ -250,6 +251,43 @@ function Scale<V extends string>({ steps, value, label }: { steps: V[]; value: V
       </div>
       <div className="mt-1.5 grid grid-cols-3 gap-1">
         {steps.map(s => <span key={s} className={cn('text-[11.5px]', s === value ? 'font-medium text-ink' : 'text-faint')}>{label(s)}</span>)}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ASC core competencies for a role: one bar per ability, 1–10 with the number
+ * written next to it. Listed in the ASC's own order — never sorted, so it
+ * never reads as a ranking. Illustrative fixture; no demand metrics.
+ */
+export function CoreCompetencies({ levels, name }: { levels: CompetencyLevel[]; name: string }) {
+  const t = useTranslations('Competencies');
+  return (
+    <div>
+      <p className="-mt-1 mb-4 max-w-3xl text-[13px] text-muted">{t('roleNote', { name })}{' '}{t('notTracked')}</p>
+      <ul aria-label={t('listLabel', { name })} className="grid gap-x-12 gap-y-3 md:grid-cols-2">
+        {levels.map(c => {
+          const label = t(`items.${c.slug}.name`);
+          return (
+            <li key={c.slug} className="grid grid-cols-[minmax(0,9.5rem)_1fr_auto] items-center gap-3 text-sm sm:grid-cols-[minmax(0,12rem)_1fr_auto]">
+              <Link href={competencyHref(c.slug)} className="leading-tight text-ink-2 hover:text-ink hover:underline">{label}</Link>
+              <span className="grid h-2.5 grid-cols-10 gap-[2px]" aria-hidden>
+                {Array.from({ length: COMPETENCY_SCALE_MAX }, (_, i) => (
+                  <span key={i} className={cn('rounded-[1px]', i < c.level ? 'bg-ink/75' : 'bg-sunken')} />
+                ))}
+              </span>
+              <span className="num w-12 whitespace-nowrap text-right text-[13px]">
+                <span className="sr-only">{t('levelLabel', { name: label, level: c.level })}</span>
+                <span aria-hidden>{t('level', { level: c.level })}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-4 flex flex-col gap-1 text-[12.5px] text-muted">
+        <p><span className="font-medium text-ink-2">{t('illustrative')}</span>{' · '}{t('scaleNote')}</p>
+        <p>{t('attribution')}{' · '}<Link href="/metrics#core-competencies" className="link">{t('explainerLink')}</Link></p>
       </div>
     </div>
   );

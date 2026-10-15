@@ -21,7 +21,9 @@ import { SourceBadge } from '@/components/market/source-badge';
 import { ClientTrendChart as TrendChart } from './trend-chart-client';
 import { WatchButton } from '@/components/market/watch-button';
 import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
-import { BeforeYouDecide, CompositionList, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
+import { competencyLevels } from '@/lib/market/competencies';
+import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
+import { BreakdownSection } from './breakdown-section';
 import { chartMetricFor, hrefWith } from './logic';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
@@ -46,6 +48,8 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const chartReading = detail.readings[chartMetric] ?? detail.readings.ad_count ?? reading;
   const insufficient = chartReading.status === 'insufficient_sample';
   const lastDate = detail.series[detail.series.length - 1]?.date ?? detail.as_of;
+  const competencies = type === 'role' ? competencyLevels(inst.slug) : null;
+  const tc = useTranslations('Competencies');
   const secondary = ([signalMetric(type), 'entry_level_share', 'ad_count'] as MetricKey[]).filter(m => m !== detail.metric).slice(0, 2);
 
   return (
@@ -65,7 +69,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           <div className="flex items-center gap-3">
             <Monogram size="lg" tone={signal ? 'signal' : 'plain'}>{inst.symbol}</Monogram>
             <div className="min-w-0">
-              <p className="kicker">{tt(type)} · {inst.category}</p>
+              <p className="kicker">{tt(type)}{inst.skill_layer ? <>{' · '}{tt(`layer.${inst.skill_layer}`)}</> : null} · {inst.category}</p>
               <p className="mt-1 font-mono text-[12px] text-muted">
                 {type === 'role' ? (inst.anzsco ? tt('anzsco', { code: inst.anzsco }) : tt('noAnzsco')) : t('tracked', { date: formatDate(inst.tracking_since, { month: 'short', year: 'numeric' }) })}
               </p>
@@ -167,6 +171,16 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         </Card>
       </section>
 
+      <Suspense fallback={<div className="skeleton mt-12 h-[520px] w-full" />}>
+        <BreakdownSection
+          breakdown={detail.breakdown}
+          type={type}
+          filter={filter}
+          subject={inst.name}
+          reading={detail.readings[detail.breakdown.measure]}
+        />
+      </Suspense>
+
       <MyNotes slug={inst.slug} name={inst.name} />
 
       <section aria-labelledby="fund-h" className="mt-16">
@@ -239,10 +253,18 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           </section>
         </div>
       ) : type === 'role' ? (
+        <>
+        {competencies ? (
+          <section aria-labelledby="core-h" className="mt-16">
+            <SectionHeader id="core-h" kicker={tc('kicker')} title={tc('title')} />
+            <CoreCompetencies levels={competencies} name={inst.name} />
+          </section>
+        ) : null}
         <section aria-labelledby="decide-h" className="mt-16">
           <SectionHeader id="decide-h" kicker={t('decideKicker')} title={t('decideTitle')} />
           <BeforeYouDecide instrument={inst} />
         </section>
+        </>
       ) : null}
 
       <section aria-labelledby="next-h" className="mt-16 grid gap-6 rounded-lg border border-rule bg-surface p-6 sm:p-8 md:grid-cols-[minmax(0,1.4fr)_auto] md:items-end">

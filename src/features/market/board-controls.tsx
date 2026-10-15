@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { LayoutGrid, List, Search, X } from 'lucide-react';
 import { sharedMetrics } from '@/lib/metrics/registry';
-import type { MetricKey } from '@/lib/market/types';
+import type { MetricKey, SkillLayer } from '@/lib/market/types';
 import type { BoardSort } from '@/lib/queries/market';
 import { Input, Segmented, Select } from '@/components/ui/form';
 import { useSetParams } from '@/components/market/use-url-state';
 import { cn } from '@/lib/utils';
-import type { BoardView } from './logic';
+import { layerParam, type BoardView } from './logic';
 
 /** Sort + list/cards toggle; both live in the URL so a board view is shareable. */
 export function BoardViewControls({ sort, view, className }: { sort: BoardSort; view: BoardView; className?: string }) {
@@ -108,5 +108,25 @@ export function SharedMetricSelect({ value, className }: { value: MetricKey; cla
       </Select>
       <span id="shared-metric-hint" className="sr-only">{t('sharedMetricHint')}</span>
     </label>
+  );
+}
+
+type LayerChoice = SkillLayer | 'all';
+
+/** Skills board: All skills · Tools · Tasks (ASC layers), kept in `?layer=`. */
+export function SkillLayerSwitch({ value, className }: { value: SkillLayer | null; className?: string }) {
+  const t = useTranslations('MarketPage');
+  const { set, pending } = useSetParams();
+  return (
+    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5', pending && 'opacity-70', className)}>
+      <Segmented<LayerChoice>
+        size="sm"
+        label={t('layerLabel')}
+        value={value ?? 'all'}
+        onValueChange={v => set({ layer: v === 'all' ? null : layerParam(v) ?? null })}
+        options={(['all', 'technology_tool', 'specialist_task'] as const).map(v => ({ value: v, label: t(`layer.${v}`) }))}
+      />
+      {value ? <p className="text-[12.5px] text-muted">{t(`layerNote.${value}`)}</p> : null}
+    </div>
   );
 }

@@ -9,7 +9,8 @@
       "modes": { "onsite": "on-site", "hybrid": "hybrid", "remote": "remote" },
       "seniority": { "all": "All levels", "entry": "Entry-level only", "graduate": "Graduate roles only" },
       "workRights": { "all": "", "no_pr_required": "No PR or citizenship requirement stated" },
-      "separator": " · "
+      "separator": " · ",
+      "ruleRemoteAnywhere": "remote roles anywhere in Australia"
     },
     "title": "Filter",
     "button": "Filter",
@@ -43,7 +44,16 @@
     "modeRequired": "Pick at least one work mode.",
     "placeRequired": "Pick at least one place.",
     "maxRules": "You can combine up to {max} rules.",
-    "currentlyShowing": "Currently showing"
+    "currentlyShowing": "Currently showing",
+    "remoteAnywhere": "Also include remote jobs anywhere in Australia",
+    "remoteAnywhereHint": "Adds remote roles from every state on top of the places above.",
+    "remoteAnywhereCovered": "Already included — your places and work modes cover remote roles across Australia.",
+    "placesHint": "Pick any mix of countries, states, cities or regions.",
+    "workModeLegend": "Work mode",
+    "advanced": "Advanced: combine your own rules",
+    "advancedHint": "Each rule is one way of working in one or more places; an ad counts if it matches any rule.",
+    "advancedLocked": "These rules can’t be shown with the simple controls. Reset, or keep editing them here.",
+    "simpleBack": "Back to simple controls"
   },
   "Metrics": {
     "switcher": "Measure",
@@ -228,7 +238,7 @@
     },
     "kindsShort": { "official": "Official", "ads": "Job ads", "practitioner": "People" },
     "names": {
-      "adzuna-au-fixture": "Job ads (illustrative fixture)",
+      "job-ads-fixture": "Job ads (illustrative fixture)",
       "jsa-ivi-fixture": "Occupation vacancy series (illustrative fixture)",
       "platform-debriefs": "Coffee-chat debriefs"
     },
@@ -270,7 +280,11 @@
     "entryShare": "Entry-level",
     "whereLabel": "Where",
     "anzsco": "ANZSCO {code}",
-    "noAnzsco": "Industry title — no single ANZSCO code"
+    "noAnzsco": "Industry title — no single ANZSCO code",
+    "layer": {
+      "technology_tool": "Technology tool",
+      "specialist_task": "Specialist task"
+    }
   },
   "Chart": {
     "showTable": "Show data table",
@@ -309,5 +323,138 @@
     "colChange": "4-week change",
     "changeCell": "{change} ({from} → {to})",
     "thinCell": "Too few ads (under {min})"
+  },
+  "Competencies": {
+    "title": "Core competencies",
+    "kicker": "Everyday abilities",
+    "illustrative": "Illustrative — based on the ASC core competency scale",
+    "attribution": "Framework: Australian Skills Classification, Jobs and Skills Australia",
+    "notTracked": "Every job uses these, so we don’t track demand for them.",
+    "scaleNote": "Levels run from 1 (basic) to 10 (highly complex) and describe how much of each ability the work calls for. They are not a judgement of any person.",
+    "roleNote": "How much of each everyday ability {name} work typically calls for.",
+    "level": "{level} / 10",
+    "levelLabel": "{name}: level {level} of 10",
+    "listLabel": "Core competency levels for {name}",
+    "explainerLink": "What core competencies are",
+    "type": "Core competency",
+    "count": "{n, plural, one {# core competency} other {# core competencies}}",
+    "matched": "Matched “{matched}”",
+    "searchNote": "These ten abilities come from the Australian Skills Classification. Every job uses them, so we don’t track demand for them — role pages show how much of each a role calls for.",
+    "guideTitle": "Core competencies",
+    "guideKicker": "Not tracked",
+    "guideLede": "The Australian Skills Classification describes work in three layers. We track the two that move with the market — specialist tasks (what you do) and technology tools (what you use). The third layer is ten core competencies that every job uses.",
+    "guideLayers": {
+      "specialist_task": "Specialist tasks — work activities such as analysing data or managing projects. Tracked.",
+      "technology_tool": "Technology tools — named software and platforms such as Excel or AWS. Tracked.",
+      "core": "Core competencies — the ten abilities below. Not tracked; role pages show them as levels."
+    },
+    "items": {
+      "digital-engagement": {
+        "name": "Digital engagement",
+        "blurb": "Using digital devices, software and online systems to get work done safely."
+      },
+      "initiative-innovation": {
+        "name": "Initiative and innovation",
+        "blurb": "Spotting what needs doing and finding new or better ways to do it."
+      },
+      "learning": {
+        "name": "Learning",
+        "blurb": "Picking up new knowledge and skills and applying them at work."
+      },
+      "numeracy": {
+        "name": "Numeracy",
+        "blurb": "Working with numbers, measurements and data to make decisions."
+      },
+      "oral-communication": {
+        "name": "Oral communication",
+        "blurb": "Speaking and listening so that information and ideas are understood."
+      },
+      "planning-organising": {
+        "name": "Planning and organising",
+        "blurb": "Setting priorities, managing time and organising tasks and resources."
+      },
+      "problem-solving": {
+        "name": "Problem solving",
+        "blurb": "Working out what is wrong and choosing a way to fix it."
+      },
+      "reading": {
+        "name": "Reading",
+        "blurb": "Understanding written information such as instructions, reports and policies."
+      },
+      "teamwork": {
+        "name": "Teamwork",
+        "blurb": "Working with others towards a shared goal."
+      },
+      "writing": {
+        "name": "Writing",
+        "blurb": "Producing written text that is clear for its audience and purpose."
+      }
+    },
+    "monogram": "ASC"
+  },
+  "Breakdown": {
+    "title": "Breakdown",
+    "kicker": "One dimension at a time",
+    "dimensionLabel": "Break down by",
+    "dims": {
+      "experience": "Experience",
+      "rights": "Work rights",
+      "mode": "Work mode"
+    },
+    "dimsLower": {
+      "experience": "experience",
+      "rights": "work rights",
+      "mode": "work mode"
+    },
+    "buckets": {
+      "entry": "Entry · 0–2 yrs",
+      "mid": "Mid · 3–5 yrs",
+      "senior": "Senior · 6–9 yrs",
+      "expert": "Expert · 10+ yrs",
+      "requires_pr": "Requires PR or citizenship",
+      "not_stated": "Not stated",
+      "sponsorship_ok": "Sponsorship offered",
+      "onsite": "On-site",
+      "hybrid": "Hybrid",
+      "remote": "Remote"
+    },
+    "short": {
+      "entry": "Entry",
+      "mid": "Mid",
+      "senior": "Senior",
+      "expert": "Expert",
+      "requires_pr": "PR required",
+      "not_stated": "Not stated",
+      "sponsorship_ok": "Sponsorship",
+      "onsite": "On-site",
+      "hybrid": "Hybrid",
+      "remote": "Remote"
+    },
+    "captionStack": "Job ads by {dimension}, 4-week rolling",
+    "captionLines": "Median advertised salary by {dimension}, rolling 12 months",
+    "stackNote": "Bands add up to the total line: every ad sits in exactly one band.",
+    "fallback": "Breakdown shows Job ads — {metric} can’t be split this way.",
+    "filteredTo": "Filtered to {buckets} by your filter.",
+    "estimated": "Estimated",
+    "methodLabel": "How {dimension} is estimated",
+    "methodTitle": "How we estimate {dimension}",
+    "method": {
+      "experience": "Read from the years of experience or level an ad asks for (“3+ years”, “senior”). Graduate, junior and intern ads count as Entry; ads that state neither are placed by job title. Some ads will be misread, so treat the bands as approximate.",
+      "rights": "Read from phrases about permanent residency, citizenship, security clearance or visa sponsorship. “Not stated” means the ad doesn’t say — it does not guarantee you can apply."
+    },
+    "salaryStated": "From {with} of {total} ads that state a salary (last 12 months).",
+    "gaps": "Gaps mean too few ads in that group state a salary: {buckets}.",
+    "legendLabel": "Breakdown values",
+    "legendStack": "Job ads, last 4 weeks · share",
+    "legendLines": "Median salary, last 12 months",
+    "total": "All job ads",
+    "notEnough": "Not enough ads",
+    "chartLabel": "{caption}. {buckets}.",
+    "illustrative": "Illustrative fixture data.",
+    "thin": "Fewer than {min} ads in the last 4 weeks for {buckets}, so we don’t give a number — the band is hatched to show roughly where those ads sit.",
+    "filteredToGraduate": "Filtered to graduate ads by your filter.",
+    "graduateBucket": "Graduate ads",
+    "graduateShort": "Graduate",
+    "allThin": "Too few ads under this filter to split them reliably. Widen the filter to see the breakdown."
   }
 }

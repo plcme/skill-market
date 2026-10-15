@@ -199,7 +199,7 @@ describe('market page queries', () => {
     const r = searchWithSnapshots('js', DEFAULT_FILTER);
     expect(r.skills[0]?.hit.instrument.slug).toBe('javascript');
     expect(r.skills[0]?.snapshot.instrument.slug).toBe('javascript');
-    expect(searchWithSnapshots('', DEFAULT_FILTER)).toEqual({ skills: [], roles: [], industries: [] });
+    expect(searchWithSnapshots('', DEFAULT_FILTER)).toEqual({ skills: [], roles: [], industries: [], competencies: [] });
   });
   it('gives example readings only for types the metric applies to', () => {
     const salary = getMetricExamples('salary_median', DEFAULT_FILTER);

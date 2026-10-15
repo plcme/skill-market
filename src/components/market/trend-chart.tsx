@@ -27,7 +27,7 @@ function niceTicks(min: number, max: number, count = 4): number[] {
   const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) ?? raw;
   const start = Math.floor(min / step) * step;
   const ticks: number[] = [];
-  for (let v = start; v <= max + step * 0.5; v += step) ticks.push(Number(v.toFixed(10)));
+  for (let v = start; ticks.length < 2 || ticks[ticks.length - 1] < max; v += step) ticks.push(Number(v.toFixed(10)));
   return ticks;
 }
 
@@ -227,7 +227,7 @@ export function TrendChart({ lines, metric, caption, defaultRange = '1y', height
           {showTable ? t('hideTable') : t('showTable')}
         </Button>
         {showTable ? (
-          <div className="mt-2 max-h-72 overflow-auto rounded-md border border-rule">
+          <div tabIndex={0} role="region" aria-label={caption} className="mt-2 max-h-72 overflow-auto rounded-md border border-rule focus-visible:outline-offset-2">
             <table className="w-full text-[13px]">
               <caption className="sr-only">{caption}</caption>
               <thead className="sticky top-0 bg-sunken">
