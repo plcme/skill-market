@@ -44,3 +44,64 @@
 5. [src/app/metrics/page.tsx:100] `target:bg-signal-soft` 把荧光黄用在锚点高亮上，而 DESIGN §2.1 规定 `signal` 只用于信号。建议改用 `accent-soft`。
 6. [src/components/market/breakdown-chart.tsx:152] 宽度小于 520px 时没有直接标注，只靠图例色块与面积带对应，好在图例顺序与堆叠顺序一致，位置本身也是线索。可以考虑在窄屏图例里给色块加上与堆叠层对应的序号，或者用细描边增强。
 7. ASC 是 CC BY 4.0 许可，署名旁边可以补上许可名和链接，便于合规审查（目前只有 "Framework: Australian Skills Classification, Jobs and Skills Australia"）。
+
+## Round 2 — 通过
+
+审查范围：`git diff aa1a235..fe-r2`（10 个 commit：e715e72 … 2c8c33a）及其触及的文件。
+
+验收命令结果：
+- `pnpm lint` / `pnpm typecheck`：0 错误（主会话已跑）
+- `pnpm test:unit`：186/186 通过（主会话已跑）；本轮自查 `theme-contrast`、`market-breakdown`、`market-competencies` 三个文件 21/21 通过
+- `pnpm build`：成功
+- `E2E_PORT=3150 pnpm exec playwright test e2e/round2.spec.ts e2e/responsive.spec.ts e2e/frontend.spec.ts`：
+  - 首轮 61 通过、60 失败、1 跳过，共 51.9 分钟。机器负载 82，失败全是超时（Test timeout、`frame.evaluate`、teardown）。
+  - `--last-failed --workers=2` 重跑：49 通过、10 失败，仍然全是超时。
+  - 剩余 10 个用 `--workers=1` 重跑：10/10 通过（40 秒）。
+  - 结论：没有真实失败。新增的 "long boards hydrate without console errors in dark mode" 在重跑中通过。
+- 补充自查：在 3150 端口截图，并用脚本检查主题切换。
+  - `/r/data-analyst?metric=salary_median&by=experience`，1440 宽浅色和深色：Entry 线清晰可见，Mid 线也足够清楚。
+  - 浅色和深色主题下，breakdown 卡片和 Median salary 卡片都写 "4,713 of 10,712"，两处一致。
+  - `/s/python?f=r.au-nt-darwin_all_all&by=experience`：全部分档都低于阈值，显示 "Too few ads…" 占位，图例四档都是 "Not enough ads"，色块为斜线填充。
+  - `/r/data-analyst?by=experience&f=ohr.au_graduate_all`：显示 "Filtered to graduate ads by your filter."，图例为 "Graduate ads"，端点标签为 "Graduate"。
+  - 主题：深色设备默认 `data-theme=dark`。点击 header toggle 后 html 变为 light，`sm-theme=light` 写入，aria-label 更新为 "Theme: Light. Switch to Dark"。reload 后保持 light。全程 console 没有 error。
+
+逐项结论：
+1. **对比度（原阻断）**：已修复。
+   - theme.css 的 ord 色板与 DESIGN §2.2 新值逐一一致。
+   - `tests/theme-contrast.test.ts` 解析两套主题，断言 7 个 `--series-*` 和 `--faint` 对 `--surface` 都至少 3:1，还附带对 WCAG 公式本身的校验。
+   - 测试断言 series 数量为 7，以后新增 token 时会被迫更新测试，不会悄悄漏检。
+2. **salary 样本说明**：已修复。
+   - `computeBreakdown` 改为直接复用 `computeMetric('salary_median')` 的 numerator 和 denominator。
+   - 0.44 收敛为 `SALARY_STATED_SHARE`，并有测试断言两处完全相等。
+3. **stack 低样本档**：已修复。
+   - `insufficient` 对 stack 同样填充，并有测试。
+   - 低于阈值的带用 SVG pattern 画成斜线填充，不给端点标签。
+   - 图例显示 "Not enough ads"，色块同样是斜线。
+   - 表格和 tooltip 中低于阈值的格子显示 "Not enough ads"：series 本身是 4 周滚动和，与 `min_sample` 的口径一致。
+   - 全部档都低于阈值时不画坐标轴，改为说明文字。
+4. **graduate 筛选**：已修复，说明行、图例、端点标签、表头都改为 graduate 措辞。
+5. **命令面板**：已修复。新增 `isExactCompetencyHit`，只有完全匹配时核心能力才置顶，否则排在 instrument 之后。`/search` 与命令面板共用这个函数，有测试。
+6. **signal-soft**：已修复。metrics 锚点和 "Currently showing" 改用 `accent-soft`。剩余用法中，signal 卡片、watchlist 和 ticker 的信号行、`tone==='signal'` 徽章都属于信号本身，合规。
+7. **深色 hydration 循环**：根因修复合理。
+   - 主题移出 React context，改为 `useSyncExternalStore`，订阅 matchMedia、`storage` 事件和自定义事件。server snapshot 固定为 `'light'`。
+   - 页面配色仍由 THEME_SCRIPT 在 paint 前设置，所以没有闪烁。
+   - `AppProvider` 只在挂载后订阅 `applyTheme`，用来跟随设备变化和其他标签页。
+   - 已实测：默认跟随系统、手动选择持久化、header toggle 状态更新、深色 `/market` 无 console error。
+   - 代价：深色设备上 toggle 图标在 hydration 后才翻转，只影响图标本身，可以接受。
+8. **README**：已改为中性措辞，不再点名具体来源。
+- **额外 commit 8f7164b**：
+  - `niceTicks` 改为循环直到最后一个刻度不小于 max，保证坐标轴覆盖数据。step 恒为正，有限步内必然结束；min > max 的退化情况也会在第 2 个刻度处结束，不会死循环。
+  - stack 模式加了 `minStep=1`，避免小计数出现小数刻度。
+  - "allThin" 说明文案合理。
+
+### 必须修复（阻断）
+
+（无）
+
+### 建议（不阻断）
+
+1. [src/features/market/breakdown-section.tsx:92 + messages/en/market.json `Breakdown.thin`] 全部分档都低于阈值时，图表区显示的是 "Too few ads…" 占位，但上方提示仍写 "the band is hatched to show roughly where those ads sit"，而此时根本没有画任何带。建议在 all-thin 时改用一句不提 hatched 的文案，或者省略这一行。
+2. [src/lib/theme-store.ts:59-67] localStorage 被禁用时，`storeTheme` 写入失败后 `applyTheme()` 又重新读 storage，结果仍按系统主题解析，手动选择完全不生效。这与注释 "lasts for this page view only" 不符。可以在模块里加一个内存中的 override 作为兜底。属于边缘场景。
+3. [src/components/market/breakdown-chart.tsx] stack 模式下，如果只有一档低于阈值，可以用 total 减去其他档反推出它的数值。这些是广告计数，不是个人数据，所以只影响 "不给数字" 的一致性，不涉及隐私。可以考虑把这种情况写进方法说明。
+4. [src/app/sources/page.tsx:99] `cellsExample` 说明框仍然使用 `bg-signal-soft`。这是本轮之前就有的用法，不在本轮修复范围内，建议顺手改成 `accent-soft`。
+5. 当前 fixture 里没找到 "部分档低于阈值" 的页面（health-care 的 rights 维度中 Sponsorship 现在是 67），因此斜线带与实心带混排的效果只做了代码审查，没有截图确认。可以考虑在 e2e 里固定一个这样的 filter。
