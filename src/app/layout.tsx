@@ -6,7 +6,7 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { APP_NAME } from '@/config/app';
 import { AppProvider } from '@/components/shell/app-provider';
-import { THEME_SCRIPT } from '@/lib/theme';
+import { PREPAINT_SCRIPT } from '@/lib/prepaint';
 import { CommandPalette } from '@/components/shell/command-palette';
 import { MobileTabBar } from '@/components/shell/mobile-tabbar';
 import { PreviewDock } from '@/components/shell/preview-dock';
@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en-AU" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: PREPAINT_SCRIPT }} />
       </head>
       <body className="min-h-svh">
         <NextIntlClientProvider>

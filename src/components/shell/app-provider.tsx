@@ -7,6 +7,8 @@ import { TooltipProvider } from '@/components/ui/overlay';
 import type { ThemePref } from '@/lib/api/types';
 import type { ResolvedTheme } from '@/lib/theme';
 import { applyTheme, readResolvedTheme, readThemePref, storeTheme, subscribeTheme } from '@/lib/theme-store';
+import { DEFAULT_MARKET_COLORS, type MarketColors } from '@/lib/market-colors';
+import { applyMarketColors, readMarketColors, storeMarketColors, subscribeMarketColors } from '@/lib/market-colors-store';
 
 interface AppContextValue {
   appName: string;
@@ -37,10 +39,20 @@ export function useTheme(): { theme: ThemePref; resolvedTheme: ResolvedTheme; se
   return { theme, resolvedTheme, setTheme: storeTheme };
 }
 
+const serverMarketColors = (): MarketColors => DEFAULT_MARKET_COLORS;
+
+/** Up/down colour scheme for the settings control; same external-store pattern as the theme. */
+export function useMarketColors(): { marketColors: MarketColors; setMarketColors: (m: MarketColors) => void } {
+  const marketColors = useSyncExternalStore(subscribeMarketColors, readMarketColors, serverMarketColors);
+  return { marketColors, setMarketColors: storeMarketColors };
+}
+
 export function AppProvider({ appName, children }: { appName: string; children: React.ReactNode }) {
   const t = useTranslations('Common');
   // Follow the device (and other tabs) after load; THEME_SCRIPT already set it before paint.
   useEffect(() => subscribeTheme(applyTheme), []);
+  // Other tabs changing the up/down colours; MARKET_COLORS_SCRIPT set it before paint.
+  useEffect(() => subscribeMarketColors(applyMarketColors), []);
   const value = useMemo(() => ({ appName }), [appName]);
   return (
     <AppContext.Provider value={value}>

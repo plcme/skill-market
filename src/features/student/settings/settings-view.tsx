@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Download, Trash2 } from 'lucide-react';
 import { RequireSession } from '@/components/shell/require-session';
-import { useTheme } from '@/components/shell/app-provider';
+import { useMarketColors, useTheme } from '@/components/shell/app-provider';
 import type { ResolvedTheme } from '@/lib/theme';
+import { MARKET_COLOR_SWATCHES, MARKET_COLORS, type MarketColors } from '@/lib/market-colors';
 import type { DemoDB, DigestFrequency, StudentField, StudentProfile, StudyYear, UiMode, Visibility, VisaStatus } from '@/lib/api/types';
 import { STUDENT_FIELDS } from '@/lib/api/types';
 import { DELETE_CONFIRMATION, PURGE_AFTER_DAYS, requestDeletion, requestExport, selectConsents, setUiMode, updateEmailPreferences, updateFieldVisibility, updateProfile } from '@/lib/api/privacy';
@@ -166,10 +167,24 @@ function EmailPrefs({ prefs }: { prefs: StudentProfile['email_prefs'] }) {
   );
 }
 
+const MARKET_COLORS_LABEL: Record<MarketColors, 'greenUp' | 'redUp' | 'blueUp'> = { 'green-up': 'greenUp', 'red-up': 'redUp', 'blue-up': 'blueUp' };
+
+/** Tiny preview for one scheme: its up colour, then its down colour. */
+function MarketColorsSwatch({ scheme, theme }: { scheme: MarketColors; theme: ResolvedTheme }) {
+  const { up, down } = MARKET_COLOR_SWATCHES[scheme][theme];
+  return (
+    <span aria-hidden className="inline-flex gap-0.5">
+      <span className="size-2.5 rounded-[2px]" style={{ background: up }} />
+      <span className="size-2.5 rounded-[2px]" style={{ background: down }} />
+    </span>
+  );
+}
+
 function Display({ mode }: { mode: UiMode }) {
   const t = useTranslations('Settings');
   const tn = useTranslations('Nav');
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const { marketColors, setMarketColors } = useMarketColors();
   const { toast } = useToast();
   const [save] = useAction(setUiMode);
   return (
@@ -191,6 +206,19 @@ function Display({ mode }: { mode: UiMode }) {
           {t('themeHint')}
           {theme !== 'system' ? <>{' '}<button type="button" className="link" onClick={() => setTheme('system')}>{tn('matchDevice')}</button></> : null}
         </p>
+      </div>
+      <div>
+        <p className="mb-2 text-sm font-medium">{t('marketColors')}</p>
+        <Segmented<MarketColors>
+          label={t('marketColors')}
+          value={marketColors}
+          onValueChange={setMarketColors}
+          options={MARKET_COLORS.map(v => ({
+            value: v,
+            label: <span className="inline-flex items-center gap-1.5"><MarketColorsSwatch scheme={v} theme={resolvedTheme} />{t(`marketColorsOptions.${MARKET_COLORS_LABEL[v]}`)}</span>,
+          }))}
+        />
+        <p className="mt-1.5 text-[13px] text-muted">{t('marketColorsHint')}</p>
       </div>
     </div>
   );
@@ -287,7 +315,7 @@ function YourData({ db }: { db: DemoDB }) {
         ) : <p className="text-sm text-muted">{t('consentsNone')}</p>}
       </div>
 
-      <Card className="flex flex-col gap-4 border-down/30 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <Card className="flex flex-col gap-4 border-danger/30 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-xl">
           <p className="font-medium">{t('deleteTitle')}</p>
           <p className="mt-1 text-sm text-muted">{t('deleteSummary', { days: PURGE_AFTER_DAYS })}</p>

@@ -430,6 +430,13 @@
     },
     "modeSaved": "Display updated",
     "themeHint": "Starts out matching your device’s light or dark setting. Once you pick one, this browser remembers it.",
+    "marketColors": "Up and down colours",
+    "marketColorsOptions": {
+      "greenUp": "Green up",
+      "redUp": "Red up",
+      "blueUp": "Blue up"
+    },
+    "marketColorsHint": "Arrows and signs always show the direction. This only changes colours on this device.",
     "dataLede": "Your data is stored in Sydney, Australia. You can download it or delete it.",
     "exportTitle": "Download your data",
     "exportBody": "A JSON file with your profile, skills, watchlist, chat requests and the emails we’ve sent you. We also email you when it’s ready.",
