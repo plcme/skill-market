@@ -52,7 +52,7 @@ function changeText(tile: HeatTile): string | null {
 function TileChange({ tile, fallback }: { tile: HeatTile; fallback: string }) {
   const text = changeText(tile);
   if (text === null || tile.change.value === null) return <>{fallback}</>;
-  return <><DirectionGlyph dir={signDirection(tile.change.value)} spoken={false} />{'\u00a0'}{text}</>;
+  return <span className="whitespace-nowrap"><DirectionGlyph dir={signDirection(tile.change.value)} spoken={false} className="mr-[0.2em] text-[0.6em]" />{text}</span>;
 }
 
 export function HeatmapLegend({ heatmap, filter, parentName, className }: { heatmap: Heatmap; filter: FilterSpec; parentName?: string; className?: string }) {
@@ -70,18 +70,19 @@ export function HeatmapLegend({ heatmap, filter, parentName, className }: { heat
         {t('sizeLabel')} {heatmap.kind === 'industries' ? t('sizeIndustries') : t('sizeSkills', { industry: parentName ?? '' })}{' '}
         {t('colourLabel')} {t('colourBody')} {t('thinNote', { min: minSample })}
       </p>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <ul className="flex flex-wrap gap-1" aria-label={t('legendLabel')}>
+      {/* Inline flow, not flex: the chips wrap word by word and the info buttons stay beside them. */}
+      <div className="leading-[24px] [&>*]:align-middle">
+        <MetricInfo metric="change_4w" type={type} reading={sample?.change} filter={filter} className="mr-1.5" />
+        <ul className="inline" aria-label={t('legendLabel')}>
           {LEGEND_STEPS.map(step => (
-            <li key={String(step)} className={cn('inline-flex items-center gap-1 rounded-[3px] px-2 py-0.5 font-mono text-[11px]', STEP_CLASS[String(step)])}>
+            <li key={String(step)} className={cn('mr-1 inline-flex items-center gap-1 rounded-[3px] px-2 py-0.5 align-middle font-mono text-[11px] leading-snug', STEP_CLASS[String(step)])}>
               <DirectionGlyph dir={STEP_DIR[String(step) as keyof typeof STEP_DIR]} />
               {t(`band.${STEP_KEY[String(step) as keyof typeof STEP_KEY]}`, { flat, strong })}
             </li>
           ))}
-          <li className="heat-na rounded-[3px] px-2 py-0.5 font-mono text-[11px] ring-1 ring-inset ring-rule">{t('band.na', { min: minSample })}</li>
+          <li className="heat-na mr-2 inline-flex rounded-[3px] px-2 py-0.5 align-middle font-mono text-[11px] leading-snug ring-1 ring-inset ring-rule">{t('band.na', { min: minSample })}</li>
         </ul>
-        <MetricInfo metric="change_4w" type={type} reading={sample?.change} filter={filter} />
-        <span className="inline-flex items-center gap-x-2">
+        <span className="inline-flex flex-wrap items-center gap-x-2">
           <SourceBadge kind="ads" />
           {window ? <span>{t('window', { start: formatDate(window.start), end: formatDate(window.end) })}</span> : null}
           <MetricInfo metric="ad_count" type={type} reading={heatmap.kind === 'industries' ? sample?.ads : undefined} filter={filter} />
