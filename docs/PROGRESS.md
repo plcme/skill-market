@@ -62,9 +62,11 @@
 | 项 | 分支 | 状态 |
 |---|---|---|
 | `docs/DESIGN.md` v1 + GLOSSARY 同步 | `dev` | 完成，海报待 DESIGN 确认后做 |
-| A2 + C3 + B2 + B1 | `fe-r2`（worktree `../skill-market-r2`） | 实现中 |
+| A2 + C3 + B2 + B1 | `fe-r2`（worktree `../skill-market-r2`） | 已合并 dev（4794852；审查 2 轮，Round 1 退回 1 阻断：series 色对比度 <3:1，DESIGN §2.2 同步修正；reviewer 用 Opus） |
 
 ## 日志
+
+- 2026-10-15：前端反馈第 2 轮合并 dev（4794852）并 push。lint/typecheck/186 单测/build 通过；e2e 在高负载（load ~82）下大量超时，`--workers=1` 重跑全部通过。复审留下非阻断建议：全部分档低于阈值时 thin 文案与画面不符（`breakdown-section.tsx:92`）、localStorage 禁用时主题手动选择不生效、单档低于阈值可被总量反推、`/sources` 仍用 `bg-signal-soft`。
 
 - 2026-10-15：清理 worktree 与分支（第 2 轮 A4）。删除已合并的 worktree `../skill-market-{fe2,industry,responsive}`、`.claude/worktrees/frontend-discussion-2a2f02`，本地分支 `frontend-v2`、`fe-r1-fixes`、`fe-responsive`、`fe-industry`、`fe-feedback-r1`、`m0-foundation`、`claude/frontend-discussion-2a2f02`，远程分支 `origin/frontend-v2`、`origin/m0-foundation`；丢弃前端 v1 stash 与本地 `tmp/`、`output/`。保留 `fe-r2`（`../skill-market-r2`，未合并）。
 
