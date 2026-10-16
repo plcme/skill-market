@@ -24,11 +24,10 @@ import { MetricInfo } from '@/components/market/metric-info';
 import { SignalTag } from '@/components/market/signal-tag';
 import { Sparkline } from '@/components/market/sparkline';
 import { ChangeBadge } from '@/components/market/change-badge';
+import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
 import { cn } from '@/lib/utils';
 import { METRICS } from '@/lib/metrics/registry';
 import { useErrorText, useModeT } from '../shared';
-
-const GLYPH = { up: '▲', down: '▼', flat: '■' } as const;
 
 function valueAt(reading: MetricReading, value: number): string {
   return primaryValue({ ...reading, status: 'ok', value }) ?? '—';
@@ -37,7 +36,6 @@ function valueAt(reading: MetricReading, value: number): string {
 /** "Since added" with its baseline and date — never a bare percentage (FR-W2, FR-D3). */
 export function SinceAdded({ row, className }: { row: WatchlistRow; className?: string }) {
   const t = useTranslations('Desk');
-  const tf = useTranslations('Format');
   const { item, current, since_added } = row;
   if (since_added === null || item.baseline_value === null || current.value === null) {
     return <span className={cn('text-[13px] text-muted', className)}>{t('sinceUnavailable')}</span>;
@@ -50,8 +48,7 @@ export function SinceAdded({ row, className }: { row: WatchlistRow; className?: 
   return (
     <span className={cn('inline-flex flex-col gap-0.5', className)}>
       <span className={cn('num inline-flex items-center gap-1 text-sm font-medium', dir === 'up' && 'text-up', dir === 'down' && 'text-down', dir === 'flat' && 'text-muted')}>
-        <span aria-hidden className="text-[0.7em]">{GLYPH[dir]}</span>
-        <span className="sr-only">{tf(dir)}</span>
+        <DirectionGlyph dir={dir} />
         {isChange ? t('sincePp', { pp: formatPp(delta) }) : formatChange(since_added)}
       </span>
       <span className="num whitespace-nowrap text-[12px] text-muted">{t('sinceDetail', { from: valueAt(current, item.baseline_value), to: valueAt(current, current.value), date: formatDate(item.baseline_at, { day: 'numeric', month: 'short' }) })}</span>
@@ -66,9 +63,13 @@ export function SignalFigure({ row }: { row: WatchlistRow }) {
   if (!signal) return null;
   if (signal.kind === 'since_added') return <SinceAdded row={row} />;
   if (signal.kind === 'entry_open') {
+    const dir = signDirection(signal.magnitude);
     return (
       <span className="inline-flex flex-col gap-0.5">
-        <span className="num text-sm font-medium text-up">{t('entryPp', { pp: formatPp(signal.magnitude) })}</span>
+        <span className={cn('num inline-flex items-center gap-1 text-sm font-medium', dir === 'up' && 'text-up', dir === 'down' && 'text-down', dir === 'flat' && 'text-muted')}>
+          <DirectionGlyph dir={dir} />
+          {t('entryPp', { pp: formatPp(signal.magnitude) })}
+        </span>
         <span className="num text-[12px] text-muted">{t('entryDetail', { from: formatShare(signal.from), to: formatShare(signal.to) })}</span>
       </span>
     );
@@ -93,7 +94,7 @@ function EditFilter({ item, instrument, open, onOpenChange }: { item: WatchlistR
         closeLabel={tc('close')}
         footer={
           <>
-            {state.error ? <p role="alert" className="mr-auto text-[13px] text-down">{errorText(state.error)}</p> : null}
+            {state.error ? <p role="alert" className="mr-auto text-[13px] text-danger">{errorText(state.error)}</p> : null}
             <Button variant="ghost" onClick={() => onOpenChange(false)}>{tc('cancel')}</Button>
             <Button disabled={!valid} loading={state.pending} onClick={async () => {
               const r = await save({ id: item.id, filter: draft });
@@ -158,7 +159,7 @@ function RowActions({ row, instrument }: { row: WatchlistRow; instrument: Instru
             </MenuItem>
           ) : null}
           <MenuSeparator />
-          <MenuItem onSelect={onRemove} className="text-down [&_svg]:text-down"><Trash2 aria-hidden />{t('remove')}</MenuItem>
+          <MenuItem onSelect={onRemove} className="text-danger [&_svg]:text-danger"><Trash2 aria-hidden />{t('remove')}</MenuItem>
         </MenuContent>
       </Menu>
       <EditFilter item={item} instrument={instrument} open={editing} onOpenChange={setEditing} />

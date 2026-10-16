@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Pause, Play } from 'lucide-react';
 import { formatChange, formatCount } from '@/lib/market/format';
 import { cn } from '@/lib/utils';
+import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
 import { useUiMode } from '@/lib/demo/ui-mode';
 
 export interface TapeItem {
@@ -28,14 +29,14 @@ export function TickerTape({ items }: { items: TapeItem[] }) {
   const row = (hidden: boolean) => (
     <ul className="flex shrink-0 items-center" aria-hidden={hidden || undefined}>
       {items.map(it => {
-        const up = it.change >= 0;
+        const dir = signDirection(it.change);
         return (
           <li key={`${hidden}-${it.slug}`} className="flex items-center">
             <Link href={it.href} tabIndex={hidden ? -1 : undefined} className="flex items-center gap-2 px-4 font-mono text-[11.5px] tracking-wide hover:bg-night-ink/10">
               <span className={cn('font-medium', it.signal && 'bg-signal px-1 text-signal-ink')}>{it.symbol}</span>
               <span className="text-night-ink/60">{it.name}</span>
-              <span className={cn(up ? 'text-[#7fe0ae]' : 'text-[#ff9f86]')}>
-                <span aria-hidden>{up ? '▲' : '▼'}</span> {formatChange(it.change)}
+              <span className={cn(dir === 'up' && 'text-tape-up', dir === 'down' && 'text-tape-down', dir === 'flat' && 'text-night-ink/70')}>
+                <DirectionGlyph dir={dir} className="text-[1em]" /> {formatChange(it.change)}
               </span>
               <span className="text-night-ink/50">{formatCount(it.from)}→{formatCount(it.to)}</span>
             </Link>
