@@ -36,7 +36,7 @@ async function loadSampleStudent(page: Page) {
 
 const PUBLIC = [
   '/', '/market', '/market?type=role', '/market?type=role&view=cards', '/market?f=r.au-nt-darwin_graduate_npr',
-  '/s/rust', '/s/python', '/r/data-engineer', '/compare?a=python&b=java', '/search?q=js', '/metrics', '/metrics/share_of_ads',
+  '/s/rust', '/s/python', '/s/sql?y=salary&by=mode', '/s/rust?f=r.au-nt-darwin_graduate_npr', '/r/data-engineer', '/compare?a=python&b=java', '/search?q=js', '/metrics', '/metrics/share_of_ads',
   '/sources', '/people', '/legal/privacy', '/legal/terms', '/legal/conduct', '/onboarding', '/auth/login',
 ];
 
