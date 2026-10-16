@@ -15,6 +15,8 @@ const RANGE_WEEKS: Record<Range, number> = { '3m': 13, '6m': 26, '1y': 52, '2y':
 // DESIGN §2.2: ordered ramp for Experience, categorical for rights / mode,
 // "Not stated" always faint. Literal class names so Tailwind can see them.
 const TONE: Record<BreakdownBucketKey, { fill: string; stroke: string; bg: string; text: string }> = {
+  // Not split: one ink series (DESIGN §2.2); the area under it is a light ink wash.
+  all: { fill: 'fill-ink/[0.07]', stroke: 'stroke-ink', bg: 'bg-ink', text: 'text-ink' },
   entry: { fill: 'fill-series-ord-1', stroke: 'stroke-series-ord-1', bg: 'bg-series-ord-1', text: 'text-series-ord-1' },
   mid: { fill: 'fill-series-ord-2', stroke: 'stroke-series-ord-2', bg: 'bg-series-ord-2', text: 'text-series-ord-2' },
   senior: { fill: 'fill-series-ord-3', stroke: 'stroke-series-ord-3', bg: 'bg-series-ord-3', text: 'text-series-ord-3' },
@@ -52,17 +54,21 @@ function spread(ys: Array<{ key: BreakdownBucketKey; y: number }>, gap: number, 
 }
 
 /**
- * Breakdown chart (GLOSSARY §2, DESIGN §6). Stack: bands sum to the total
- * line, y from 0, 1px surface stroke between bands. Lines: one per bucket,
- * gaps where the sample is too small. Direct labels at the right edge where
- * they fit, a legend with latest values below, and a data-table view.
+ * The detail-page chart (GLOSSARY §2, DESIGN §6). Stack: bands sum to the
+ * total line, y from 0, 1px surface stroke between bands. Lines: one per
+ * bucket, gaps where the sample is too small. Not split (`by` null): one ink
+ * series. Direct labels at the right edge where they fit, a legend with latest
+ * values below, an optional footer line, and a data-table view.
  */
-export function BreakdownChart({ breakdown, caption, graduateOnly = false, height = 280, className }: {
+export function BreakdownChart({ breakdown, caption, graduateOnly = false, height = 280, footer, className }: {
   breakdown: Breakdown;
+  /** Accessible name of the figure and the table (not shown). */
   caption: string;
   /** Filter is "Graduate roles only": the Entry band holds graduate ads, so say so. */
   graduateOnly?: boolean;
   height?: number;
+  /** Source / window line, shown next to the table toggle. */
+  footer?: React.ReactNode;
   className?: string;
 }) {
   const t = useTranslations('Breakdown');
@@ -73,6 +79,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
   const [width, setWidth] = useState(720);
   const wrap = useRef<HTMLDivElement>(null);
   const stack = breakdown.kind === 'stack';
+  const single = breakdown.by === null;
   const fmt = (v: number) => (stack ? formatCount(v) : formatAud(v));
   const hatchId = useId().replace(/:/g, '');
   // Stack: a band below the sample threshold is drawn hatched and never gets a number
@@ -120,7 +127,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
   // Every band below the threshold: nothing honest to draw, say so instead of an axis of tiny numbers.
   const allThin = stack && breakdown.buckets.length > 0 && breakdown.buckets.every(b => thin.has(b.key));
   const hasData = values.length > 1 && !allThin;
-  const directLabels = width >= 520;
+  const directLabels = width >= 520 && !single;
   const m = { l: 52, r: directLabels ? 104 : 10, t: 12, b: 28 };
   const innerW = width - m.l - m.r;
   const innerH = height - m.t - m.b;
@@ -216,8 +223,8 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
 
   return (
     <figure className={cn('flex flex-col gap-3', className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <figcaption className="kicker">{caption}</figcaption>
+      <figcaption className="sr-only">{caption}</figcaption>
+      <div className="flex justify-end">
         <Segmented size="sm" label={tc('rangeLabel')} value={range} onValueChange={setRange} options={(Object.keys(RANGE_WEEKS) as Range[]).map(r => ({ value: r, label: tc(`range.${r}`) }))} />
       </div>
       <div ref={wrap} className="relative w-full select-none">
@@ -265,7 +272,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
                     strokeLinejoin="round"
                   />
                 ))}
-                {total ? <path d={linePath(total)} fill="none" className="stroke-ink" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" /> : null}
+                {total ? <path d={linePath(total)} fill="none" className="stroke-ink" strokeWidth={single ? 2 : 1.75} strokeLinejoin="round" strokeLinecap="round" /> : null}
               </>
             ) : (
               buckets.map((b, k) => (
@@ -305,7 +312,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
                 </p>
               );
             })}
-            {stack && total?.[cursor]?.value != null ? (
+            {stack && !single && total?.[cursor]?.value != null ? (
               <p className="num mt-1 flex justify-between gap-3 border-t border-paper/20 pt-1">
                 <span className="text-paper/80">{t('total')}</span>
                 <span className="font-medium">{fmt(total[cursor].value as number)}</span>
@@ -317,13 +324,12 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
       </div>
 
       <div>
-        <p className="kicker mb-2">{stack ? t('legendStack') : t('legendLines')}</p>
         <ul aria-label={t('legendLabel')} className="flex max-w-md flex-col gap-1.5">
           {[...breakdown.buckets].reverse().map(b => {
             const k = breakdown.buckets.indexOf(b);
             return (
               <li key={b.key} className="flex min-w-0 items-center gap-2.5 text-[13px]">
-                {stack
+                {stack && !single
                   ? <span aria-hidden className={cn('size-3 shrink-0 rounded-[2px]', thin.has(b.key) ? cn('border border-current bg-[repeating-linear-gradient(45deg,currentColor_0_2px,transparent_2px_5px)]', TONE[b.key].text) : TONE[b.key].bg)} />
                   : <svg aria-hidden width="20" height="8" className="shrink-0"><line x1="1" x2="19" y1="4" y2="4" className={TONE[b.key].stroke} strokeWidth={2.5} strokeDasharray={DASH[k % DASH.length]} strokeLinecap="round" /></svg>}
                 <span className="min-w-0 flex-1 truncate text-ink-2">{label(b.key)}</span>
@@ -331,7 +337,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
                   {b.latest.value == null
                     ? <span className="text-muted">{t('notEnough')}</span>
                     : stack
-                      ? <>{formatCount(b.latest.value)}<span className="text-muted">{' · '}{b.share == null ? '—' : formatShare(b.share)}</span></>
+                      ? <>{formatCount(b.latest.value)}{single ? null : <span className="text-muted">{' · '}{b.share == null ? '—' : formatShare(b.share)}</span>}</>
                       : formatAud(b.latest.value)}
                 </span>
               </li>
@@ -341,9 +347,12 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
       </div>
 
       <div>
-        <Button variant="link" size="sm" onClick={() => setShowTable(s => !s)} aria-expanded={showTable}>
-          {showTable ? tc('hideTable') : tc('showTable')}
-        </Button>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-rule pt-3">
+          {footer ? <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted">{footer}</div> : null}
+          <Button variant="link" size="sm" onClick={() => setShowTable(s => !s)} aria-expanded={showTable}>
+            {showTable ? tc('hideTable') : tc('showTable')}
+          </Button>
+        </div>
         {showTable ? (
           <div tabIndex={0} role="region" aria-label={caption} className="mt-2 max-h-72 overflow-auto rounded-md border border-rule focus-visible:outline-offset-2">
             <table className="w-full text-[13px]">
@@ -352,7 +361,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
                 <tr>
                   <th scope="col" className="kicker px-3 py-2 text-left">{tc('week')}</th>
                   {buckets.map(b => <th key={b.key} scope="col" className="kicker px-3 py-2 text-right">{short(b.key)}</th>)}
-                  {stack ? <th scope="col" className="kicker px-3 py-2 text-right">{t('total')}</th> : null}
+                  {stack && !single ? <th scope="col" className="kicker px-3 py-2 text-right">{t('total')}</th> : null}
                 </tr>
               </thead>
               <tbody className="num">
@@ -360,7 +369,7 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
                   <tr key={d} className="border-t border-rule">
                     <th scope="row" className="whitespace-nowrap px-3 py-1.5 text-left font-normal text-ink-2">{formatDayStable(d)}</th>
                     {buckets.map((b, k) => <td key={b.key} className="px-3 py-1.5 text-right">{cellText(valueAt(k, i))}</td>)}
-                    {stack ? <td className="px-3 py-1.5 text-right font-medium">{total?.[i]?.value == null ? '—' : fmt(total[i].value as number)}</td> : null}
+                    {stack && !single ? <td className="px-3 py-1.5 text-right font-medium">{total?.[i]?.value == null ? '—' : fmt(total[i].value as number)}</td> : null}
                   </tr>
                 ))}
               </tbody>

@@ -150,7 +150,7 @@
     "salary_median": {
       "label": "Median salary",
       "short": "Median",
-      "definition": "The middle advertised base salary for this role in the last 12 months.",
+      "definition": "The middle advertised base salary in ads for this role, or in ads that mention this skill, over the last 12 months.",
       "unit": "AUD per year",
       "denominator": "Ads that state a salary",
       "method": "Annualised from the ad’s stated range midpoint; hourly and daily rates are converted.",
@@ -393,9 +393,18 @@
     "monogram": "ASC"
   },
   "Breakdown": {
-    "title": "Breakdown",
-    "kicker": "One dimension at a time",
-    "dimensionLabel": "Break down by",
+    "yAxis": "Y axis",
+    "yAxisButton": "Y axis: {measure}. Change",
+    "splitBy": "Split by",
+    "splitButton": "Split by {dimension}. Change",
+    "splitNoneButton": "Not split. Choose a split",
+    "clearSplit": "Stop splitting",
+    "none": "None",
+    "close": "Close",
+    "measures": {
+      "ads": "Job ads",
+      "salary": "Median salary"
+    },
     "dims": {
       "experience": "Experience",
       "rights": "Work rights",
@@ -407,6 +416,7 @@
       "mode": "work mode"
     },
     "buckets": {
+      "all": "All ads",
       "entry": "Entry · 0–2 yrs",
       "mid": "Mid · 3–5 yrs",
       "senior": "Senior · 6–9 yrs",
@@ -419,6 +429,7 @@
       "remote": "Remote"
     },
     "short": {
+      "all": "All ads",
       "entry": "Entry",
       "mid": "Mid",
       "senior": "Senior",
@@ -432,9 +443,9 @@
     },
     "captionStack": "Job ads by {dimension}, 4-week rolling",
     "captionLines": "Median advertised salary by {dimension}, rolling 12 months",
-    "stackNote": "Bands add up to the total line: every ad sits in exactly one band.",
-    "fallback": "Breakdown shows Job ads — {metric} can’t be split this way.",
-    "filteredTo": "Filtered to {buckets} by your filter.",
+    "captionSingleStack": "Job ads, 4-week rolling",
+    "captionSingleLines": "Median advertised salary, rolling 12 months",
+    "filteredTo": "Filtered to {buckets}.",
     "estimated": "Estimated",
     "methodLabel": "How {dimension} is estimated",
     "methodTitle": "How we estimate {dimension}",
@@ -442,19 +453,16 @@
       "experience": "Read from the years of experience or level an ad asks for (“3+ years”, “senior”). Graduate, junior and intern ads count as Entry; ads that state neither are placed by job title. Some ads will be misread, so treat the bands as approximate.",
       "rights": "Read from phrases about permanent residency, citizenship, security clearance or visa sponsorship. “Not stated” means the ad doesn’t say — it does not guarantee you can apply."
     },
-    "salaryStated": "From {with} of {total} ads that state a salary (last 12 months).",
-    "gaps": "Gaps mean too few ads in that group state a salary: {buckets}.",
-    "legendLabel": "Breakdown values",
-    "legendStack": "Job ads, last 4 weeks · share",
-    "legendLines": "Median salary, last 12 months",
+    "salaryStated": "{with} of {total} ads state a salary",
+    "gaps": "Too few ads state a salary for {buckets}.",
+    "legendLabel": "Latest values",
     "total": "All job ads",
     "notEnough": "Not enough ads",
     "chartLabel": "{caption}. {buckets}.",
-    "illustrative": "Illustrative fixture data.",
-    "thin": "Fewer than {min} ads in the last 4 weeks for {buckets}, so we don’t give a number — the band is hatched to show roughly where those ads sit.",
-    "filteredToGraduate": "Filtered to graduate ads by your filter.",
+    "thin": "Too few ads for a number: {buckets}.",
+    "filteredToGraduate": "Filtered to graduate ads.",
     "graduateBucket": "Graduate ads",
     "graduateShort": "Graduate",
-    "allThin": "Too few ads under this filter to split them reliably. Widen the filter to see the breakdown."
+    "allThin": "Too few ads under this filter to split them reliably."
   }
 }
