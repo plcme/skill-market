@@ -1,12 +1,10 @@
 {
   "Home": {
     "edition": "Australian job ads · week ending {date}",
-    "headline": "See what employers are asking for.",
-    "headlineEm": "Then ask someone who does the work.",
-    "lede": "Follow skills and roles across Australian job ads — every number explains itself — and turn any signal into a 20-minute chat with someone who has the skill.",
+    "headline": "A stock market for skills.",
+    "lede": "Built from Australian job ads, updated every week.",
     "ctaMarket": "Explore the market",
-    "ctaStart": "Personalise in 10 seconds",
-    "promise": "Free for students · No one can pay to change what the market shows · No account needed to browse",
+    "ctaStart": "Personalise",
     "leadOpen": "Open {name}",
     "signalsTitle": "Today’s signals",
     "heatKicker": "Industries this month",

@@ -38,18 +38,17 @@ export default async function HomePage() {
         <Container className="grid gap-10 pb-14 pt-10 lg:grid-cols-[1.25fr_1fr] lg:gap-16 lg:pb-20 lg:pt-16">
           <div className="flex flex-col justify-center animate-rise">
             <p className="kicker flex items-center gap-2">
-              <span className="live-dot inline-block size-1.5 rounded-full bg-up" aria-hidden />
+              <span className="live-dot inline-block size-1.5 rounded-full bg-muted" aria-hidden />
               {t('edition', { date: formatDate(skills.as_of) })}
             </p>
             <h1 className="display mt-5 text-[46px] sm:text-[64px] lg:text-[76px]">
-              {t('headline')} <em className="text-ink-2">{t('headlineEm')}</em>
+              {t('headline')}
             </h1>
             <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-ink-2 sm:text-lg">{t('lede')}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link href="/market">{t('ctaMarket')}<ArrowRight aria-hidden /></Link></Button>
               <Button asChild size="lg" variant="outline"><Link href="/onboarding">{t('ctaStart')}</Link></Button>
             </div>
-            <p className="mt-6 text-[13px] text-muted">{t('promise')}</p>
           </div>
 
           <section aria-labelledby="heat-title" className="flex min-w-0 flex-col animate-rise [animation-delay:80ms]">
