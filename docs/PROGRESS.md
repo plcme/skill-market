@@ -64,6 +64,14 @@
 | `docs/DESIGN.md` v1 + GLOSSARY 同步 | `dev` | 完成，海报待 DESIGN 确认后做 |
 | A2 + C3 + B2 + B1 | `fe-r2`（worktree `../skill-market-r2`） | 已合并 dev（4794852；审查 2 轮，Round 1 退回 1 阻断：series 色对比度 <3:1，DESIGN §2.2 同步修正；reviewer 用 Opus） |
 
+## 前端反馈第 3 轮（2026-10-17）
+
+用户在 artifact 原型（https://claude.ai/artifact/72Ka23B5tHtKwUWCQfyE1V）上定稿：详情页只要一张图；标题 "SQL in [All Australia ▾]"（地点只属于筛选，放进标题，"in …" 小于标的名）；Y axis 只有 Job ads / Median salary；Split by = Experience / Work rights / Work mode / 无；详情页不要 Filter 按钮；文字越少越好。skill 也显示 Median salary（推翻 GLOSSARY 旧规则，用户决定）。数据来源问题先不管，先做前端。
+
+| 项 | 分支 | 状态 |
+|---|---|---|
+| 详情页单图（Y axis + Split by + 标题地点） | `fe-r3-chart` | 实现中 |
+
 ## 日志
 
 - 2026-10-15：前端反馈第 2 轮合并 dev（4794852）并 push。lint/typecheck/186 单测/build 通过；e2e 在高负载（load ~82）下大量超时，`--workers=1` 重跑全部通过。复审留下非阻断建议：全部分档低于阈值时 thin 文案与画面不符（`breakdown-section.tsx:92`）、localStorage 禁用时主题手动选择不生效、单档低于阈值可被总量反推、`/sources` 仍用 `bg-signal-soft`。

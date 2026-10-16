@@ -21,10 +21,10 @@
 | 中文 | 界面用词 | 代码 | 定义 |
 |---|---|---|---|
 | 筛选 | Filter | `FilterSpec`（`rules[]`、`seniority`、`work_rights`） | **作用于整张表**的范围：地区、工作方式、资历、工作权利。改筛选 = 改分母 |
-| 纵轴变量 / 度量 | Measure | `MetricKey`（注册表 `src/lib/metrics/registry.ts`） | 每个标的显示的那个数字，也是图表的 y 轴 |
-| 拆分 / 分布 | Breakdown | `?by=experience\|rights\|mode`，注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开，可切换。维度：Experience · Work rights · Work mode（地点不是维度）。**可相加的量用堆叠面积，不可相加的量（中位数、占比）用多条线**。详见 `docs/DESIGN.md` §6.3 |
+| 纵轴变量 / 度量 | Measure；详情页图表上叫 **Y axis** | `MetricKey`（注册表 `src/lib/metrics/registry.ts`）；详情页图表 `?y=ads\|salary` | 每个标的显示的那个数字，也是图表的 y 轴。详情页图表的 Y axis 只有 Job ads 和 Median salary 两个选项（2026-10-17） |
+| 拆分 / 分布 | Breakdown；界面叫 **Split by** | `?by=experience\|rights\|mode\|none`，注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开，可切换。维度：Experience · Work rights · Work mode（地点不是维度）。**可相加的量用堆叠面积，不可相加的量（中位数、占比）用多条线**。详见 `docs/DESIGN.md` §6.3 |
 | 经验段 | Entry / Mid / Senior / Expert | `experience`：0–2 / 3–5 / 6–9 / 10+ 年 | Expert = 用户说的 "master level"（10 年以上）；界面不用 Master 以免和硕士学位混淆 |
-| 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}` |
+| 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}`。详情页上地点写在标题里："SQL in [All Australia ▾]"，"in …" 字号小于标的名（2026-10-17） |
 | 排序 | Sort | `sort`：`value` / `change` | 只有"按度量""按变化"两种；不提供 A–Z |
 | 视图 | View | `view`：`list` / `cards` | 列表或卡片 |
 | 信号 | Signal | `Signal`（`rise` / `fall` / `entry_open` / `since_added`） | 满足阈值的显著变化；不代表"应该去学" |
@@ -39,7 +39,7 @@
 | 12-month growth | `growth_12m` | 同比变化 |
 | Entry-level share | `entry_level_share` | 文本抽取，需标注方法与误差 |
 | No PR required | `no_pr_required_share` | 文本抽取，需标注方法与误差 |
-| Median salary | `salary_median` | **仅 role**；skill 不提供原始薪资（会把"岗位偏资深"误读成"学了就能拿"） |
+| Median salary | `salary_median` | role 和 skill（2026-10-17 用户决定 skill 也显示）。只统计写明薪资的广告。为避免把"岗位偏资深"误读成"学了就能拿"，skill 上默认按 Experience 拆分 |
 | Skill premium | `skill_premium` | 仅 skill，进阶指标；同一 role 内有无该技能的受控对比 |
 
 ## 4. 其他产品用词
@@ -56,5 +56,5 @@
 ## 5. 未定概念（不得擅自落地）
 
 - **什么算 skill**：按 ASC 三层做原型（见 §1），看过效果后定稿。
-- **Breakdown**：v1 原型见 §2，看过效果后定稿。
+- **Breakdown**：v2（2026-10-17）：详情页只有一张图，上方 Y axis + Split by，不再有单独的 breakdown 区块和筛选按钮。原型 https://claude.ai/artifact/72Ka23B5tHtKwUWCQfyE1V ，实现后定稿。
 - **细分行业颗粒度**：ANZSIC Subdivision 还是 Group。
