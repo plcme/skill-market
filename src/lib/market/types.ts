@@ -178,12 +178,24 @@ export interface DataSource {
 export type BreakdownDimension = 'experience' | 'rights' | 'mode';
 export const BREAKDOWN_DIMENSIONS: readonly BreakdownDimension[] = ['experience', 'rights', 'mode'];
 
+/** Detail-page chart Y axis (`?y=`): Job ads or Median salary (GLOSSARY §2). */
+export type ChartMeasure = 'ads' | 'salary';
+export const CHART_MEASURES: readonly ChartMeasure[] = ['ads', 'salary'];
+
 /** Years of experience asked for: entry 0–2 (incl. graduate), mid 3–5, senior 6–9, expert 10+. */
 export type ExperienceBucket = 'entry' | 'mid' | 'senior' | 'expert';
 export const EXPERIENCE_BUCKETS: readonly ExperienceBucket[] = ['entry', 'mid', 'senior', 'expert'];
 
 export type BreakdownRightsBucket = 'requires_pr' | 'not_stated' | 'sponsorship_ok';
-export type BreakdownBucketKey = ExperienceBucket | BreakdownRightsBucket | WorkMode;
+/** `all` = the single, unsplit series (Split by: none). */
+export type BreakdownBucketKey = ExperienceBucket | BreakdownRightsBucket | WorkMode | 'all';
+
+/** Buckets of each dimension, in display order (DESIGN §6.3). */
+export const BREAKDOWN_BUCKETS: Record<BreakdownDimension, readonly BreakdownBucketKey[]> = {
+  experience: EXPERIENCE_BUCKETS,
+  rights: ['requires_pr', 'not_stated', 'sponsorship_ok'],
+  mode: WORK_MODES,
+};
 
 export interface BreakdownBucket {
   key: BreakdownBucketKey;
@@ -196,7 +208,8 @@ export interface BreakdownBucket {
 }
 
 export interface Breakdown {
-  by: BreakdownDimension;
+  /** null = not split: one `all` bucket. */
+  by: BreakdownDimension | null;
   kind: 'stack' | 'lines';
   /** The measure actually broken down (`ad_count` or `salary_median`). */
   measure: MetricKey;

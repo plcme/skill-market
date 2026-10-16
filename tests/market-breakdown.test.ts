@@ -83,7 +83,7 @@ describe('computeBreakdown — filter narrowing', () => {
 });
 
 describe('computeBreakdown — measures', () => {
-  it('salary splits into lines for roles only', () => {
+  it('salary splits into lines for roles and skills', () => {
     const role = computeBreakdown('data-analyst', 'salary_median', DEFAULT_FILTER, 'experience');
     expect(role.kind).toBe('lines');
     expect(role.measure).toBe('salary_median');
@@ -95,9 +95,10 @@ describe('computeBreakdown — measures', () => {
     // One sample statement per page: matches the Median salary card exactly.
     const card = computeMetric('data-analyst', 'salary_median', DEFAULT_FILTER);
     expect(role.salary_stated).toEqual({ with_salary: card.numerator, total: card.denominator });
-    const skill = computeBreakdown('python', 'salary_median', DEFAULT_FILTER, 'experience');
-    expect(skill.kind).toBe('stack');
-    expect(skill.measure).toBe('ad_count');
+    // Industries have no salary: the chart falls back to job ads.
+    const industry = computeBreakdown('mining', 'salary_median', DEFAULT_FILTER, 'experience');
+    expect(industry.kind).toBe('stack');
+    expect(industry.measure).toBe('ad_count');
   });
 
   it('salary lines gate on sample size: gaps, not guesses', () => {
@@ -127,12 +128,18 @@ describe('computeBreakdown — measures', () => {
     expect(b.requested).toBe('entry_level_share');
   });
 
-  it('is attached to the detail read model with the ?by= dimension', () => {
+  it('is attached to the detail read model with the ?by= dimension and ?y= measure', () => {
     expect(parseBreakdownBy('rights')).toBe('rights');
     expect(parseBreakdownBy('location')).toBe('experience');
     expect(parseBreakdownBy(undefined)).toBe('experience');
-    const d = getInstrumentDetail('data-analyst', DEFAULT_FILTER, 'salary_median', 'mode');
+    const d = getInstrumentDetail('data-analyst', DEFAULT_FILTER, undefined, 'mode', 'salary');
     expect(d?.breakdown.by).toBe('mode');
     expect(d?.breakdown.kind).toBe('lines');
+    expect(d?.chart).toEqual({ y: 'salary', measures: ['ads', 'salary'] });
+    // The "Right now" metric no longer drives the chart.
+    const m = getInstrumentDetail('data-analyst', DEFAULT_FILTER, 'salary_median', 'mode');
+    expect(m?.metric).toBe('salary_median');
+    expect(m?.breakdown.kind).toBe('stack');
+    expect(m?.chart.y).toBe('ads');
   });
 });

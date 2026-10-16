@@ -529,13 +529,15 @@ const RIGHTS_ORDER: readonly RightsBucket[] = ['requires_pr', 'not_stated', 'spo
 
 /** Salary multipliers per bucket relative to the role's all-levels median (fixture). */
 const SALARY_ADJ: Record<BreakdownBucketKey, number> = {
+  all: 1,
   entry: 0.7, mid: 0.94, senior: 1.14, expert: 1.36,
   requires_pr: 1.04, not_stated: 0.97, sponsorship_ok: 1.09,
   onsite: 0.97, hybrid: 1.02, remote: 1.05,
 };
 
-/** Buckets of a dimension inside the filter, each with its unrounded weekly counts. */
-function bucketCounts(slug: string, filter: FilterSpec, by: BreakdownDimension): { all: BreakdownBucketKey[]; rows: Array<{ key: BreakdownBucketKey; raw: number[] }> } {
+/** Buckets of a dimension inside the filter, each with its unrounded weekly counts. No dimension = one `all` bucket. */
+function bucketCounts(slug: string, filter: FilterSpec, by: BreakdownDimension | null): { all: BreakdownBucketKey[]; rows: Array<{ key: BreakdownBucketKey; raw: number[] }> } {
+  if (by === null) return { all: ['all'], rows: [{ key: 'all', raw: weeklyRaw(slug, filter) }] };
   const cells = expandFilterToCells(filter);
   if (by === 'mode') {
     const present = WORK_MODES.filter(mode => cells.pairs.some(p => p.mode === mode));
@@ -557,13 +559,14 @@ function bucketCounts(slug: string, filter: FilterSpec, by: BreakdownDimension):
 }
 
 /**
- * Split the current measure by one dimension (GLOSSARY §2 "Breakdown").
+ * The detail-page chart: the measure split by one dimension (GLOSSARY §2
+ * "Split by"), or not split at all (`by = null` → one `all` bucket).
  * Additive `ad_count` → stacked bands that sum to the unbroken total.
- * Non-additive `salary_median` (roles only) → one line per bucket, with gaps
- * where too few ads state a salary. Any other measure falls back to job ads.
- * Respects the table filter: only buckets inside it are returned.
+ * Non-additive `salary_median` (skills and roles) → one line per bucket, with
+ * gaps where too few ads state a salary. Any other measure falls back to job
+ * ads. Respects the table filter: only buckets inside it are returned.
  */
-export function computeBreakdown(slug: string, metric: MetricKey, filter: FilterSpec, by: BreakdownDimension): Breakdown {
+export function computeBreakdown(slug: string, metric: MetricKey, filter: FilterSpec, by: BreakdownDimension | null): Breakdown {
   const inst = getInstrument(slug);
   if (!inst) throw new Error(`Unknown instrument ${slug}`);
   const type = inst.type;
@@ -572,7 +575,7 @@ export function computeBreakdown(slug: string, metric: MetricKey, filter: Filter
   const measure: MetricKey = kind === 'lines' ? metric : 'ad_count';
   const { all, rows } = bucketCounts(slug, filter, by);
   const filtered_to = rows.length < all.length ? rows.map(r => r.key) : null;
-  const estimated = by !== 'mode';
+  const estimated = by === 'experience' || by === 'rights';
   const counts = rows.map(r => ({ key: r.key, weekly: r.raw.map(Math.round) }));
 
   if (kind === 'stack') {
@@ -599,16 +602,21 @@ export function computeBreakdown(slug: string, metric: MetricKey, filter: Filter
   const senAdj = by === 'experience' ? 1 : filter.seniority === 'graduate' ? 0.62 : filter.seniority === 'entry' ? 0.7 : 1;
   const growthPerWeek = 0.03 / 52;
   const min = def.min_sample;
+  // Same sample statement as the page's Median salary figure (computeMetric), so the page shows one number.
+  const overall = computeMetric(slug, 'salary_median', filter);
   const insufficient: BreakdownBucketKey[] = [];
   const buckets: BreakdownBucket[] = counts.map(c => {
     // A rolling 12-month median moves slowly: gentle drift plus a small seasonal wave.
     const phase = rng(`salary:${slug}:${c.key}`)() * Math.PI * 2;
-    const base = (salary?.median ?? 0) * placeAdj * senAdj * SALARY_ADJ[c.key];
+    const wave = (i: number) => (1 + growthPerWeek * (i - (WEEKS - 1))) * (1 + 0.006 * Math.sin(i / 9 + phase));
+    // The unsplit line ends exactly on the Median salary figure.
+    const base = c.key === 'all' && overall.value != null
+      ? overall.value / wave(WEEKS - 1)
+      : (salary?.median ?? 0) * placeAdj * senAdj * SALARY_ADJ[c.key];
     const series: SeriesPoint[] = c.weekly.map((_, i) => {
       if (i < 51) return { date: weekDate(i), value: null };
       const stated = Math.round(sum(c.weekly.slice(i - 51, i + 1)) * SALARY_STATED_SHARE);
-      const v = base * (1 + growthPerWeek * (i - (WEEKS - 1))) * (1 + 0.006 * Math.sin(i / 9 + phase));
-      return { date: weekDate(i), value: stated >= min ? Math.round(v / 500) * 500 : null };
+      return { date: weekDate(i), value: stated >= min ? Math.round((base * wave(i)) / 500) * 500 : null };
     });
     const year = sum(lastN(c.weekly, 52));
     const stated = Math.round(year * SALARY_STATED_SHARE);
@@ -617,8 +625,6 @@ export function computeBreakdown(slug: string, metric: MetricKey, filter: Filter
     if (latest.status !== 'ok') insufficient.push(c.key);
     return { key: c.key, series, latest, share: null };
   });
-  // Same sample statement as the page's Median salary card (computeMetric), so the page shows one number.
-  const overall = computeMetric(slug, 'salary_median', filter);
   const salary_stated = { with_salary: overall.numerator ?? 0, total: overall.denominator ?? 0 };
   return { by, kind, measure, requested: metric, buckets, total: null, filtered_to, estimated, salary_stated, insufficient };
 }

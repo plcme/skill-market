@@ -203,8 +203,10 @@ describe('market page queries', () => {
   });
   it('gives example readings only for types the metric applies to', () => {
     const salary = getMetricExamples('salary_median', DEFAULT_FILTER);
-    expect(salary.length).toBe(2);
-    expect(salary.every(e => e.instrument.type === 'role')).toBe(true);
+    expect(salary.length).toBe(4);
+    expect(salary.every(e => e.instrument.type !== 'industry')).toBe(true);
+    const range = getMetricExamples('salary_p10_p90', DEFAULT_FILTER);
+    expect(range.every(e => e.instrument.type === 'role')).toBe(true);
     expect(getMetricExamples('share_of_ads', DEFAULT_FILTER).length).toBe(6);
     expect(getInstrument('python')).toBeDefined();
   });

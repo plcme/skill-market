@@ -3,10 +3,10 @@ import { cooccurrence, getInstrument, INDUSTRY_COMPONENTS, INSTRUMENTS, instrume
 import { searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import type { HeatTile, Heatmap } from '@/lib/market/heatmap';
 import { pickMovers } from '@/lib/market/movers';
-import { METRICS, defaultMetric, isValidMetric, metricsFor, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
+import { CHART_MEASURE_METRIC, METRICS, chartMeasuresFor, defaultMetric, isValidMetric, metricsFor, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
 import { sortValue } from '@/lib/market/format';
 import type {
-  ActiveInstrumentType, Breakdown, BreakdownDimension, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
+  ActiveInstrumentType, Breakdown, BreakdownDimension, ChartMeasure, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
 } from '@/lib/market/types';
 
 // Public read model (RSC). Today backed by the fixture engine; the production
@@ -109,13 +109,25 @@ export interface InstrumentDetail {
   /** Skill → often asked together. */
   related: CompositionEntry[];
   locations: Array<{ location_id: string; name: string; count: number }>;
-  /** The selected measure split by one dimension (`?by=`, default experience). */
+  /** The page's one chart: Y axis (`?y=`) split by one dimension (`?by=`, default experience; null = not split). */
   breakdown: Breakdown;
+  /** Chart Y axis in use and the options valid for this type (industries: Job ads only). */
+  chart: { y: ChartMeasure; measures: ChartMeasure[] };
   signal: Signal | null;
   as_of: string;
 }
 
-export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension = 'experience'): InstrumentDetail | null {
+/** `?y=` for a type: Median salary only where it applies; anything else is Job ads. */
+export function resolveChartMeasure(type: ActiveInstrumentType, y?: string | null): ChartMeasure {
+  const options = chartMeasuresFor(type);
+  return options.find(m => m === y) ?? 'ads';
+}
+
+/**
+ * `metricParam` drives the "Right now" figure (`?metric=`); the chart has its
+ * own Y axis (`?y=`) and split (`?by=`, null = no split).
+ */
+export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension | null = 'experience', yParam?: string): InstrumentDetail | null {
   const inst = getInstrument(slug);
   if (!inst) return null;
   // Same rule as boards: legacy non-selectable metrics fall back to the default.
@@ -125,6 +137,7 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
   for (const k of [groups.default, ...groups.common, ...groups.advanced]) readings[k] = computeMetric(slug, k, filter);
   const series = computeSeries(slug, METRICS[metric].chartable ? metric : 'ad_count', filter);
   const snap = snapshot(slug, metric, filter);
+  const y = resolveChartMeasure(inst.type, yParam);
   const components = inst.type === 'role' ? ROLE_COMPONENTS[slug] : inst.type === 'industry' ? INDUSTRY_COMPONENTS[slug] : undefined;
   const composition: CompositionEntry[] = components
     ? components.map(c => {
@@ -145,7 +158,8 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
     heatmap: inst.type === 'industry' ? getIndustrySkillHeatmap(slug, filter) : null,
     related,
     locations: locationBreakdown(slug, filter),
-    breakdown: computeBreakdown(slug, metric, filter, by),
+    breakdown: computeBreakdown(slug, CHART_MEASURE_METRIC[y], filter, by),
+    chart: { y, measures: chartMeasuresFor(inst.type) },
     signal: snap.signal,
     as_of: DATA_AS_OF,
   };

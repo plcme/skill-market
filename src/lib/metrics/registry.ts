@@ -1,4 +1,4 @@
-import { ACTIVE_INSTRUMENT_TYPES, type ActiveInstrumentType, type MetricKey, type SourceKind } from '@/lib/market/types';
+import { ACTIVE_INSTRUMENT_TYPES, CHART_MEASURES, type ActiveInstrumentType, type ChartMeasure, type MetricKey, type SourceKind } from '@/lib/market/types';
 
 // Single source of truth for metrics (ARCHITECTURE §6.4, PRD §7.1 validity matrix).
 // Human copy (label, definition, denominator, method, caveat) lives in
@@ -54,7 +54,7 @@ export const METRICS: Record<MetricKey, MetricDefinition> = {
   entry_level_share: { key: 'entry_level_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['seniority'], chartable: true, neutral: true, selectable: true, breakdown: null },
   no_pr_required_share: { key: 'no_pr_required_share', applies_to: ALL, default_for: [], tier: 'common', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_rights'], chartable: true, neutral: true, selectable: true, breakdown: null },
   employer_concentration: { key: 'employer_concentration', applies_to: ALL, default_for: [], tier: 'common', unit: 'employers', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
-  salary_median: { key: 'salary_median', applies_to: ['role'], default_for: [], tier: 'common', unit: 'aud', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: 'lines' },
+  salary_median: { key: 'salary_median', applies_to: ['skill', 'role'], default_for: [], tier: 'common', unit: 'aud', source: { skill: 'ads', role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: 'lines' },
   salary_p10_p90: { key: 'salary_p10_p90', applies_to: ['role'], default_for: [], tier: 'advanced', unit: 'aud_range', source: { role: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
   skill_premium: { key: 'skill_premium', applies_to: ['skill'], default_for: [], tier: 'advanced', unit: 'premium', source: { skill: 'ads' }, window_days: 365, min_sample: MIN_SAMPLE_DEFAULT * 2, available_after_days: 0, text_derived: false, ignores: [], chartable: false, neutral: true, selectable: true, breakdown: null },
   remote_share: { key: 'remote_share', applies_to: ALL, default_for: [], tier: 'advanced', unit: 'share', source: ADS, window_days: 28, min_sample: MIN_SAMPLE_DEFAULT, available_after_days: 0, text_derived: true, ignores: ['work_mode'], chartable: true, neutral: true, selectable: true, breakdown: null },
@@ -97,4 +97,12 @@ export function metricSource(key: MetricKey, type: ActiveInstrumentType): Source
 export function signalMetric(type: ActiveInstrumentType): MetricKey {
   // Industries move with the cycle, so the short window is the useful one (as for skills).
   return type === 'role' ? 'growth_12m' : 'change_4w';
+}
+
+/** The metric behind each detail-chart Y axis option (`?y=ads|salary`, GLOSSARY §2). */
+export const CHART_MEASURE_METRIC: Record<ChartMeasure, MetricKey> = { ads: 'ad_count', salary: 'salary_median' };
+
+/** Y axis options valid for a type: Job ads everywhere, Median salary where it applies (not industries). */
+export function chartMeasuresFor(type: ActiveInstrumentType): ChartMeasure[] {
+  return CHART_MEASURES.filter(m => isValidMetric(type, CHART_MEASURE_METRIC[m]));
 }
