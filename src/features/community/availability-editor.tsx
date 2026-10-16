@@ -56,7 +56,7 @@ export function AvailabilityEditor({ practitioner, onSaved, saveLabel }: { pract
                   <Button variant="ghost" size="icon" aria-label={t('remove')} onClick={() => setWindows(list => list.filter((_, j) => j !== i))}><Trash2 aria-hidden /></Button>
                 </div>
               </div>
-              {problems[i] ? <p className="text-[13px] font-medium text-down">{t(`problems.${problems[i]}`)}</p> : null}
+              {problems[i] ? <p className="text-[13px] font-medium text-danger">{t(`problems.${problems[i]}`)}</p> : null}
             </li>
           ))}
         </ul>

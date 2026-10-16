@@ -110,7 +110,7 @@ function BasicsSheets({ values, setValue, fields }: {
                 <span className="min-w-0">
                   <span className="kicker block">{t('sheet.count', { n: i + 1, total: BASICS.length })} · {q.label}</span>
                   <span className={cn('mt-1 block', answer ? 'font-medium text-ink' : 'text-muted')}>{answer ?? t('sheet.notAnswered')}</span>
-                  {fields[k] ? <span id={`basics-${k}-error`} className="mt-1 block text-[13px] text-down">{errorText(fields[k])}</span> : null}
+                  {fields[k] ? <span id={`basics-${k}-error`} className="mt-1 block text-[13px] text-danger">{errorText(fields[k])}</span> : null}
                 </span>
                 <span className="shrink-0 text-sm text-accent">{answer ? t('sheet.change') : t('sheet.answer')}</span>
               </button>

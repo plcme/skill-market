@@ -84,7 +84,7 @@ export function SafetyActions({ db, targetKind, targetId, targetName, requestId 
       ) : (
         <Dialog open={blockOpen} onOpenChange={setBlockOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-down hover:bg-down-soft"><Ban aria-hidden />{t('block')}</Button>
+            <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-soft"><Ban aria-hidden />{t('block')}</Button>
           </DialogTrigger>
           <DialogContent title={t('blockTitle', { name: targetName })} description={t('blockBody', { name: targetName })} closeLabel={tc('close')}>
             {blockState.error ? <Notice tone="warn" className="mb-4">{errorText(blockState.error)}</Notice> : null}

@@ -23,7 +23,7 @@ export function MatchFallback({ db, instrument, filter, fallback }: { db: DemoDB
   if (!fallback) return null;
   const waitlisted = isWaitlisted(db, instrument.slug);
   const joinButton = waitlisted
-    ? <p className="text-sm font-medium text-up">{t('waitlistJoined', { name: instrument.name })}</p>
+    ? <p className="text-sm font-medium text-success">{t('waitlistJoined', { name: instrument.name })}</p>
     : <Button variant={fallback === 'waitlist' ? 'primary' : 'subtle'} loading={state.pending} onClick={() => join({ instrument_slug: instrument.slug, filter })}>{t('waitlistJoin')}</Button>;
 
   if (fallback === 'adjacent') {
@@ -31,7 +31,7 @@ export function MatchFallback({ db, instrument, filter, fallback }: { db: DemoDB
       <Notice tone="signal" className="mt-5" title={t('adjacentTitle', { name: instrument.name })}>
         <p>{t('adjacentBody', { name: instrument.name })}</p>
         <div className="mt-3">{joinButton}</div>
-        {state.error ? <p className="mt-2 text-[13px] text-down" role="alert">{errorText(state.error)}</p> : null}
+        {state.error ? <p className="mt-2 text-[13px] text-danger" role="alert">{errorText(state.error)}</p> : null}
       </Notice>
     );
   }
@@ -43,7 +43,7 @@ export function MatchFallback({ db, instrument, filter, fallback }: { db: DemoDB
         <h3 className="mt-3 font-serif text-[26px] leading-tight">{t('waitlistTitle', { name: instrument.name })}</h3>
         <p className="mt-2 text-ink-2">{t('waitlistBody', { name: instrument.name })}</p>
         <div className="mt-5">{joinButton}</div>
-        {state.error ? <p className="mt-2 text-[13px] text-down" role="alert">{errorText(state.error)}</p> : null}
+        {state.error ? <p className="mt-2 text-[13px] text-danger" role="alert">{errorText(state.error)}</p> : null}
       </div>
       <div className="border-t border-rule pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">
         <p className="kicker">{t('waitlistAlso')}</p>

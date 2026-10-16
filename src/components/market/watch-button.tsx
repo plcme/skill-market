@@ -84,7 +84,7 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className, labe
               {item.status === 'held' ? t('markWatching') : t('markHeld')}
             </MenuItem>
           ) : null}
-          <MenuItem onSelect={async () => { const r = await remove(item.id); if (r?.ok) toast({ title: t('removed', { name: inst.name }) }); }} className="text-down [&_svg]:text-down">
+          <MenuItem onSelect={async () => { const r = await remove(item.id); if (r?.ok) toast({ title: t('removed', { name: inst.name }) }); }} className="text-danger [&_svg]:text-danger">
             <Trash2 aria-hidden />{t('remove')}
           </MenuItem>
         </MenuContent>

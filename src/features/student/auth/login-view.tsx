@@ -118,7 +118,7 @@ export function LoginView() {
                 </Link>
               </Button>
             </div>
-            {sendState.error ? <p role="alert" className="text-[13px] font-medium text-down">{errorText(sendState.error)}</p> : null}
+            {sendState.error ? <p role="alert" className="text-[13px] font-medium text-danger">{errorText(sendState.error)}</p> : null}
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
               <Button variant="link" loading={sendState.pending} onClick={async () => { const r = await send({ email: sent.email, age_confirmed: true, privacy_acknowledged: true, next: next || undefined }); if (r?.ok) setSent({ email: r.data.email, token: r.data.token }); }}>{t('resend')}</Button>
               <Button variant="link" onClick={() => { setSent(null); setFields({}); }}>{t('differentEmail')}</Button>
@@ -135,7 +135,7 @@ export function LoginView() {
             <div className="flex flex-col gap-3 border-t border-rule pt-4">
               <div>
                 <Checkbox checked={age} onCheckedChange={v => setAge(v === true)} label={t('age')} description={t('ageHint')} aria-invalid={Boolean(fields.age_confirmed)} />
-                {fields.age_confirmed ? <p className="ml-[30px] mt-1 text-[13px] font-medium text-down">{errorText(fields.age_confirmed)}</p> : null}
+                {fields.age_confirmed ? <p className="ml-[30px] mt-1 text-[13px] font-medium text-danger">{errorText(fields.age_confirmed)}</p> : null}
               </div>
               <div>
                 <Checkbox
@@ -145,7 +145,7 @@ export function LoginView() {
                   description={t.rich('privacyHint', { link: chunks => <Link href="/legal/privacy" className="link" target="_blank">{chunks}</Link> })}
                   aria-invalid={Boolean(fields.privacy_acknowledged)}
                 />
-                {fields.privacy_acknowledged ? <p className="ml-[30px] mt-1 text-[13px] font-medium text-down">{errorText(fields.privacy_acknowledged)}</p> : null}
+                {fields.privacy_acknowledged ? <p className="ml-[30px] mt-1 text-[13px] font-medium text-danger">{errorText(fields.privacy_acknowledged)}</p> : null}
               </div>
             </div>
             {formError ? <Notice tone="warn">{errorText(formError)}</Notice> : null}

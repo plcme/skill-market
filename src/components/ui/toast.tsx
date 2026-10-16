@@ -48,13 +48,13 @@ export function ToastProvider({ children, dismissLabel }: { children: React.Reac
         {toasts.map(t => {
           const Icon = ICON[t.tone];
           return (
-            <div key={t.id} role="status" className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md bg-ink px-4 py-3 text-paper shadow-float animate-rise">
-              <Icon className={cn('mt-0.5 size-4 shrink-0', t.tone === 'success' && 'text-signal', t.tone === 'warn' && 'text-[#f0c14b]')} aria-hidden />
+            <div key={t.id} role="status" className="on-ink pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md bg-ink px-4 py-3 text-paper shadow-float animate-rise">
+              <Icon className={cn('mt-0.5 size-4 shrink-0', t.tone === 'success' && 'text-success', t.tone === 'warn' && 'text-warn')} aria-hidden />
               <div className="min-w-0 flex-1 text-sm">
                 <p className="font-medium">{t.title}</p>
                 {t.body ? <p className="mt-0.5 text-paper/75">{t.body}</p> : null}
                 {t.action ? (
-                  <button type="button" className="mt-1.5 text-[13px] font-medium text-signal underline underline-offset-2" onClick={() => { t.action?.onClick(); dismiss(t.id); }}>
+                  <button type="button" className="mt-1.5 text-[13px] font-medium text-paper underline underline-offset-2" onClick={() => { t.action?.onClick(); dismiss(t.id); }}>
                     {t.action.label}
                   </button>
                 ) : null}

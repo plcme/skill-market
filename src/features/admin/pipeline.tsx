@@ -53,12 +53,12 @@ function Row({ db, row }: { db: DemoDB; row: PipelineRow }) {
   const seconds = last?.finished_at ? Math.max(1, Math.round((Date.parse(last.finished_at) - Date.parse(last.started_at)) / 1000)) : null;
   return (
     <>
-      <tr className={cn('border-b border-rule align-top', failed && 'bg-down-soft')}>
+      <tr className={cn('border-b border-rule align-top', failed && 'bg-danger-soft')}>
         <th scope="row" className="py-3 pr-4 text-left font-medium">
           {t(`jobs.${row.job}`)}
           <span className="block font-mono text-[11px] font-normal text-muted">{row.job} · {t('runs', { n: row.runs.length })}</span>
         </th>
-        <td className="py-3 pr-4">{last ? <Badge tone={failed ? 'down' : last.status === 'running' ? 'warn' : 'up'}>{t(`statuses.${last.status}`)}</Badge> : <span className="text-muted">{t('never')}</span>}</td>
+        <td className="py-3 pr-4">{last ? <Badge tone={failed ? 'danger' : last.status === 'running' ? 'warn' : 'success'}>{t(`statuses.${last.status}`)}</Badge> : <span className="text-muted">{t('never')}</span>}</td>
         <td className="num py-3 pr-4">{last ? <>{formatDateTime(last.started_at)}<span className="block text-[12px] text-muted">{formatRelative(last.started_at, now)}</span></> : '—'}</td>
         <td className="num py-3 pr-4">{seconds ? t('seconds', { n: seconds }) : '—'}</td>
         <td className="num py-3 pr-4 text-[12.5px] text-ink-2">{last ? Object.entries(last.stats).map(([k, v]) => `${k} ${v.toLocaleString('en-AU')}`).join(' · ') || '—' : '—'}</td>
@@ -66,8 +66,8 @@ function Row({ db, row }: { db: DemoDB; row: PipelineRow }) {
         <td className="py-3 text-right"><Button size="sm" variant={failed ? 'primary' : 'ghost'} loading={state.pending} onClick={() => rerun(row.job)}><RotateCw aria-hidden />{t('rerun')}</Button></td>
       </tr>
       {failed && last?.error ? (
-        <tr className="border-b border-rule bg-down-soft">
-          <td colSpan={7} className="pb-3 font-mono text-[12px] text-down">{last.error}</td>
+        <tr className="border-b border-rule bg-danger-soft">
+          <td colSpan={7} className="pb-3 font-mono text-[12px] text-danger">{last.error}</td>
         </tr>
       ) : null}
     </>
