@@ -7,9 +7,7 @@
       "all": "Market"
     },
     "metaDescription": "Every skill and role we track in Australian job ads, with the measure you choose, its change and a 12-month trend.",
-    "kicker": "Job ads · week ending {date}",
     "title": "The market",
-    "lede": "Every skill and role we track, measured the same way under your filter. Tap any number to see exactly what it counts.",
     "boardHeading": "Board",
     "typeTabsLabel": "Instrument type",
     "types": {
@@ -51,12 +49,6 @@
     "orderNote": "The order follows the market measure you picked — it ranks skills and roles, never people. Rows with too few ads sink to the bottom and say so instead of showing a number.",
     "illustrativeNote": "Illustrative data: numbers in this preview are generated to behave like the real pipeline and are not real market signals.",
     "sourcesLink": "Sources and method",
-    "signalsNow": "Signals now",
-    "signalsNowCount": "{n, plural, =0 {none} one {# under your filter} other {# under your filter}}",
-    "signalsNowNote": "Flagged when a move is at least 25% and 10 ads, with enough ads to trust it.",
-    "signalsNowEmpty": "Nothing has moved enough to flag under this filter. That is normal for narrow filters — widen it, or browse the board below.",
-    "signalsNowTalk": "Talk to someone",
-    "signalsNowTalkLabel": "Talk to someone who uses {name}",
     "filterScopeLabel": "Scope of every number on this board",
     "compareMode": "Compare",
     "compareModeOn": "Done comparing",
