@@ -267,6 +267,7 @@
   "ComparePage": {
     "metaTitle": "Compare",
     "metaTitlePair": "{a} vs {b}",
+    "chartCaption": "{metric} · 4-week rolling, weekly to {end}",
     "metaDescription": "Put two skills or two roles side by side under the same filter: demand, change, entry-level share, overlap, effort and transferability.",
     "kicker": "Compare",
     "title": "Side by side",
