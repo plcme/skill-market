@@ -70,9 +70,12 @@
 
 | 项 | 分支 | 状态 |
 |---|---|---|
-| 详情页单图（Y axis + Split by + 标题地点） | `fe-r3-chart` | 实现中 |
+| 详情页单图（Y axis + Split by + 标题地点） | `fe-r3-chart` | 已合并 dev（审查 2 轮，Round 1 退回 2 阻断：/compare 缺文案 key、键盘焦点丢失；reviewer 改用 Opus） |
+| 配色方案、单色 logo、首页短标语 | `fe-r3-colours`（另一会话） | 已合并 dev（仓库内无审查记录，用户要求直接合并；合并后全量检查通过） |
 
 ## 日志
+
+- 2026-10-21：FE-R3 两个分支合并 dev 并 push。合并冲突仅 `filter-builder.tsx`。lint/typecheck/243 单测/build 通过；全量 e2e `--workers=1` 134 过 2 跳过。注意：`.claude/worktrees/` 在仓库内，`eslint .` 会扫进去，需加入忽略。待拍板：skill 薪资是否在 board / Right now / Fundamentals 不拆分显示（A 只在图里 / B 加提醒 / C 维持）；PRD.md:185 "技能无薪资"需用户改。Fable 已不可用，子 agent 全部用 Opus。本轮子 agent 约 0.95M tokens。
 
 - 2026-10-15：前端反馈第 2 轮合并 dev（4794852）并 push。lint/typecheck/186 单测/build 通过；e2e 在高负载（load ~82）下大量超时，`--workers=1` 重跑全部通过。复审留下非阻断建议：全部分档低于阈值时 thin 文案与画面不符（`breakdown-section.tsx:92`）、localStorage 禁用时主题手动选择不生效、单档低于阈值可被总量反推、`/sources` 仍用 `bg-signal-soft`。
 
