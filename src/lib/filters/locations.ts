@@ -93,3 +93,22 @@ export function stateOf(id: string): string | null {
   const chain = ancestorsOf(id);
   return chain.find(a => a.level === 'state')?.id ?? chain[0]?.id ?? null;
 }
+
+/** All of Australia: the fixed base of every place selection, never a pickable place. */
+export const ALL_AUSTRALIA_ID = 'au';
+
+/** What the place picker offers: Australian states, cities and regions (no country level). */
+export const PICKABLE_LOCATIONS: readonly Location[] = LOCATIONS.filter(
+  l => l.level !== 'country' && ancestorsOf(l.id)[0]?.id === ALL_AUSTRALIA_ID,
+);
+
+/** The narrower places in a selection; empty means all of Australia. */
+export function narrowedPlaces(ids: readonly string[]): string[] {
+  return ids.filter(id => id !== ALL_AUSTRALIA_ID);
+}
+
+/** A selection with nothing narrower chosen means all of Australia (`['au']`, as in DEFAULT_FILTER). */
+export function placesOrAllAustralia(ids: readonly string[]): string[] {
+  const narrow = narrowedPlaces(ids);
+  return narrow.length ? narrow : [ALL_AUSTRALIA_ID];
+}

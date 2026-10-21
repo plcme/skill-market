@@ -6,32 +6,33 @@ import { ChevronDown, MapPin, Plus, SlidersHorizontal, Trash2, X } from 'lucide-
 import { Dialog, DialogTrigger, SheetContent, Popover, PopoverContent, PopoverTrigger } from '@/components/ui/overlay';
 import { Button } from '@/components/ui/button';
 import { Checkbox, ChipToggleGroup, Input, Segmented, Switch } from '@/components/ui/form';
-import { LOCATIONS, ancestorsOf, getLocation } from '@/lib/filters/locations';
+import { PICKABLE_LOCATIONS, ancestorsOf, getLocation, narrowedPlaces, placesOrAllAustralia } from '@/lib/filters/locations';
 import {
   activeConditionCount, cloneFilter, DEFAULT_FILTER, describeFilter, fromSimpleFilter, isDefaultFilter, MAX_RULES, normaliseFilter,
   remoteAnywhereRedundant, toSimpleFilter, type SimpleFilter,
 } from '@/lib/filters/spec';
-import type { FilterRule, FilterSpec, Seniority, WorkMode, WorkRights } from '@/lib/market/types';
+import type { FilterRule, FilterSpec, LocationLevel, Seniority, WorkMode, WorkRights } from '@/lib/market/types';
 import { WORK_MODES } from '@/lib/market/types';
 import { cn } from '@/lib/utils';
 import { useFilterCopy } from './filter-readback';
 import { useUrlFilter } from './use-url-state';
 
-const INDENT = { country: 'pl-2', state: 'pl-5', city: 'pl-8', region: 'pl-11' } as const;
+// The picker never lists the country level (Australia is the fixed base).
+const INDENT: Record<LocationLevel, string> = { country: 'pl-3', state: 'pl-3', city: 'pl-6', region: 'pl-9' };
 
-function PlacePicker({ selected, onAdd }: { selected: string[]; onAdd: (id: string) => void }) {
+function PlacePicker({ selected, onAdd, label }: { selected: string[]; onAdd: (id: string) => void; label: string }) {
   const t = useTranslations('Filter');
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const matches = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return LOCATIONS.filter(l => !needle || l.name.toLowerCase().includes(needle) || l.short.toLowerCase().includes(needle));
+    return PICKABLE_LOCATIONS.filter(l => !needle || l.name.toLowerCase().includes(needle) || l.short.toLowerCase().includes(needle));
   }, [q]);
   return (
     <Popover open={open} onOpenChange={o => { setOpen(o); if (!o) setQ(''); }}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="h-7 rounded-full border border-dashed border-rule px-2.5 text-muted hover:text-ink">
-          <Plus aria-hidden />{t('addPlace')}
+          <Plus aria-hidden />{label}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[min(320px,calc(100vw-24px))] p-0">
@@ -50,7 +51,7 @@ function PlacePicker({ selected, onAdd }: { selected: string[]; onAdd: (id: stri
                   onClick={() => { onAdd(l.id); setOpen(false); setQ(''); }}
                   className={cn('flex w-full items-center justify-between gap-3 py-1.5 pr-3 text-left text-sm hover:bg-sunken disabled:opacity-40', q ? 'pl-3' : INDENT[l.level])}
                 >
-                  <span className={cn(l.level === 'country' && 'font-medium')}>{l.name}</span>
+                  <span>{l.name}</span>
                   <span className="kicker">{t(`levels.${l.level}`)}</span>
                 </button>
               </li>
@@ -90,40 +91,52 @@ function RuleEditor({ rule, index, canRemove, onChange, onRemove }: {
       {rule.work_modes.length === 0 ? <p className="mt-1.5 text-[13px] text-danger">{t('modeRequired')}</p> : null}
       <p className="mb-2 mt-4 text-[13px] font-medium">{t('places')}</p>
       <PlaceChips places={rule.location_ids} onChange={location_ids => onChange({ ...rule, location_ids })} />
-      {rule.location_ids.length === 0 ? <p className="mt-1.5 text-[13px] text-danger">{t('placeRequired')}</p> : null}
     </fieldset>
   );
 }
 
-/** Selected places as removable chips plus an "Add a place" picker. */
+/**
+ * Places on top of the fixed "All Australia" base: with nothing narrower chosen
+ * it shows a non-removable "All Australia" pill; otherwise the chosen states,
+ * cities or regions as removable chips. Removing the last one returns to
+ * `['au']` (all of Australia, as in DEFAULT_FILTER), so a selection is never empty.
+ */
 export function PlaceChips({ places, onChange }: { places: string[]; onChange: (next: string[]) => void }) {
   const t = useTranslations('Filter');
+  const tp = useTranslations('InstrumentPage.places');
+  const narrowed = narrowedPlaces(places);
   // Picking a place replaces any selected ancestor or descendant of it, so
-  // "Australia" → add "Sydney" means Sydney, not Australia-and-Sydney.
+  // Sydney then New South Wales means New South Wales, and the "au" base drops out.
   const add = (id: string) => {
     const lineage = new Set(ancestorsOf(id).map(a => a.id));
     onChange([...places.filter(p => !lineage.has(p) && !ancestorsOf(p).some(a => a.id === id)), id]);
   };
+  const remove = (id: string) => onChange(placesOrAllAustralia(places.filter(x => x !== id)));
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {places.map(id => {
+      {narrowed.length === 0 ? (
+        <span className="inline-flex h-7 items-center gap-1 rounded-full border border-rule-strong/70 px-2.5 text-[13px] text-ink">
+          <MapPin className="size-3 text-muted" aria-hidden />
+          {tp('label.all')}
+        </span>
+      ) : narrowed.map(id => {
         const loc = getLocation(id);
         return (
           <span key={id} className="inline-flex h-7 items-center gap-1 rounded-full bg-ink pl-2.5 pr-1 text-[13px] text-paper">
             <MapPin className="size-3" aria-hidden />
             {loc?.name ?? id}
-            <button type="button" onClick={() => onChange(places.filter(x => x !== id))} aria-label={t('removePlace', { place: loc?.name ?? id })} className="grid size-5 place-items-center rounded-full hover:bg-paper/20">
+            <button type="button" onClick={() => remove(id)} aria-label={t('removePlace', { place: loc?.name ?? id })} className="grid size-5 place-items-center rounded-full hover:bg-paper/20">
               <X className="size-3" aria-hidden />
             </button>
           </span>
         );
       })}
-      <PlacePicker selected={places} onAdd={add} />
+      <PlacePicker selected={places} onAdd={add} label={narrowed.length ? t('addAnotherPlace') : t('narrowPlaces')} />
     </div>
   );
 }
 
-/** Places of the simple filter. `compact` drops the heading, hint and empty-state error (the caller titles it and treats no place as anywhere). */
+/** Places of the simple filter. `compact` drops the heading and hint (the caller titles it). */
 export function PlacesField({ simple, onChange, compact = false }: { simple: SimpleFilter; onChange: (next: SimpleFilter) => void; compact?: boolean }) {
   const t = useTranslations('Filter');
   return (
@@ -135,7 +148,6 @@ export function PlacesField({ simple, onChange, compact = false }: { simple: Sim
         </>
       ) : null}
       <PlaceChips places={simple.places} onChange={places => onChange({ ...simple, places })} />
-      {simple.places.length === 0 && !compact ? <p className="mt-1.5 text-[13px] text-danger">{t('placeRequired')}</p> : null}
     </div>
   );
 }
@@ -201,9 +213,11 @@ function AdvancedRules({ value, onChange }: { value: FilterSpec; onChange: (f: F
 }
 
 /**
- * Filter editor (FR-F1–F5). Simple controls by default (places, work mode,
- * remote-anywhere switch); the multi-rule builder sits behind "Advanced" and
- * opens by itself when a spec can't be expressed simply, so any URL stays editable.
+ * Filter editor (FR-F1–F5). Top to bottom: a sticky "Currently showing"
+ * readback, work rights (set first, rarely changed), level, then the simple
+ * place controls (places, work mode, remote-anywhere switch); the multi-rule
+ * builder sits behind "Advanced" and opens by itself when a spec can't be
+ * expressed simply, so any URL stays editable.
  */
 export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange: (f: FilterSpec) => void }) {
   const t = useTranslations('Filter');
@@ -233,8 +247,25 @@ export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange:
   const canGoSimple = valid && toSimpleFilter(value) !== null;
   return (
     <div className="flex flex-col gap-5">
-      {!advanced && simple ? <SimpleControls simple={simple} onChange={setSimple} /> : null}
-      <div className={cn(!advanced && 'border-t border-rule pt-4')}>
+      {/* Sticks to the top of the sheet's scroll area; -top-5/-mt-5 cancel the sheet's padding so nothing shows through above it. */}
+      <div className="sticky -top-5 z-10 -mx-5 -mt-5 bg-surface px-5 pb-1 pt-5">
+        <div aria-live="polite" className="rounded-md bg-accent-soft px-4 py-3 text-sm">
+          <p className="kicker mb-1">{t('currentlyShowing')}</p>
+          <p className="text-ink" data-testid="filter-readback">{valid ? describeFilter(value, copy) : '…'}</p>
+        </div>
+      </div>
+      <div>
+        <p className="mb-2 text-[13px] font-medium">{t('workRights')}</p>
+        <Segmented<WorkRights> label={t('workRights')} value={value.work_rights} onValueChange={v => setScope({ work_rights: v })} options={(['all', 'no_pr_required'] as const).map(v => ({ value: v, label: t(`workRightsOptions.${v}`) }))} />
+        <p className="mt-1.5 text-[13px] text-muted">{t('workRightsHint')}</p>
+      </div>
+      <div className="border-t border-rule pt-5">
+        <p className="mb-2 text-[13px] font-medium">{t('seniority')}</p>
+        <Segmented<Seniority> label={t('seniority')} value={value.seniority} onValueChange={v => setScope({ seniority: v })} options={(['all', 'entry', 'graduate'] as const).map(v => ({ value: v, label: t(`seniorityOptions.${v}`) }))} />
+        <p className="mt-1.5 text-[13px] text-muted">{t('seniorityHint')}</p>
+      </div>
+      {!advanced && simple ? <div className="border-t border-rule pt-5"><SimpleControls simple={simple} onChange={setSimple} /></div> : null}
+      <div className="border-t border-rule pt-4">
         <button
           type="button"
           aria-expanded={advanced}
@@ -253,22 +284,6 @@ export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange:
         </button>
         {advanced && !canGoSimple && valid ? <p className="mt-1.5 text-[13px] text-muted">{t('advancedLocked')}</p> : null}
         {advanced ? <div id="filter-advanced" className="mt-3"><AdvancedRules value={value} onChange={onChange} /></div> : null}
-      </div>
-      <div className="grid gap-5 border-t border-rule pt-5">
-        <div>
-          <p className="mb-2 text-[13px] font-medium">{t('seniority')}</p>
-          <Segmented<Seniority> label={t('seniority')} value={value.seniority} onValueChange={v => setScope({ seniority: v })} options={(['all', 'entry', 'graduate'] as const).map(v => ({ value: v, label: t(`seniorityOptions.${v}`) }))} />
-          <p className="mt-1.5 text-[13px] text-muted">{t('seniorityHint')}</p>
-        </div>
-        <div>
-          <p className="mb-2 text-[13px] font-medium">{t('workRights')}</p>
-          <Segmented<WorkRights> label={t('workRights')} value={value.work_rights} onValueChange={v => setScope({ work_rights: v })} options={(['all', 'no_pr_required'] as const).map(v => ({ value: v, label: t(`workRightsOptions.${v}`) }))} />
-          <p className="mt-1.5 text-[13px] text-muted">{t('workRightsHint')}</p>
-        </div>
-      </div>
-      <div aria-live="polite" className="rounded-md bg-accent-soft px-4 py-3 text-sm">
-        <p className="kicker mb-1">{t('currentlyShowing')}</p>
-        <p className="text-ink" data-testid="filter-readback">{valid ? describeFilter(value, copy) : '…'}</p>
       </div>
     </div>
   );
