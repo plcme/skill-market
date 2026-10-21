@@ -22,9 +22,9 @@
 |---|---|---|---|
 | 筛选 | Filter | `FilterSpec`（`rules[]`、`seniority`、`work_rights`） | **作用于整张表**的范围：地区、工作方式、资历、工作权利。改筛选 = 改分母 |
 | 纵轴变量 / 度量 | Measure；详情页图表上叫 **Y axis** | `MetricKey`（注册表 `src/lib/metrics/registry.ts`）；详情页图表 `?y=ads\|salary` | 每个标的显示的那个数字，也是图表的 y 轴。详情页图表的 Y axis 只有 Job ads 和 Median salary 两个选项（2026-10-17） |
-| 拆分 / 分布 | Breakdown；界面叫 **Split by** | `?by=experience\|rights\|mode\|none`，注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开，可切换。维度：Experience · Work rights · Work mode（地点不是维度）。**可相加的量用堆叠面积，不可相加的量（中位数、占比）用多条线**。详见 `docs/DESIGN.md` §6.3 |
+| 拆分 / 分布 | Breakdown；界面叫 **Split by** | `?by=experience\|rights\|mode\|none`，注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开，可切换。维度：Experience · Work rights · Work mode（地点不是维度）。筛选已把某维度固定成一个桶时（Entry-level/Graduate → Experience；只选一种 work mode → Work mode），该选项置灰并注明 "Fixed by your filter"，URL 里冲突的 `by` 按不拆分画。**可相加的量用堆叠面积，不可相加的量（中位数、占比）用多条线**。详见 `docs/DESIGN.md` §6.3 |
 | 经验段 | Entry / Mid / Senior / Expert | `experience`：0–2 / 3–5 / 6–9 / 10+ 年 | Expert = 用户说的 "master level"（10 年以上）；界面不用 Master 以免和硕士学位混淆 |
-| 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}`。详情页上地点写在标题里："SQL in [All Australia ▾]"，"in …" 字号小于标的名（2026-10-17） |
+| 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}`。只有澳大利亚：All Australia（`au`）是固定底，不能选也不能删；只能缩小到州、城市或区域，删掉最后一个就回到 All Australia（2026-10-21）。详情页标题里的 "in …" 是整条筛选的一句话，比如 "SQL in [Sydney + remote · Entry-level ▾]"：地点总在前，其他条件只列缩小范围的那些，用 " · " 分隔，多规则时写 "custom places"。点它打开和行情表 Filter 按钮同一个面板；"in …" 字号小于标的名（2026-10-21，取代 10-17 的地点弹层和可删除条件标签） |
 | 排序 | Sort | `sort`：`value` / `change` | 只有"按度量""按变化"两种；不提供 A–Z |
 | 视图 | View | `view`：`list` / `cards` | 列表或卡片 |
 | 信号 | Signal | `Signal`（`rise` / `fall` / `entry_open` / `since_added`） | 满足阈值的显著变化；不代表"应该去学" |
