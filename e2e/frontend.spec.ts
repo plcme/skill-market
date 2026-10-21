@@ -211,13 +211,13 @@ test.describe('industries', () => {
     await expect(page.getByText('ANZSIC Division B')).toBeVisible();
   });
 
-  test('movers carousel states its rule, advances and can pause', async ({ page }) => {
+  test('movers carousel states its rule, advances and links to the instrument', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await expect(page.getByText(/biggest 4-week changes, up or down/)).toBeVisible();
     const carousel = page.getByRole('region', { name: 'Biggest 4-week moves' });
-    await expect(carousel.getByRole('button', { name: 'Resume rotation' })).toBeVisible();
     const first = await carousel.getByRole('heading', { level: 3 }).textContent();
+    await expect(carousel.getByRole('heading', { level: 3 }).getByRole('link')).toHaveAttribute('href', /^\/(s|r|i)\/[a-z0-9-]+$/);
     await carousel.getByRole('button', { name: 'Next move' }).click();
     await expect(carousel.getByRole('heading', { level: 3 })).not.toHaveText(first ?? '');
     await expect(carousel.getByText(/^Ads (mentioning|for|in) .+ (rose|fell) [\d,]+ → [\d,]+ in 4 weeks\.$/).first()).toBeVisible();
