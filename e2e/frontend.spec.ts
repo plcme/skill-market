@@ -35,9 +35,11 @@ test('unknown instrument is a 404', async ({ page }) => {
   expect((await page.goto('/s/not-a-skill'))?.status()).toBe(404);
 });
 
-test('filter is part of the URL and read back in plain English', async ({ page }) => {
+test('filter is part of the URL and read back in the title and chips', async ({ page }) => {
   await page.goto('/s/rust?f=r.au-nt-darwin_graduate_npr');
-  await expect(page.getByText(/Showing remote roles in Darwin/).first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Rust\s+in Darwin/);
+  const chips = page.getByRole('list', { name: 'Also filtered by' });
+  await expect(chips.getByRole('listitem')).toHaveText(['Graduate only', 'No PR or citizenship stated', 'Work mode: Remote']);
   await expect(page.getByText('Not enough ads for a reliable trend')).toBeVisible();
 });
 
@@ -206,7 +208,7 @@ test.describe('industries', () => {
     await expect(page.getByText('Colour:').first()).toBeVisible();
     await tile.click();
     await expect(page).toHaveURL(/\/i\/mining$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mining');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
     await expect(page.getByText('ANZSIC Division B')).toBeVisible();
   });
 
@@ -224,7 +226,7 @@ test.describe('industries', () => {
 
   test('industry page shows skills as a heatmap and a labelled list, plus a way to talk', async ({ page }) => {
     await page.goto('/i/construction');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Construction');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Construction\s+in All Australia/);
     const map = page.getByRole('list', { name: /Skills in Construction/ }).filter({ visible: true });
     await expect(map.getByRole('link', { name: /^AutoCAD: / })).toBeVisible();
     await expect(page.getByText('Share of this industry’s ads mentioning each skill')).toBeVisible();

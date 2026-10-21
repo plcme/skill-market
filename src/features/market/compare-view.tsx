@@ -153,7 +153,7 @@ export function CompareView({ c, filter }: { c: Comparison; filter: FilterSpec }
                   { id: b.slug, label: b.name, points: c.b.series, tone: 'accent' },
                 ]}
                 metric={chartMetric}
-                caption={ti('chartCaption', { metric: tm(`${chartMetric}.label`), end: formatDate(lastDate) })}
+                caption={t('chartCaption', { metric: tm(`${chartMetric}.label`), end: formatDate(lastDate) })}
                 height={280}
               />
             )}

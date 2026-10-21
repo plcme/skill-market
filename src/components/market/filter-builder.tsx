@@ -95,7 +95,8 @@ function RuleEditor({ rule, index, canRemove, onChange, onRemove }: {
   );
 }
 
-function PlaceChips({ places, onChange }: { places: string[]; onChange: (next: string[]) => void }) {
+/** Selected places as removable chips plus an "Add a place" picker. */
+export function PlaceChips({ places, onChange }: { places: string[]; onChange: (next: string[]) => void }) {
   const t = useTranslations('Filter');
   // Picking a place replaces any selected ancestor or descendant of it, so
   // "Australia" → add "Sydney" means Sydney, not Australia-and-Sydney.
@@ -122,19 +123,46 @@ function PlaceChips({ places, onChange }: { places: string[]; onChange: (next: s
   );
 }
 
+/** Places of the simple filter. `compact` drops the heading, hint and empty-state error (the caller titles it and treats no place as anywhere). */
+export function PlacesField({ simple, onChange, compact = false }: { simple: SimpleFilter; onChange: (next: SimpleFilter) => void; compact?: boolean }) {
+  const t = useTranslations('Filter');
+  return (
+    <div>
+      {!compact ? (
+        <>
+          <p className="mb-1 text-[13px] font-medium">{t('places')}</p>
+          <p className="mb-2 text-[13px] text-muted">{t('placesHint')}</p>
+        </>
+      ) : null}
+      <PlaceChips places={simple.places} onChange={places => onChange({ ...simple, places })} />
+      {simple.places.length === 0 && !compact ? <p className="mt-1.5 text-[13px] text-down">{t('placeRequired')}</p> : null}
+    </div>
+  );
+}
+
+/** "Also include remote jobs anywhere in Australia"; disabled (and on) when places × modes already cover it. */
+export function RemoteAnywhereSwitch({ simple, onChange, compact = false, className }: { simple: SimpleFilter; onChange: (next: SimpleFilter) => void; compact?: boolean; className?: string }) {
+  const t = useTranslations('Filter');
+  const redundant = remoteAnywhereRedundant(simple.places, simple.modes);
+  return (
+    <Switch
+      label={t('remoteAnywhere')}
+      description={redundant ? t(compact ? 'remoteAnywhereCoveredShort' : 'remoteAnywhereCovered') : compact ? undefined : t('remoteAnywhereHint')}
+      checked={redundant || simple.includeRemoteAnywhere}
+      disabled={redundant}
+      onCheckedChange={v => onChange({ ...simple, includeRemoteAnywhere: v })}
+      className={cn('rounded-md border border-rule bg-paper/50 p-3', className)}
+    />
+  );
+}
+
 /** B2 primary controls: places × work modes, plus "remote anywhere in Australia". */
 function SimpleControls({ simple, onChange }: { simple: SimpleFilter; onChange: (next: SimpleFilter) => void }) {
   const t = useTranslations('Filter');
-  const redundant = remoteAnywhereRedundant(simple.places, simple.modes);
   const toggleMode = (mode: WorkMode, on: boolean) => onChange({ ...simple, modes: WORK_MODES.filter(m => (m === mode ? on : simple.modes.includes(m))) });
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <p className="mb-1 text-[13px] font-medium">{t('places')}</p>
-        <p className="mb-2 text-[13px] text-muted">{t('placesHint')}</p>
-        <PlaceChips places={simple.places} onChange={places => onChange({ ...simple, places })} />
-        {simple.places.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('placeRequired')}</p> : null}
-      </div>
+      <PlacesField simple={simple} onChange={onChange} />
       <fieldset>
         <legend className="mb-2 text-[13px] font-medium">{t('workModeLegend')}</legend>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -144,14 +172,7 @@ function SimpleControls({ simple, onChange }: { simple: SimpleFilter; onChange: 
         </div>
         {simple.modes.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('modeRequired')}</p> : null}
       </fieldset>
-      <Switch
-        label={t('remoteAnywhere')}
-        description={redundant ? t('remoteAnywhereCovered') : t('remoteAnywhereHint')}
-        checked={redundant || simple.includeRemoteAnywhere}
-        disabled={redundant}
-        onCheckedChange={v => onChange({ ...simple, includeRemoteAnywhere: v })}
-        className="rounded-md border border-rule bg-paper/50 p-3"
-      />
+      <RemoteAnywhereSwitch simple={simple} onChange={onChange} />
     </div>
   );
 }

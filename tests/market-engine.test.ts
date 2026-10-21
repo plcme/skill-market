@@ -44,7 +44,8 @@ describe('fixture market engine', () => {
   });
 
   it('refuses invalid metric × type combinations (FR-M4)', () => {
-    expect(computeMetric('python', 'salary_median', DEFAULT_FILTER).status).toBe('unavailable');
+    expect(computeMetric('mining', 'salary_median', DEFAULT_FILTER).status).toBe('unavailable');
+    expect(computeMetric('python', 'salary_p10_p90', DEFAULT_FILTER).status).toBe('unavailable');
     expect(computeMetric('data-analyst', 'skill_premium', DEFAULT_FILTER).status).toBe('unavailable');
     expect(computeMetric('data-analyst', 'salary_median', DEFAULT_FILTER).status).toBe('ok');
   });

@@ -233,3 +233,63 @@ export function fromSimpleFilter(simple: SimpleFilter, base: Pick<FilterSpec, 's
   }
   return { rules, seniority: base.seniority, work_rights: base.work_rights };
 }
+
+// --- Detail-page title: "SQL in [places]" (GLOSSARY §2, 2026-10-17) -------------
+
+/** Copy for the places label in a detail-page title; from messages so it stays translatable. */
+export interface PlacesCopy {
+  all: string; // "All Australia"
+  custom: string; // "custom places" — a multi-rule spec the simple controls can't show
+  count: string; // "{n} places"
+  withRemote: string; // "{places} + remote"
+  join: string; // ", "
+}
+
+/** True when the spec's places are exactly all of Australia (work modes and scope aside). */
+export function isAllAustralia(spec: FilterSpec): boolean {
+  const simple = toSimpleFilter(spec);
+  return simple !== null && !simple.includeRemoteAnywhere && simple.places.length === 1 && simple.places[0] === 'au';
+}
+
+/**
+ * Short label for where a spec looks: "All Australia", up to two place names,
+ * or "N places", plus " + remote" when remote-anywhere is on; `custom` for
+ * multi-rule specs. Work modes, seniority and work rights are not part of it.
+ */
+export function placesLabel(spec: FilterSpec, copy: PlacesCopy, nameOf: (id: string) => string = id => getLocation(id)?.name ?? id): string {
+  const simple = toSimpleFilter(spec);
+  if (!simple) return copy.custom;
+  const places = simple.places;
+  const base = places.length === 1 && places[0] === 'au'
+    ? copy.all
+    : places.length <= 2 ? places.map(nameOf).join(copy.join) : fillTemplate(copy.count, { n: places.length });
+  return simple.includeRemoteAnywhere ? fillTemplate(copy.withRemote, { places: base }) : base;
+}
+
+/** Conditions besides places that narrow a spec; shown as removable chips under a detail-page title. */
+export type ScopeCondition = 'seniority' | 'work_rights' | 'work_modes';
+
+export function scopeConditions(spec: FilterSpec): ScopeCondition[] {
+  const n = normaliseFilter(spec);
+  const out: ScopeCondition[] = [];
+  if (n.seniority !== 'all') out.push('seniority');
+  if (n.work_rights !== 'all') out.push('work_rights');
+  const simple = toSimpleFilter(n);
+  if (simple && simple.modes.length < WORK_MODES.length) out.push('work_modes');
+  return out;
+}
+
+/** The spec without one scope condition (work modes go back to all three). */
+export function clearScopeCondition(spec: FilterSpec, condition: ScopeCondition): FilterSpec {
+  if (condition === 'seniority') return { ...cloneFilter(spec), seniority: 'all' };
+  if (condition === 'work_rights') return { ...cloneFilter(spec), work_rights: 'all' };
+  const simple = toSimpleFilter(spec);
+  return simple ? fromSimpleFilter({ ...simple, modes: [...WORK_MODES] }, spec) : cloneFilter(spec);
+}
+
+/** Back to all of Australia, keeping work modes (simple specs), seniority and work rights. */
+export function resetPlaces(spec: FilterSpec): FilterSpec {
+  const simple = toSimpleFilter(spec);
+  if (simple) return fromSimpleFilter({ places: ['au'], modes: simple.modes, includeRemoteAnywhere: false }, spec);
+  return { ...cloneFilter(DEFAULT_FILTER), seniority: spec.seniority, work_rights: spec.work_rights };
+}

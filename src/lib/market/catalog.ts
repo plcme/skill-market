@@ -265,8 +265,50 @@ export function profileOf(slug: string): SkillProfile {
   return seed.p;
 }
 
-export function salaryOf(slug: string): Seed['salary'] | undefined {
-  return PROFILES.get(slug)?.salary;
+export type SalarySeed = NonNullable<Seed['salary']>;
+
+/** Fallback for a skill no seeded role lists (fixture; roughly the middle of the catalogue). */
+export const DEFAULT_SKILL_SALARY: Readonly<SalarySeed> = Object.freeze({ median: 105000, spread: 0.28, skillsPerAd: 7 });
+
+/**
+ * A skill's fixture salary: the average of the salaries of the roles that list
+ * it as a component, weighted by `RoleComponent.weight` (share of the role's
+ * ads mentioning the skill), median rounded to $1,000. Falls back to
+ * DEFAULT_SKILL_SALARY when no role with a salary lists it. Pure; exported for tests.
+ */
+export function deriveSkillSalary(roles: ReadonlyArray<{ salary: SalarySeed | undefined; weight: number }>): SalarySeed {
+  const known = roles.filter((r): r is { salary: SalarySeed; weight: number } => Boolean(r.salary) && r.weight > 0);
+  const total = known.reduce((a, r) => a + r.weight, 0);
+  if (!(total > 0)) return { ...DEFAULT_SKILL_SALARY };
+  const avg = (pick: (s: SalarySeed) => number) => known.reduce((a, r) => a + pick(r.salary) * r.weight, 0) / total;
+  return {
+    median: Math.round(avg(s => s.median) / 1000) * 1000,
+    spread: Math.round(avg(s => s.spread) * 100) / 100,
+    skillsPerAd: Math.round(avg(s => s.skillsPerAd)),
+  };
+}
+
+const SKILL_SLUGS = new Set(SKILLS.map(s => s.slug));
+const derivedSalaries = new Map<string, SalarySeed>();
+
+/**
+ * Advertised salary seed. Roles carry their own; skills derive one from the
+ * roles that ask for them (GLOSSARY §3: skills show Median salary since
+ * 2026-10-17); industries have none.
+ */
+export function salaryOf(slug: string): SalarySeed | undefined {
+  const own = PROFILES.get(slug)?.salary;
+  if (own || !SKILL_SLUGS.has(slug)) return own;
+  let derived = derivedSalaries.get(slug);
+  if (!derived) {
+    const roles = Object.entries(ROLE_COMPONENTS).flatMap(([roleSlug, comps]) => {
+      const c = comps.find(x => x.skill_slug === slug);
+      return c ? [{ salary: PROFILES.get(roleSlug)?.salary, weight: c.weight }] : [];
+    });
+    derived = deriveSkillSalary(roles);
+    derivedSalaries.set(slug, derived);
+  }
+  return derived;
 }
 
 export function premiumOf(slug: string): number | undefined {

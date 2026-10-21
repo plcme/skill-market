@@ -4,34 +4,31 @@ import { useTranslations } from 'next-intl';
 import { ArrowLeftRight, ChevronRight, MessageCircle } from 'lucide-react';
 import { encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
 import { chatHref, instrumentPath } from '@/lib/links';
-import { METRICS, signalMetric } from '@/lib/metrics/registry';
+import { CHART_MEASURE_METRIC, METRICS, signalMetric } from '@/lib/metrics/registry';
 import { formatDate } from '@/lib/time';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
 import type { InstrumentDetail } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
 import { Card, Container, Monogram, SectionHeader } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
-import { FilterBar } from '@/components/market/filter-builder';
 import { MetricLabel } from '@/components/market/metric-info';
 import { MetricSwitcher } from '@/components/market/metric-switcher';
 import { MetricValue } from '@/components/market/metric-value';
-import { SampleWarning } from '@/components/market/sample-warning';
 import { SignalTag } from '@/components/market/signal-tag';
 import { SourceBadge } from '@/components/market/source-badge';
-import { ClientTrendChart as TrendChart } from './trend-chart-client';
 import { WatchButton } from '@/components/market/watch-button';
 import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
-import { BreakdownSection } from './breakdown-section';
-import { chartMetricFor, hrefWith } from './logic';
+import { hrefWith } from './logic';
+import { InstrumentChart } from './instrument-chart';
+import { PlacesInTitle, PlacesInTitleStatic, ScopeChips } from './instrument-places';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
 
 /** The flagship full ticker page shared by /s/[slug], /r/[slug] and /i/[slug]. */
 export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; filter: FilterSpec }) {
   const t = useTranslations('InstrumentPage');
-  const tm = useTranslations('Metrics');
   const tt = useTranslations('Ticker');
   const move = useSignalMove();
   const { snapshot: snap, signal } = detail;
@@ -44,10 +41,6 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const compare = hrefWith('/compare', { a: inst.slug, f });
 
   const reading = snap.metric;
-  const chartMetric = chartMetricFor(detail.metric);
-  const chartReading = detail.readings[chartMetric] ?? detail.readings.ad_count ?? reading;
-  const insufficient = chartReading.status === 'insufficient_sample';
-  const lastDate = detail.series[detail.series.length - 1]?.date ?? detail.as_of;
   const competencies = type === 'role' ? competencyLevels(inst.slug) : null;
   const tc = useTranslations('Competencies');
   const secondary = ([signalMetric(type), 'entry_level_share', 'ad_count'] as MetricKey[]).filter(m => m !== detail.metric).slice(0, 2);
@@ -75,7 +68,15 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               </p>
             </div>
           </div>
-          <h1 className="display mt-6 break-words text-[48px] sm:text-[72px] lg:text-[88px]">{inst.name}</h1>
+          <h1 className="display mt-6 break-words text-[48px] sm:text-[72px] lg:text-[88px]">
+            {inst.name}{' '}
+            <Suspense fallback={<PlacesInTitleStatic filter={filter} />}>
+              <PlacesInTitle />
+            </Suspense>
+          </h1>
+          <Suspense fallback={null}>
+            <ScopeChips className="mt-4" />
+          </Suspense>
           <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{inst.blurb}</p>
           {inst.aliases.length ? (
             <p className="mt-3 text-[13px] text-muted">
@@ -99,10 +100,6 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           <p className="text-[12.5px] text-muted">{t('talkNote')}</p>
         </div>
       </header>
-
-      <Suspense fallback={<div className="h-[62px] rounded-md border border-rule bg-surface" />}>
-        <FilterBar />
-      </Suspense>
 
       <section id="now" aria-labelledby="now-h" className="mt-8 grid scroll-mt-24 gap-8 border-t-2 border-rule-strong pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
         <div className="min-w-0">
@@ -153,33 +150,19 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         </div>
 
         <Card className="min-w-0 self-start p-4 sm:p-6">
-          {insufficient ? (
-            <Suspense fallback={null}>
-              <SampleWarning reading={chartReading} filter={filter} />
-            </Suspense>
-          ) : (
-            <TrendChart
-              lines={[{ id: inst.slug, label: inst.name, points: detail.series, tone: 'ink' }]}
-              metric={chartMetric}
-              caption={t('chartCaption', { metric: tm(`${chartMetric}.label`), end: formatDate(lastDate) })}
-              height={300}
+          <Suspense fallback={<div className="skeleton h-[420px] w-full" />}>
+            <InstrumentChart
+              breakdown={detail.breakdown}
+              y={detail.chart.y}
+              measures={detail.chart.measures}
+              type={type}
+              filter={filter}
+              subject={inst.name}
+              reading={detail.readings[CHART_MEASURE_METRIC[detail.chart.y]]}
             />
-          )}
-          {!insufficient && chartMetric !== detail.metric ? (
-            <p className="mt-3 border-t border-rule pt-3 text-[12.5px] text-muted">{t('chartFallback', { metric: tm(`${detail.metric}.label`) })}</p>
-          ) : null}
+          </Suspense>
         </Card>
       </section>
-
-      <Suspense fallback={<div className="skeleton mt-12 h-[520px] w-full" />}>
-        <BreakdownSection
-          breakdown={detail.breakdown}
-          type={type}
-          filter={filter}
-          subject={inst.name}
-          reading={detail.readings[detail.breakdown.measure]}
-        />
-      </Suspense>
 
       <MyNotes slug={inst.slug} name={inst.name} />
 

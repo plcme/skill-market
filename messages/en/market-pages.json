@@ -103,6 +103,30 @@
       "industry": "Talk to someone working in this industry"
     },
     "talkNote": "A free 20-minute chat with a verified practitioner. Your filter goes with the request.",
+    "places": {
+      "in": "in",
+      "button": "{places}. Change places",
+      "title": "Places",
+      "close": "Close",
+      "reset": "All Australia",
+      "label": {
+        "all": "All Australia",
+        "custom": "custom places",
+        "count": "{n} places",
+        "withRemote": "{places} + remote",
+        "join": ", "
+      }
+    },
+    "scope": {
+      "label": "Also filtered by",
+      "remove": "Remove {condition}",
+      "seniority": {
+        "entry": "Entry level",
+        "graduate": "Graduate only"
+      },
+      "workRights": "No PR or citizenship stated",
+      "workModes": "Work mode: {modes}"
+    },
     "compareWith": "Compare with…",
     "now": "Right now",
     "whyFlagged": "Why this is flagged:",
@@ -116,8 +140,6 @@
     },
     "signalTalk": "Ask someone what’s behind it",
     "noSignal": "Nothing flagged under this filter. We flag a move when it is at least 25% and at least 10 ads, or when entry-level openings rise by 10 points.",
-    "chartCaption": "{metric} · 4-week rolling, weekly to {end}",
-    "chartFallback": "{metric} isn’t a weekly series, so the chart shows the ads behind it over time.",
     "fundKicker": "Fundamentals",
     "fundTitle": "Every measure, under your filter",
     "fundAction": "What each measure means",
@@ -246,6 +268,7 @@
   "ComparePage": {
     "metaTitle": "Compare",
     "metaTitlePair": "{a} vs {b}",
+    "chartCaption": "{metric} · 4-week rolling, weekly to {end}",
     "metaDescription": "Put two skills or two roles side by side under the same filter: demand, change, entry-level share, overlap, effort and transferability.",
     "kicker": "Compare",
     "title": "Side by side",
@@ -376,7 +399,7 @@
     "metaTitle": "{metric} — measure",
     "indexKicker": "Method",
     "indexTitle": "What each number means",
-    "indexLede": "Every measure has one definition, one denominator and one source. Only valid combinations appear in the app — a skill has no salary, so we never show one.",
+    "indexLede": "Every measure has one definition, one denominator and one source. Only valid combinations appear in the app — an industry has no salary figure, so we never show one.",
     "legendApplies": "Applies",
     "legendNot": "Doesn’t apply",
     "legendDefault": "Shown first for that type",

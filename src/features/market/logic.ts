@@ -1,6 +1,6 @@
 import { getInstrument } from '@/lib/market/catalog';
 import { METRICS } from '@/lib/metrics/registry';
-import type { ActiveInstrumentType, BreakdownDimension, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
+import type { ActiveInstrumentType, BreakdownDimension, ChartMeasure, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
 import type { BoardSort, BoardType } from '@/lib/queries/market';
 
 // Pure helpers for the public market pages: URL parsing, href building and the
@@ -42,10 +42,29 @@ export function layerParam(layer: SkillLayer | null): string | undefined {
   return layer === 'technology_tool' ? 'tool' : 'task';
 }
 
-/** Detail-page breakdown dimension: `?by=experience|rights|mode`, default experience. */
-export function parseBreakdownBy(v: string | string[] | undefined): BreakdownDimension {
+/**
+ * Detail-chart split: `?by=experience|rights|mode|none`. Absent or invalid =
+ * experience (the default); `none` = not split (null).
+ */
+export function parseBreakdownBy(v: string | string[] | undefined): BreakdownDimension | null {
   const s = firstParam(v);
+  if (s === 'none') return null;
   return s === 'rights' || s === 'mode' ? s : 'experience';
+}
+
+/** `by` value for a link: omitted for the default (experience), `none` for no split. */
+export function breakdownParam(by: BreakdownDimension | null): string | null {
+  return by === null ? 'none' : by === 'experience' ? null : by;
+}
+
+/** Detail-chart Y axis: `?y=ads|salary`, default (and fallback) ads. Validity per type is checked by the query. */
+export function parseChartY(v: string | string[] | undefined): ChartMeasure {
+  return firstParam(v) === 'salary' ? 'salary' : 'ads';
+}
+
+/** `y` value for a link: omitted for the default. */
+export function chartYParam(y: ChartMeasure): string | null {
+  return y === 'ads' ? null : y;
 }
 
 export type BoardView = 'list' | 'cards';
