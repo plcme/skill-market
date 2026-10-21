@@ -2,18 +2,16 @@
 
 import Link from 'next/link';
 import type { MouseEvent } from 'react';
+import { prefersReducedMotion } from '@/lib/hooks/use-media-query';
 
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
-
-/** Bring the "Right now" section (headline figure + chart) back into view. */
+/**
+ * Bring the "Right now" section (headline figure + chart) back into view and
+ * move focus to its heading, so keyboard and screen-reader users land on the
+ * newly selected measure.
+ */
 export function scrollToNow(): void {
-  let reduced = false;
-  try {
-    reduced = window.matchMedia(REDUCED_QUERY).matches;
-  } catch {
-    reduced = false;
-  }
-  document.getElementById('now')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  document.getElementById('now')?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  document.getElementById('now-h')?.focus({ preventScroll: true });
 }
 
 /**

@@ -90,11 +90,11 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             <WatchButton slug={inst.slug} filter={filter} metric={detail.metric} prominent />
           </Suspense>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
-            <Link href={compare} className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline">
+            <Link href={compare} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
               <ArrowLeftRight className="size-3.5" aria-hidden />{t('compareWith')}
             </Link>
             <span aria-hidden className="text-faint">·</span>
-            <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })} className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline">
+            <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
               <MessageCircle className="size-3.5" aria-hidden />{t('talkShort')}
             </Link>
           </div>
@@ -104,7 +104,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
       <section id="now" aria-labelledby="now-h" className="mt-8 grid scroll-mt-24 gap-8 border-t-2 border-rule-strong pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="now-h" className="kicker text-ink">{t('now')}</h2>
+            <h2 id="now-h" tabIndex={-1} className="kicker text-ink">{t('now')}</h2>
             <Suspense fallback={<div className="h-8 w-40" />}>
               <MetricSwitcher type={type} value={detail.metric} />
             </Suspense>
