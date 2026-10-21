@@ -7,26 +7,6 @@
     "lede": "When a skill you follow moves, we find up to three people who use it every day and have 20 minutes free. You bring the decision you’re stuck on.",
     "ctaStart": "Start from a signal",
     "ctaRequests": "My requests",
-    "howKicker": "How it works",
-    "howTitle": "From a signal to a decision, in four steps",
-    "steps": {
-      "signal": {
-        "title": "A signal",
-        "body": "A skill on your watchlist moves — say, more entry-level ads mention it. Every signal shows the ad counts behind it."
-      },
-      "match": {
-        "title": "Up to three people",
-        "body": "We match on the skill, how recently they started, and what they’re happy to talk about. Each match comes with its reasons."
-      },
-      "chat": {
-        "title": "Twenty minutes",
-        "body": "Pick a time they’ve opened. Bring your question and three suggested openers you can edit."
-      },
-      "debrief": {
-        "title": "One-click debrief",
-        "body": "Afterwards, one click: more keen, less keen or no change. It goes into your notes on that skill."
-      }
-    },
     "rulesKicker": "The rules",
     "rulesTitle": "Built so nobody is left hanging",
     "rules": {

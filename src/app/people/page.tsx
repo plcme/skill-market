@@ -6,14 +6,14 @@ import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
 import { Container, PageHeader, SectionHeader } from '@/components/ui/primitives';
-import { PractitionerCta, StartFromSignal, SupplyStats, type MarketSignal } from '@/features/community/people-client';
+import { StartFromSignal, SupplyStats, type MarketSignal } from '@/features/community/people-client';
+import { PractitionerJoinCard } from '@/features/community/practitioner-join-card';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('People');
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-const STEPS = ['signal', 'match', 'chat', 'debrief'] as const;
 const RULES = ['optIn', 'window', 'noShow', 'safety'] as const;
 
 export default async function PeoplePage() {
@@ -35,20 +35,7 @@ export default async function PeoplePage() {
         />
       </Container>
 
-      <Container className="mt-8">
-        <SectionHeader kicker={t('howKicker')} title={t('howTitle')} />
-        <ol className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map((s, i) => (
-            <li key={s} className="flex flex-col gap-2">
-              <span aria-hidden data-n={String(i + 1).padStart(2, '0')} className="serif-num text-[52px] leading-none text-ink/15 before:content-[attr(data-n)]" />
-              <h3 className="font-serif text-[22px] leading-snug">{t(`steps.${s}.title`)}</h3>
-              <p className="text-[15px] text-ink-2">{t(`steps.${s}.body`)}</p>
-            </li>
-          ))}
-        </ol>
-      </Container>
-
-      <Container className="mt-16 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <Container className="mt-8 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section id="start" aria-labelledby="start-h" className="scroll-mt-24">
           <SectionHeader id="start-h" kicker={t('startKicker')} title={t('startTitle')} />
           <StartFromSignal market={market} />
@@ -81,14 +68,7 @@ export default async function PeoplePage() {
       </section>
 
       <Container className="mt-20">
-        <div className="grid gap-6 rounded-lg border border-rule bg-surface p-6 sm:p-10 md:grid-cols-[1.4fr_auto] md:items-end">
-          <div>
-            <p className="kicker">{t('joinKicker')}</p>
-            <h2 className="mt-3 font-serif text-[30px] leading-tight sm:text-[36px]">{t('joinTitle')}</h2>
-            <p className="mt-3 max-w-2xl text-ink-2">{t('joinBody')}</p>
-          </div>
-          <PractitionerCta />
-        </div>
+        <PractitionerJoinCard />
       </Container>
     </>
   );
