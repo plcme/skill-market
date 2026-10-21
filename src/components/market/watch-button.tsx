@@ -15,11 +15,16 @@ import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
 /** Add "instrument + filter" to the watchlist as held or watching (FR-W1, FR-F6). */
-export function WatchButton({ slug, filter, metric, size = 'sm', className, labelClassName }: {
+export function WatchButton({ slug, filter, metric, size = 'sm', prominent = false, className, labelClassName }: {
   slug: string;
   filter: FilterSpec;
   metric?: MetricKey;
   size?: 'sm' | 'md';
+  /**
+   * The page's primary action (instrument header): large, full width, accent
+   * fill until watched, then an outline "Watching" so the state reads clearly.
+   */
+  prominent?: boolean;
   className?: string;
   /**
    * Applied to the visible text. Pass e.g. `@max-4xl:sr-only` to render an
@@ -41,8 +46,12 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className, labe
   const label = (text: string) => (labelClassName ? <span className={labelClassName}>{text}</span> : text);
   // Icon-only buttons need square-ish padding once the label is hidden.
   const iconPad = labelClassName ? '@max-4xl:px-2' : undefined;
+  const sz = prominent ? 'lg' : size;
+  const wide = prominent ? 'w-full' : undefined;
+  const callVariant = prominent ? 'accent' : 'subtle';
+  const addVariant = prominent ? 'accent' : 'outline';
 
-  if (!db || !inst) return <Button variant="subtle" size={size} disabled className={cn(labelClassName ? iconPad : 'w-[108px]', className)}><Bookmark aria-hidden />{label(t('watch'))}</Button>;
+  if (!db || !inst) return <Button variant={callVariant} size={sz} disabled className={cn(labelClassName ? iconPad : prominent ? wide : 'w-[108px]', className)}><Bookmark aria-hidden />{label(t('watch'))}</Button>;
 
   const signedIn = db.session?.personas.includes('student');
   const item = signedIn ? findWatchItem(db, slug, filter) : undefined;
@@ -50,9 +59,9 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className, labe
   if (!signedIn) {
     return (
       <Button
-        variant="subtle"
-        size={size}
-        className={cn(iconPad, className)}
+        variant={callVariant}
+        size={sz}
+        className={cn(iconPad, wide, className)}
         onClick={() => toast({ title: t('signInToWatch'), body: t('signInBody'), action: { label: t('signIn'), onClick: () => router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`) } })}
       >
         <Bookmark aria-hidden />{label(t('watch'))}
@@ -71,7 +80,7 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className, labe
     return (
       <Menu>
         <MenuTrigger asChild>
-          <Button variant="primary" size={size} loading={busy} className={cn(iconPad, className)} aria-label={t('manage', { name: inst.name })}>
+          <Button variant={prominent ? 'outline' : 'primary'} size={sz} loading={busy} className={cn(iconPad, wide, className)} aria-label={t('manage', { name: inst.name })}>
             {!busy ? <Icon aria-hidden /> : null}
             {label(item.status === 'held' ? t('held') : t('watching'))}
             <ChevronDown className="!size-3.5 opacity-70" aria-hidden />
@@ -94,17 +103,17 @@ export function WatchButton({ slug, filter, metric, size = 'sm', className, labe
 
   // Only skills can be "held"; roles and industries are watched.
   if (inst.type !== 'skill') {
-    return <Button variant="outline" size={size} loading={busy} className={cn(iconPad, className)} onClick={() => doAdd('watching')}>{!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}</Button>;
+    return <Button variant={addVariant} size={sz} loading={busy} className={cn(iconPad, wide, className)} onClick={() => doAdd('watching')}>{!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}</Button>;
   }
 
   return (
-    <span className={cn('inline-flex', className)}>
-      <Button variant="outline" size={size} loading={busy} className={cn('rounded-r-none', iconPad)} onClick={() => doAdd('watching')}>
+    <span className={cn('inline-flex', wide, className)}>
+      <Button variant={addVariant} size={sz} loading={busy} className={cn('rounded-r-none', prominent && 'flex-1', iconPad)} onClick={() => doAdd('watching')}>
         {!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}
       </Button>
       <Menu>
         <MenuTrigger asChild>
-          <Button variant="outline" size={size === 'sm' ? 'icon-sm' : 'icon'} className="-ml-px rounded-l-none" aria-label={t('moreOptions', { name: inst.name })} disabled={busy}>
+          <Button variant={addVariant} size={prominent ? 'lg' : size === 'sm' ? 'icon-sm' : 'icon'} className={cn('rounded-l-none', prominent ? 'border-l border-accent-ink/25 px-3.5' : '-ml-px')} aria-label={t('moreOptions', { name: inst.name })} disabled={busy}>
             <ChevronDown aria-hidden />
           </Button>
         </MenuTrigger>

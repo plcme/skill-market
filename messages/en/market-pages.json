@@ -94,7 +94,7 @@
       "role": "Talk to someone who does this job",
       "industry": "Talk to someone working in this industry"
     },
-    "talkNote": "A free 20-minute chat with a verified practitioner. Your filter goes with the request.",
+    "talkShort": "Talk to someone",
     "places": {
       "in": "in",
       "button": "{places}. Change places",

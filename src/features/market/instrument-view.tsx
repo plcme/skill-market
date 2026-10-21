@@ -85,19 +85,19 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             </p>
           ) : null}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:max-w-[340px] lg:flex-col lg:items-stretch">
-          <Button asChild variant="accent" size="lg">
-            <Link href={talk}><MessageCircle aria-hidden />{t(`talk.${type}`, { name: inst.name })}</Link>
-          </Button>
-          <div className="flex gap-2">
-            <Suspense fallback={<Button variant="subtle" disabled className="flex-1" aria-hidden />}>
-              <WatchButton slug={inst.slug} filter={filter} metric={detail.metric} size="md" className="flex-1 [&>button:first-child]:flex-1" />
-            </Suspense>
-            <Button asChild variant="outline" className="flex-1">
-              <Link href={compare}><ArrowLeftRight aria-hidden />{t('compareWith')}</Link>
-            </Button>
+        <div className="flex w-full flex-col gap-3 sm:w-[340px]">
+          <Suspense fallback={<Button variant="accent" size="lg" disabled className="w-full" aria-hidden />}>
+            <WatchButton slug={inst.slug} filter={filter} metric={detail.metric} prominent />
+          </Suspense>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
+            <Link href={compare} className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline">
+              <ArrowLeftRight className="size-3.5" aria-hidden />{t('compareWith')}
+            </Link>
+            <span aria-hidden className="text-faint">·</span>
+            <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })} className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline">
+              <MessageCircle className="size-3.5" aria-hidden />{t('talkShort')}
+            </Link>
           </div>
-          <p className="text-[12.5px] text-muted">{t('talkNote')}</p>
         </div>
       </header>
 
