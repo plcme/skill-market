@@ -13,7 +13,7 @@ export const buttonVariants = cva(
         outline: 'border border-rule-strong/80 bg-transparent text-ink hover:bg-ink hover:text-paper',
         subtle: 'border border-rule bg-surface text-ink hover:border-ink/40 hover:bg-sunken/60',
         ghost: 'bg-transparent text-ink hover:bg-sunken',
-        danger: 'border border-down/40 bg-transparent text-down hover:bg-down hover:text-paper',
+        danger: 'border border-danger/40 bg-transparent text-danger hover:bg-danger hover:text-paper',
         signal: 'bg-signal text-signal-ink hover:brightness-95',
         link: 'h-auto px-0 text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-current',
       },

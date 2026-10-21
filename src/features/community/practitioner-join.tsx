@@ -86,13 +86,13 @@ function AgreeStep() {
     <section className="flex flex-col gap-6">
       <h2 className="font-serif text-[28px] leading-tight">{t('agreeTitle')}</h2>
       <ul className="flex flex-col gap-2 text-ink-2">
-        {(['p1', 'p2', 'p3', 'p4'] as const).map(k => <li key={k} className="flex gap-2"><Check className="mt-1 size-4 shrink-0 text-up" aria-hidden />{t(`agreePoints.${k}`)}</li>)}
+        {(['p1', 'p2', 'p3', 'p4'] as const).map(k => <li key={k} className="flex gap-2"><Check className="mt-1 size-4 shrink-0 text-success" aria-hidden />{t(`agreePoints.${k}`)}</li>)}
       </ul>
       <Card className="flex flex-col gap-4 p-5">
         <Checkbox label={t('agree18')} checked={adult} onCheckedChange={v => setAdult(v === true)} />
         <Checkbox label={t('agreeConduct')} checked={conduct} onCheckedChange={v => setConduct(v === true)} description={<Link href="/legal/conduct" className="link" target="_blank">{t('agreeConductLink')}</Link>} />
       </Card>
-      {tried && (!adult || !conduct) ? <p role="alert" className="text-[13px] font-medium text-down">{errorText({ code: 'validation', message: 'agreeRequired' })}</p> : null}
+      {tried && (!adult || !conduct) ? <p role="alert" className="text-[13px] font-medium text-danger">{errorText({ code: 'validation', message: 'agreeRequired' })}</p> : null}
       {state.error ? <Notice tone="warn">{errorText(state.error)}</Notice> : null}
       <div>
         <Button size="lg" loading={state.pending} onClick={() => { setTried(true); if (adult && conduct) void join({ agree_18: true, agree_conduct: true }); }}>{t('agreeCta')}</Button>
@@ -121,7 +121,7 @@ function EmailStep({ db, onDone }: { db: DemoDB; onDone: () => void }) {
   if (mine.verification === 'verified') {
     return (
       <section className="flex flex-col items-start gap-4">
-        <p className="flex items-center gap-2 font-serif text-2xl"><BadgeCheck className="size-6 text-up" aria-hidden />{t('verified', { domain: mine.work_email_domain })}</p>
+        <p className="flex items-center gap-2 font-serif text-2xl"><BadgeCheck className="size-6 text-success" aria-hidden />{t('verified', { domain: mine.work_email_domain })}</p>
         <Button onClick={onDone}>{t('profileSave')}</Button>
       </section>
     );
@@ -212,7 +212,7 @@ function DoneStep({ pending }: { pending: boolean }) {
   const router = useRouter();
   return (
     <section className="flex flex-col items-start gap-4">
-      <BadgeCheck className="size-8 text-up" aria-hidden />
+      <BadgeCheck className="size-8 text-success" aria-hidden />
       <h2 className="font-serif text-[32px] leading-tight">{t('doneTitle')}</h2>
       <p className="max-w-xl text-ink-2">{pending ? t('donePending') : t('doneBody')}</p>
       <Button size="lg" onClick={() => router.push('/practitioner')}>{t('doneCta')}</Button>

@@ -126,7 +126,7 @@ export function ReviewStep({ db, instrument, filter, signal, question, candidate
           onCheckedChange={v => { setAgree(v === true); setAgreeError(false); }}
           description={<Link href="/legal/conduct" className="link" target="_blank">{t('conductLink')}</Link>}
         />
-        {agreeError ? <p className="text-[13px] font-medium text-down" role="alert">{t('conductRequired')}</p> : null}
+        {agreeError ? <p className="text-[13px] font-medium text-danger" role="alert">{t('conductRequired')}</p> : null}
       </div>
 
       {state.error ? <Notice tone="warn">{errorText(state.error)}</Notice> : null}

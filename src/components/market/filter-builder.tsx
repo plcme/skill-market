@@ -87,10 +87,10 @@ function RuleEditor({ rule, index, canRemove, onChange, onRemove }: {
         onValueChange={v => onChange({ ...rule, work_modes: v })}
         options={WORK_MODES.map(m => ({ value: m, label: t(`modes.${m}`) }))}
       />
-      {rule.work_modes.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('modeRequired')}</p> : null}
+      {rule.work_modes.length === 0 ? <p className="mt-1.5 text-[13px] text-danger">{t('modeRequired')}</p> : null}
       <p className="mb-2 mt-4 text-[13px] font-medium">{t('places')}</p>
       <PlaceChips places={rule.location_ids} onChange={location_ids => onChange({ ...rule, location_ids })} />
-      {rule.location_ids.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('placeRequired')}</p> : null}
+      {rule.location_ids.length === 0 ? <p className="mt-1.5 text-[13px] text-danger">{t('placeRequired')}</p> : null}
     </fieldset>
   );
 }
@@ -135,7 +135,7 @@ export function PlacesField({ simple, onChange, compact = false }: { simple: Sim
         </>
       ) : null}
       <PlaceChips places={simple.places} onChange={places => onChange({ ...simple, places })} />
-      {simple.places.length === 0 && !compact ? <p className="mt-1.5 text-[13px] text-down">{t('placeRequired')}</p> : null}
+      {simple.places.length === 0 && !compact ? <p className="mt-1.5 text-[13px] text-danger">{t('placeRequired')}</p> : null}
     </div>
   );
 }
@@ -170,7 +170,7 @@ function SimpleControls({ simple, onChange }: { simple: SimpleFilter; onChange: 
             <Checkbox key={m} label={t(`modes.${m}`)} checked={simple.modes.includes(m)} onCheckedChange={v => toggleMode(m, v === true)} />
           ))}
         </div>
-        {simple.modes.length === 0 ? <p className="mt-1.5 text-[13px] text-down">{t('modeRequired')}</p> : null}
+        {simple.modes.length === 0 ? <p className="mt-1.5 text-[13px] text-danger">{t('modeRequired')}</p> : null}
       </fieldset>
       <RemoteAnywhereSwitch simple={simple} onChange={onChange} />
     </div>

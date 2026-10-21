@@ -5,7 +5,7 @@ import { Check } from 'lucide-react';
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
-const control = 'w-full rounded-[5px] border border-rule bg-surface px-3 text-base text-ink placeholder:text-faint sm:text-[15px] transition-colors hover:border-ink/35 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 disabled:opacity-50 aria-[invalid=true]:border-down';
+const control = 'w-full rounded-[5px] border border-rule bg-surface px-3 text-base text-ink placeholder:text-faint sm:text-[15px] transition-colors hover:border-ink/35 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 disabled:opacity-50 aria-[invalid=true]:border-danger';
 
 export function Input({ className, ...props }: React.ComponentProps<'input'>) {
   return <input className={cn(control, 'h-11 sm:h-10', className)} {...props} />;
@@ -45,7 +45,7 @@ export function Field({ label, hint, error, children, className, optional, optio
       </label>
       {children({ id, describedBy, invalid: Boolean(error) })}
       {hint ? <p id={hintId} className="text-[13px] leading-snug text-muted">{hint}</p> : null}
-      {error ? <p id={errorId} className="text-[13px] font-medium text-down">{error}</p> : null}
+      {error ? <p id={errorId} className="text-[13px] font-medium text-danger">{error}</p> : null}
     </div>
   );
 }

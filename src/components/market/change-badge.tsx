@@ -2,8 +2,7 @@ import { useTranslations } from 'next-intl';
 import { direction, formatChange, formatCount } from '@/lib/market/format';
 import type { MetricReading } from '@/lib/market/types';
 import { cn } from '@/lib/utils';
-
-const GLYPH = { up: '▲', down: '▼', flat: '■' } as const;
+import { DirectionGlyph } from './direction-glyph';
 
 /**
  * A change is always shown with its absolute counts (FR-D3) and with glyph +
@@ -34,8 +33,7 @@ export function ChangeBadge({ reading, size = 'md', showAbsolute = true, classNa
           dir === 'flat' && 'text-muted',
         )}
       >
-        <span aria-hidden className="text-[0.7em]">{GLYPH[dir]}</span>
-        <span className="sr-only">{t(dir)}</span>
+        <DirectionGlyph dir={dir} />
         {formatChange(reading.value)}
       </span>
       {showAbsolute && abs ? <span className="num max-w-full truncate text-[12px] text-muted" title={abs}>{abs}</span> : null}

@@ -84,6 +84,8 @@ const badgeVariants = cva('inline-flex items-center gap-1 whitespace-nowrap roun
       signal: 'bg-signal text-signal-ink',
       up: 'bg-up-soft text-up',
       down: 'bg-down-soft text-down',
+      success: 'bg-success-soft text-success',
+      danger: 'bg-danger-soft text-danger',
       warn: 'bg-warn-soft text-warn',
       ink: 'bg-ink text-paper',
     },
@@ -154,12 +156,12 @@ export function Notice({ tone = 'info', title, children, action, className, icon
         'flex gap-3 rounded-md border px-4 py-3 text-sm',
         tone === 'info' && 'border-rule bg-surface text-ink-2',
         tone === 'warn' && 'border-warn/30 bg-warn-soft text-ink',
-        tone === 'success' && 'border-up/25 bg-up-soft text-ink',
+        tone === 'success' && 'border-success/25 bg-success-soft text-ink',
         tone === 'signal' && 'border-transparent bg-signal-soft text-ink',
         className,
       )}
     >
-      <Icon className={cn('mt-0.5 size-4 shrink-0', tone === 'warn' && 'text-warn', tone === 'success' && 'text-up', (tone === 'info' || tone === 'signal') && 'text-muted')} aria-hidden />
+      <Icon className={cn('mt-0.5 size-4 shrink-0', tone === 'warn' && 'text-warn', tone === 'success' && 'text-success', (tone === 'info' || tone === 'signal') && 'text-muted')} aria-hidden />
       <div className="min-w-0 flex-1">
         {title ? <p className="font-medium text-ink">{title}</p> : null}
         {children ? <div className={cn(title && 'mt-0.5', 'text-ink-2')}>{children}</div> : null}

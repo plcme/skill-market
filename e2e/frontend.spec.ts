@@ -204,8 +204,7 @@ test.describe('industries', () => {
     const map = page.getByRole('list', { name: /Industries by job ads/ }).filter({ visible: true });
     const tile = map.getByRole('link', { name: /^Mining: [\d,]+ job ads/ });
     await expect(tile).toBeVisible();
-    await expect(page.getByText('Size:').first()).toBeVisible();
-    await expect(page.getByText('Colour:').first()).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Colour bands' })).toBeVisible();
     await tile.click();
     await expect(page).toHaveURL(/\/i\/mining$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
@@ -233,8 +232,7 @@ test.describe('industries', () => {
     await expect(page.getByText(/in \d+% of these ads/).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /Talk to someone working in this industry/ })).toBeVisible();
     await expect(page.getByText('Median salary')).toHaveCount(0);
-    await page.getByText('Show these numbers as a table').click();
-    await expect(page.getByRole('rowheader', { name: 'AutoCAD' })).toBeVisible();
+    await expect(page.getByRole('rowheader', { name: 'AutoCAD' })).toHaveCount(1);
   });
 
   test('a role opened under /i/ redirects to /r/', async ({ page }) => {

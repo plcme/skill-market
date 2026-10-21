@@ -100,7 +100,7 @@ export function ProfileForm({ practitioner, now, submitLabel, onSaved }: { pract
       <Field label={t('fBio')} error={err('bio')}>{({ id }) => <Textarea id={id} rows={2} className="min-h-16" maxLength={400} value={bio} placeholder={t('fBioPlaceholder')} onChange={e => setBio(e.target.value)} />}</Field>
       <Field label={t('fLink')} hint={t('fLinkHint')} error={err('meeting_link')}>{({ id, describedBy, invalid }) => <Input id={id} type="url" aria-describedby={describedBy} aria-invalid={invalid} value={link} placeholder={t('fLinkPlaceholder')} onChange={e => setLink(e.target.value)} />}</Field>
       {state.error && !Object.keys(fields).length ? <Notice tone="warn">{errorText(state.error)}</Notice> : null}
-      {Object.keys(fields).length ? <p role="alert" className="text-[13px] font-medium text-down">{errorText(state.error)}</p> : null}
+      {Object.keys(fields).length ? <p role="alert" className="text-[13px] font-medium text-danger">{errorText(state.error)}</p> : null}
       <div><Button type="submit" loading={state.pending}>{submitLabel}</Button></div>
     </form>
   );

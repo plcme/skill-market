@@ -154,7 +154,7 @@ function Gap({ db }: { db: DemoDB }) {
       />
       <RolePicker value={diagnosis ? roleSlug : ''} suggested={suggested} />
 
-      {roleSlug && !diagnosis ? <p role="alert" className="mt-4 text-sm text-down">{t('unknownRole')}</p> : null}
+      {roleSlug && !diagnosis ? <p role="alert" className="mt-4 text-sm text-danger">{t('unknownRole')}</p> : null}
 
       {!diagnosis ? (
         suggested.length ? (
@@ -187,7 +187,7 @@ function Gap({ db }: { db: DemoDB }) {
                 {diagnosis.have.map(h => (
                   <li key={h.skill.slug}>
                     <Link href={h.suggested ? '/me/skills' : instrumentPath('skill', h.skill.slug)} className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-surface px-3 py-1.5 text-sm hover:border-ink/40">
-                      {!h.suggested ? <Check className="size-3.5 text-up" aria-hidden /> : null}
+                      {!h.suggested ? <Check className="size-3.5 text-success" aria-hidden /> : null}
                       {h.skill.name}
                       {h.suggested ? <Badge tone="outline" className="ml-1">{t('haveSuggested')}</Badge> : null}
                     </Link>

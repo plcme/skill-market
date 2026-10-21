@@ -90,7 +90,7 @@ function Row({ db, req, group, now }: { db: DemoDB; req: ChatRequest; group: key
   else if (req.debrief) detail = t('rowVote', { vote: tc(`vote.${req.debrief.vote}`, { instrument }) });
   else detail = tc(`status.${status}`);
   const when = req.status === 'reschedule_proposed' && req.proposed_slot_start ? req.proposed_slot_start : req.slot_start;
-  const tone = group === 'needs_you' ? 'signal' : status === 'confirmed' ? 'up' : 'outline';
+  const tone = group === 'needs_you' ? 'signal' : status === 'confirmed' ? 'success' : 'outline';
   return (
     <li className="relative flex items-center gap-4 py-4 hover:bg-surface">
       {p ? <Avatar initials={p.initials} /> : null}
