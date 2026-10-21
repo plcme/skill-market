@@ -25,7 +25,7 @@
 - 遵守澳洲 Privacy Act / APPs；个人数据存放在澳洲区域
 - 付费方不限（见 PRD §12.1），但收入永远不影响盘面数据与展示；MVP 不做付费功能与雇主侧功能
 
-## 工作流（主会话 = Fable，负责调度）
+## 工作流（主会话负责调度；Fable 已不可用，子 agent 一律用 Opus）
 
 用户已授权主会话按下面的流程使用子 agent，无需每次再问。
 
@@ -42,7 +42,7 @@
 
 1. **前置检查**：该里程碑"需要人类完成的事项"是否已完成（查 `docs/SETUP_STATUS.md`，由用户和 Codex 维护）。未完成 → 停下，给用户一份逐步操作清单，等完成后再继续
 2. **实现**：派 `implementer` 子 agent（Opus），只给它这一个里程碑。它在分支 `m{n}-<slug>` 上工作
-3. **审查**：派 `reviewer` 子 agent（Fable），审查该分支相对 `dev` 的改动
+3. **审查**：派 `reviewer` 子 agent（Opus），审查该分支相对 `dev` 的改动
 4. **结论**：
    - 通过 → 合并到 `dev`，push（如已有 remote），更新 `docs/PROGRESS.md`，进入下一个里程碑
    - 退回 → 把 `docs/reviews/M{n}.md` 的问题清单交给 implementer 修复，再审

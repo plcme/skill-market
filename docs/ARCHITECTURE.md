@@ -643,7 +643,7 @@ type FilterSpec = {
 | `entry_level_share` | entry-level / graduate 广告占比 | entry ads / all ads | skill, role | 常用 | 有数据 |
 | `no_pr_required_share` | 未明示要求 PR / 公民 / 完整工作权利的广告占比 | not_stated + sponsorship_ok / all | skill, role | 常用 | 有数据；popover 注明抽取规则与误差 |
 | `employer_concentration` | 不同雇主数，以及前 5 家雇主占比 | distinct companies；top5 / all | skill, role | 常用 | 有数据 |
-| `salary_median` | 标注薪资的广告的中位数（仅标注薪资的广告，说明覆盖率） | — | role | 常用 | 标薪广告 ≥ min_sample |
+| `salary_median` | 标注薪资的广告的中位数（仅标注薪资的广告，说明覆盖率） | — | skill, role（skill 自 2026-10-17 起，见 GLOSSARY §3） | 常用 | 标薪广告 ≥ min_sample |
 | `salary_p10_p90` | 薪资 10–90 分位 | — | role | 进阶 | 同上 |
 | `remote_share` | 远程或混合广告占比 | remote+hybrid / all | skill, role | 进阶 | 有数据 |
 | `contract_share` | 合同制广告占比 | contract / all | skill, role | 进阶 | 有数据 |

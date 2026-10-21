@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: 里程碑代码审查 agent。implementer 完成一个里程碑后，主会话派它审查该分支相对 dev 的改动，给出通过或退回。
-model: fable
+model: opus
 tools: Read, Glob, Grep, Bash, Write
 ---
 
