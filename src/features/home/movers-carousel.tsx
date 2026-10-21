@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AUTO_ADVANCE_QUERY, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { instrumentPath } from '@/lib/links';
 import { direction, formatChange, formatCount } from '@/lib/market/format';
 import type { ActiveInstrumentType } from '@/lib/market/types';
@@ -14,8 +15,10 @@ import { DirectionGlyph, signDirection } from '@/components/market/direction-gly
 import { cn } from '@/lib/utils';
 
 // Landing "what moved" carousel: one main card plus the next three as smaller
-// cards, each a link to its instrument page. Auto-advance pauses on hover or
-// focus and never starts when the viewer prefers reduced motion.
+// cards, each a link to its instrument page. There is no pause button, so to
+// meet WCAG 2.2.2 auto-advance only runs where hover-to-pause works (fine
+// pointer with hover, no reduced-motion preference), pauses on hover or focus,
+// and stops for good once the viewer interacts with the carousel.
 
 export interface MoverItem {
   slug: string;
@@ -31,25 +34,6 @@ export interface MoverItem {
 }
 
 const INTERVAL_MS = 8000;
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
-
-function subscribeReducedMotion(cb: () => void): () => void {
-  try {
-    const mq = window.matchMedia(REDUCED_QUERY);
-    mq.addEventListener('change', cb);
-    return () => mq.removeEventListener('change', cb);
-  } catch {
-    return () => {};
-  }
-}
-
-function readReducedMotion(): boolean {
-  try {
-    return window.matchMedia(REDUCED_QUERY).matches;
-  } catch {
-    return true;
-  }
-}
 
 function useMoveLine() {
   const t = useTranslations('Home');
@@ -68,11 +52,14 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
   const line = useMoveLine();
   const [index, setIndex] = useState(0);
   const [hold, setHold] = useState(false);
-  const reduced = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => true);
-  const playing = !reduced;
+  // Set by any pointer, key or prev/next interaction; never reset this session.
+  const [stopped, setStopped] = useState(false);
+  const canAutoAdvance = useMediaQuery(AUTO_ADVANCE_QUERY);
+  const playing = canAutoAdvance && !stopped;
   const n = items.length;
 
   const go = useCallback((delta: number) => setIndex(i => (i + delta + n) % n), [n]);
+  const step = (delta: number) => { setStopped(true); go(delta); };
 
   useEffect(() => {
     if (!playing || hold || n < 2) return;
@@ -89,6 +76,8 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
     <section
       aria-roledescription={t('carouselRole')}
       aria-label={t('moversLabel')}
+      onPointerDown={() => setStopped(true)}
+      onKeyDown={() => setStopped(true)}
       onMouseEnter={() => setHold(true)}
       onMouseLeave={() => setHold(false)}
       onFocus={() => setHold(true)}
@@ -96,8 +85,8 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
     >
       <div className="mb-3 flex items-center justify-end gap-1">
         <span className="num mr-2 text-[12.5px] text-muted" aria-hidden>{index + 1} / {n}</span>
-        <Button variant="ghost" size="icon-sm" onClick={() => go(-1)} aria-label={t('moversPrev')}><ChevronLeft aria-hidden /></Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => go(1)} aria-label={t('moversNext')}><ChevronRight aria-hidden /></Button>
+        <Button variant="ghost" size="icon-sm" onClick={() => step(-1)} aria-label={t('moversPrev')}><ChevronLeft aria-hidden /></Button>
+        <Button variant="ghost" size="icon-sm" onClick={() => step(1)} aria-label={t('moversNext')}><ChevronRight aria-hidden /></Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
