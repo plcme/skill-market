@@ -113,9 +113,11 @@
 - **按钮层级**：
   - 每个视图最多一个 `primary`（墨色实心）。
   - `accent` 用于转化动作，例如"约咖啡聊"。
+  - 详情页头部只有一个大按钮：Watch（`WatchButton prominent`，未关注时 `accent` 实心，已关注时 `outline` 的 "Watching"）。"Compare with…" 和 "Talk to someone" 是它下方一行带图标的文字链接。
   - 其余动作用 `subtle`、`outline` 或 `ghost`。
   - `signal` 按钮只出现在信号相关的入口。
   - 危险操作用 `danger`，并且必须二次确认。
+- **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。首页 movers 卡片、详情页 Fundamentals 格子都按此处理（点 Fundamentals 格子 = 把该度量切到顶部 "Right now" 并滚回去）。
 - **数字**：一律通过 `MetricValue` 和 `MetricInfo` 渲染，不要裸写数字。
 - **涨跌**：用 `ChangeBadge`，它永远显示原始计数 from → to。
 - **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有筛选按钮，地点写在标题里（"SQL in [All Australia ▾]"），从行情表带来的其他条件显示为可删除的小标签。
