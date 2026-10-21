@@ -105,6 +105,7 @@
     "talkNote": "A free 20-minute chat with a verified practitioner. Your filter goes with the request.",
     "places": {
       "in": "in",
+      "button": "{places}. Change places",
       "title": "Places",
       "close": "Close",
       "reset": "All Australia",
@@ -123,7 +124,7 @@
         "entry": "Entry level",
         "graduate": "Graduate only"
       },
-      "workRights": "No PR required",
+      "workRights": "No PR or citizenship stated",
       "workModes": "Work mode: {modes}"
     },
     "compareWith": "Compare with…",

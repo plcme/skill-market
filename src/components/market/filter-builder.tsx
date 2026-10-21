@@ -147,7 +147,7 @@ export function RemoteAnywhereSwitch({ simple, onChange, compact = false, classN
   return (
     <Switch
       label={t('remoteAnywhere')}
-      description={compact ? undefined : redundant ? t('remoteAnywhereCovered') : t('remoteAnywhereHint')}
+      description={redundant ? t(compact ? 'remoteAnywhereCoveredShort' : 'remoteAnywhereCovered') : compact ? undefined : t('remoteAnywhereHint')}
       checked={redundant || simple.includeRemoteAnywhere}
       disabled={redundant}
       onCheckedChange={v => onChange({ ...simple, includeRemoteAnywhere: v })}

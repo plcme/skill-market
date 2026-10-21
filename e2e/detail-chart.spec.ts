@@ -109,3 +109,42 @@ test('detail chart fits a 375px screen with menus as bottom sheets', async ({ pa
     expect((await b.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   }
 });
+
+test('keyboard focus stays on the controls after split and chip changes', async ({ page }) => {
+  test.slow();
+  await page.goto('/s/python?f=oh.au_entry_all');
+  const chart = page.locator('section#now');
+
+  // Clear the split with the keyboard: focus moves to the Split by trigger, not <body>.
+  const clear = chart.getByRole('button', { name: 'Stop splitting' });
+  await expect(async () => {
+    if (!/by=none/.test(page.url())) {
+      await clear.focus({ timeout: 5000 });
+      await page.keyboard.press('Enter');
+    }
+    await expect(page).toHaveURL(/[?&]by=none/, { timeout: 10000 });
+  }).toPass({ timeout: 40000 });
+  const none = chart.getByRole('button', { name: 'Not split. Choose a split' });
+  await expect(none).toBeFocused();
+
+  // Pick a split from the "None" state with the keyboard: focus returns to the same trigger.
+  await page.keyboard.press('Enter');
+  const menu = page.getByRole('dialog', { name: 'Split by' });
+  await expect(menu).toBeVisible();
+  await menu.getByRole('button', { name: /^Work mode/ }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/[?&]by=mode/, { timeout: 30000 });
+  await expect(chart.getByRole('button', { name: 'Split by Work mode. Change' })).toBeFocused();
+
+  // Remove scope chips: focus goes to the next chip, then to the places button.
+  const chips = page.getByRole('list', { name: 'Also filtered by' });
+  await chips.getByRole('button', { name: 'Remove Entry level' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/f=oh\.au_all_all/, { timeout: 30000 });
+  const modes = chips.getByRole('button', { name: 'Remove Work mode: On-site, Hybrid' });
+  await expect(modes).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page).not.toHaveURL(/[?&]f=/, { timeout: 30000 });
+  await expect(page.getByRole('button', { name: 'All Australia. Change places' })).toBeFocused();
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('BODY');
+});

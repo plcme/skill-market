@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, Info, Plus, X } from 'lucide-react';
 import { formatCount } from '@/lib/market/format';
@@ -69,6 +69,9 @@ export function InstrumentChart({ breakdown, y, measures, type, filter, subject,
   const measureLabel = t(`measures.${y}`);
   const chooseY = (next: ChartMeasure) => { setMenu(null); if (next !== y) set({ y: chartYParam(next) }); };
   const chooseBy = (next: BreakdownDimension | null) => { setMenu(null); if (next !== by) set({ by: breakdownParam(next) }); };
+  const splitTrigger = useRef<HTMLButtonElement>(null);
+  // The clear button unmounts once the URL updates: hand focus to the (stable) Split by trigger first.
+  const clearSplit = () => { splitTrigger.current?.focus(); chooseBy(null); };
   const latest = breakdown.buckets[0]?.latest;
   // Experience filtered to graduate ads: name what is actually inside, not the 0–2 yrs band.
   const graduateOnly = by === 'experience' && filter.seniority === 'graduate';
@@ -120,27 +123,8 @@ export function InstrumentChart({ breakdown, y, measures, type, filter, subject,
         </div>
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="kicker">{t('splitBy')}</span>
-          {by ? (
-            <span className={cn(PILL, 'gap-1 border border-accent bg-accent-soft pl-0 pr-1 text-accent')}>
-              <AdaptivePopover
-                open={menu === 'split'}
-                onOpenChange={toggle('split')}
-                title={t('splitBy')}
-                closeLabel={t('close')}
-                align="end"
-                trigger={(
-                  <button type="button" className="inline-flex h-full items-center rounded-l-full pl-3.5 pr-1 font-medium" aria-label={t('splitButton', { dimension: t(`dims.${by}`) })}>
-                    {t(`dims.${by}`)}
-                  </button>
-                )}
-              >
-                {splitMenu}
-              </AdaptivePopover>
-              <button type="button" onClick={() => chooseBy(null)} aria-label={t('clearSplit')} className="grid size-7 place-items-center rounded-full hover:bg-surface">
-                <X className="size-3.5" aria-hidden />
-              </button>
-            </span>
-          ) : (
+          {/* One stable trigger for both states, so focus survives a split change (WCAG 2.4.3). */}
+          <span className="flex items-center">
             <AdaptivePopover
               open={menu === 'split'}
               onOpenChange={toggle('split')}
@@ -148,15 +132,35 @@ export function InstrumentChart({ breakdown, y, measures, type, filter, subject,
               closeLabel={t('close')}
               align="end"
               trigger={(
-                <button type="button" className={cn(PILL, 'gap-1.5 border border-dashed border-muted text-muted hover:border-ink hover:text-ink')} aria-label={t('splitNoneButton')}>
-                  <Plus className="size-3.5" aria-hidden />
-                  {t('none')}
+                <button
+                  ref={splitTrigger}
+                  type="button"
+                  className={cn(
+                    PILL,
+                    by
+                      ? 'rounded-r-none border border-r-0 border-accent bg-accent-soft pr-3 text-accent'
+                      : 'gap-1.5 border border-dashed border-muted text-muted hover:border-ink hover:text-ink',
+                  )}
+                  aria-label={by ? t('splitButton', { dimension: t(`dims.${by}`) }) : t('splitNoneButton')}
+                >
+                  {by ? t(`dims.${by}`) : <><Plus className="size-3.5" aria-hidden />{t('none')}</>}
                 </button>
               )}
             >
               {splitMenu}
             </AdaptivePopover>
-          )}
+            {by ? (
+              // A 44px-wide segment of the chip, so its touch area never overlaps the trigger.
+              <button
+                type="button"
+                onClick={clearSplit}
+                aria-label={t('clearSplit')}
+                className="grid h-10 w-11 place-items-center rounded-r-full border border-accent bg-accent-soft text-accent hover:bg-surface"
+              >
+                <X className="size-3.5" aria-hidden />
+              </button>
+            ) : null}
+          </span>
         </div>
       </div>
 

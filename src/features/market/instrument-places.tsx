@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, X } from 'lucide-react';
 import {
@@ -17,6 +17,9 @@ import { cn } from '@/lib/utils';
 
 // Detail-page title "SQL in [All Australia ▾]" (GLOSSARY §2, 2026-10-17):
 // places are part of the page's filter (`?f=`), chosen from the title.
+
+/** The title's places button; scope chips hand focus to it when the last chip goes. */
+const PLACES_TRIGGER_ID = 'instrument-places-trigger';
 
 const WHERE = 'font-serif text-[22px] leading-tight tracking-normal text-muted sm:text-[26px]';
 
@@ -50,7 +53,9 @@ export function PlacesInTitle() {
         closeLabel={t('close')}
         trigger={(
           <button
+            id={PLACES_TRIGGER_ID}
             type="button"
+            aria-label={t('button', { places: label })}
             className={cn('inline-block max-w-full border-b border-dashed border-muted text-left text-ink transition-colors hover:border-ink', pending && 'opacity-70')}
           >
             {label}
@@ -96,6 +101,14 @@ export function ScopeChips({ className }: { className?: string }) {
   const [filter, setFilter, pending] = useUrlFilter();
   const labelOf = useConditionLabel();
   const conditions = scopeConditions(filter);
+  const removeButtons = useRef(new Map<ScopeCondition, HTMLButtonElement>());
+  // The removed chip unmounts once the URL updates: move focus first, to the next chip or the places button.
+  const remove = (c: ScopeCondition) => {
+    const next = conditions[conditions.indexOf(c) + 1];
+    const target = next ? removeButtons.current.get(next) : document.getElementById(PLACES_TRIGGER_ID);
+    target?.focus();
+    setFilter(clearScopeCondition(filter, c));
+  };
   if (!conditions.length) return null;
   return (
     <ul aria-label={t('label')} className={cn('flex flex-wrap gap-2', pending && 'opacity-70', className)}>
@@ -104,7 +117,11 @@ export function ScopeChips({ className }: { className?: string }) {
         return (
           <li key={c} className="inline-flex h-8 items-center gap-0.5 rounded-full border border-rule bg-surface pl-3 pr-1 text-[13px] text-ink">
             {label}
-            <button type="button" onClick={() => setFilter(clearScopeCondition(filter, c))} aria-label={t('remove', { condition: label })} className="grid size-6 place-items-center rounded-full text-muted hover:bg-sunken hover:text-ink">
+            <button
+              ref={el => { if (el) removeButtons.current.set(c, el); else removeButtons.current.delete(c); }}
+              type="button"
+              onClick={() => remove(c)}
+              aria-label={t('remove', { condition: label })} className="grid size-6 place-items-center rounded-full text-muted hover:bg-sunken hover:text-ink">
               <X className="size-3.5" aria-hidden />
             </button>
           </li>

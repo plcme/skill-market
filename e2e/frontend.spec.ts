@@ -39,7 +39,7 @@ test('filter is part of the URL and read back in the title and chips', async ({ 
   await page.goto('/s/rust?f=r.au-nt-darwin_graduate_npr');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Rust\s+in Darwin/);
   const chips = page.getByRole('list', { name: 'Also filtered by' });
-  await expect(chips.getByRole('listitem')).toHaveText(['Graduate only', 'No PR required', 'Work mode: Remote']);
+  await expect(chips.getByRole('listitem')).toHaveText(['Graduate only', 'No PR or citizenship stated', 'Work mode: Remote']);
   await expect(page.getByText('Not enough ads for a reliable trend')).toBeVisible();
 });
 

@@ -47,6 +47,7 @@
     "currentlyShowing": "Currently showing",
     "remoteAnywhere": "Also include remote jobs anywhere in Australia",
     "remoteAnywhereHint": "Adds remote roles from every state on top of the places above.",
+    "remoteAnywhereCoveredShort": "Already included.",
     "remoteAnywhereCovered": "Already included — your places and work modes cover remote roles across Australia.",
     "placesHint": "Pick any mix of countries, states, cities or regions.",
     "workModeLegend": "Work mode",
