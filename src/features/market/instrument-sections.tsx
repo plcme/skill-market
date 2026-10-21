@@ -15,6 +15,7 @@ import { SourceBadge } from '@/components/market/source-badge';
 import { Notice } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
 import { barPercent, salaryAxis, togetherness, type Togetherness } from './logic';
+import { MeasureCellLink } from './measure-cell-link';
 
 // Building blocks of the full ticker page (FR-M2 "full page"); several are reused
 // on /compare so both views explain numbers the same way.
@@ -27,7 +28,10 @@ export function Figure({ reading, className }: { reading: MetricReading; classNa
   return <MetricValue reading={reading} size="lg" className={cn('[&>span:last-child]:whitespace-normal', className)} />;
 }
 
-/** Every valid measure as a figure cell; advanced ones behind a disclosure (PRD §10 rule 9). */
+/**
+ * Every valid measure as a figure cell; advanced ones behind a disclosure (PRD §10 rule 9).
+ * Each cell selects its measure in the "Right now" headline and scrolls back up to it.
+ */
 export function Fundamentals({ detail, filter, metricHref }: {
   detail: InstrumentDetail;
   filter: FilterSpec;
@@ -41,14 +45,12 @@ export function Fundamentals({ detail, filter, metricHref }: {
     if (!r) return null;
     const current = m === detail.metric;
     return (
-      <li key={m} className={cn('flex min-w-0 flex-col gap-3 border-b border-r border-rule bg-surface p-3.5 sm:p-5', current && 'shadow-[inset_0_2px_0_var(--ink)]')}>
-        <MetricLabel metric={m} type={type} reading={r} filter={filter} subject={detail.snapshot.instrument.name} />
+      <li key={m} className={cn('relative flex min-w-0 flex-col gap-3 border-b border-r border-rule bg-surface p-3.5 transition-colors hover:bg-sunken/50 sm:p-5', current && 'shadow-[inset_0_2px_0_var(--ink)]')}>
+        <MeasureCellLink href={metricHref(m)} current={current} label={t('showMeasureLabel', { metric: tm(`${m}.label`) })} />
+        <MetricLabel metric={m} type={type} reading={r} filter={filter} subject={detail.snapshot.instrument.name} infoClassName="relative z-10" />
         <Figure reading={r} />
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-1">
+        <div className="mt-auto pt-1">
           <SourceBadge kind={r.source} short />
-          {current
-            ? <span className="kicker text-ink">{t('shownAbove')}</span>
-            : <Link href={metricHref(m)} scroll={false} className="text-[12.5px] text-accent hover:underline" aria-label={t('showAboveLabel', { metric: tm(`${m}.label`) })}>{t('showAbove')}</Link>}
         </div>
       </li>
     );
