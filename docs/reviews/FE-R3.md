@@ -120,3 +120,49 @@
 9. **[src/lib/queries/market.ts:138] `detail.series` 已无用**
    - 详情页不再用它，但每次请求仍在计算
    - 如果没有其他消费者，可以删掉这个字段
+
+## Round 2 — 通过
+
+审查范围：`git diff 178fa60..cdd3c19`（eeba0fb、cdd3c19）。
+
+验收命令结果：
+- `pnpm lint`：0 错误
+- `pnpm typecheck`：0 错误
+- `pnpm test:unit`：22 个文件、202 个测试全部通过（新增 `tests/i18n-keys.test.ts`）
+- `E2E_PORT=3161 pnpm test:e2e e2e/detail-chart.spec.ts --workers=1`：10/10 通过（desktop 和 mobile 各 5 个，含新增的纯键盘焦点测试）
+  - `.next` 的 BUILD_ID 生成于 15:40，晚于所有改动文件的修改时间（不晚于 15:39:13），所以测的是最新代码
+- `curl /compare?a=python&b=java`（3003 dev server）：标题正常显示为 "… · 4-week rolling, weekly to …"，页面中没有 `InstrumentPage.chartCaption` 或 `ComparePage.chartCaption` 这类原始 key
+
+阻断项复核：
+1. **已修复**：compare 页图表标题
+   - `compare-view.tsx:156` 改用 `ComparePage.chartCaption`，messages 里已补上这个 key
+   - 新增 `tests/i18n-keys.test.ts`：按作用域解析 `useTranslations`/`getTranslations` 的绑定，校验 `src` 中所有静态 key（断言 >500 个），并自带一个解析器的单测。以后再删掉仍在使用的 key 会直接失败
+2. **已修复**：键盘操作后焦点丢失
+   - Split by 现在只有一个稳定的 trigger（`instrument-chart.tsx` 中带 `splitTrigger` ref 的按钮），两种状态只改内容、样式和 aria-label
+   - ✕ 成为独立的 44×40px 段，不再与 trigger 的触控区重叠（顺带解决了 Round 1 建议 6）
+   - 点 ✕ 时先把焦点移到 trigger，再改 URL；从菜单里选拆分时，Radix 把焦点还给同一个 trigger
+   - scope chip 移除前，先把焦点移到下一个 chip 的移除按钮；没有下一个时移到标题里的 places 按钮（`PLACES_TRIGGER_ID`）
+   - e2e 在桌面和手机上都断言了焦点落在这些位置，不是 body
+
+回归检查：
+- Round 1 的建议 4、5、7 已处理：
+  - 置灰的远程开关显示 "Already included."
+  - places 按钮的 aria-label 为 "{places}. Change places"，以可见文字开头，符合 2.5.3
+  - rights chip 改为 "No PR or citizenship stated"，与筛选口径一致
+- `frontend.spec` 已同步新文案
+- 其余逻辑没有变化
+
+### 必须修复（阻断）
+
+（无）
+
+### 建议（不阻断）
+
+1. [src/features/market/instrument-places.tsx:58] h1 的可访问名称被拉长
+   - places 按钮的 aria-label 会参与 h1 的命名，标题列表里会读成 "SQL in All Australia. Change places"
+   - 可以接受。如果想让标题更干净，可以把 "Change places" 改为通过 `aria-describedby` 提供
+2. [src/features/market/instrument-places.tsx:104-111] 删最后一个 chip 时焦点去向
+   - 删掉的是最后一个 chip、但前面还有其他 chip 时，焦点会跳到标题里的 places 按钮，而不是前一个 chip
+   - 可用，但更顺手的做法是回落到前一个 chip
+3. Round 1 建议 1、2、3、8、9 仍然有效
+   - 其中 skill 薪资是否在 board、Right now、Fundamentals 上不拆分地显示，已交给用户拍板
