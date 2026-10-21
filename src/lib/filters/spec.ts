@@ -46,7 +46,7 @@ const RIGHTS_CODE: Record<WorkRights, string> = { all: 'all', no_pr_required: 'n
 
 /**
  * URL codec. Only characters that survive form-encoding untouched are used:
- * `ohr.au-nsw-sydney.au-vic-melbourne*r.au.nz_entry_npr`
+ * `ohr.au-nsw-sydney.au-vic-melbourne*r.au-qld.au-wa_entry_npr`
  */
 export function encodeFilter(spec: FilterSpec): string {
   const n = normaliseFilter(spec);

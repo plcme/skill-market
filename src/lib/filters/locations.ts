@@ -1,7 +1,8 @@
 import type { Location } from '@/lib/market/types';
 
-// Location tree: country → state → city → region (FR-F4). Any level is selectable;
-// leaves are the atoms that ads are assigned to (ARCHITECTURE §6.3).
+// Location tree: country → state → city → region (FR-F4). Australia only: `au`
+// is the single country and the root every filter starts from. Leaves are the
+// atoms that ads are assigned to (ARCHITECTURE §6.3).
 export const LOCATIONS: readonly Location[] = [
   { id: 'au', name: 'Australia', short: 'AU', level: 'country', parent_id: null },
   { id: 'au-nsw', name: 'New South Wales', short: 'NSW', level: 'state', parent_id: 'au' },
@@ -30,9 +31,6 @@ export const LOCATIONS: readonly Location[] = [
   { id: 'au-tas-hobart', name: 'Hobart', short: 'Hobart', level: 'city', parent_id: 'au-tas' },
   { id: 'au-nt', name: 'Northern Territory', short: 'NT', level: 'state', parent_id: 'au' },
   { id: 'au-nt-darwin', name: 'Darwin', short: 'Darwin', level: 'city', parent_id: 'au-nt' },
-  { id: 'nz', name: 'New Zealand', short: 'NZ', level: 'country', parent_id: null },
-  { id: 'nz-auckland', name: 'Auckland', short: 'Auckland', level: 'city', parent_id: 'nz' },
-  { id: 'nz-wellington', name: 'Wellington', short: 'Wellington', level: 'city', parent_id: 'nz' },
 ];
 
 const byId = new Map(LOCATIONS.map(l => [l.id, l]));
