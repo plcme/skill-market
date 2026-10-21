@@ -1,6 +1,5 @@
 {
   "Home": {
-    "edition": "Australian job ads · week ending {date}",
     "headline": "A stock market for skills.",
     "lede": "Built from Australian job ads, updated every week.",
     "ctaMarket": "Explore the market",
@@ -37,18 +36,6 @@
     "step2Body": "Each figure carries its definition, denominator, source and date one click away. Small samples are flagged, not charted.",
     "step3Title": "Ask someone who’s there",
     "step3Body": "When a signal is worth digging into, we match you with up to three verified practitioners and suggest what to ask.",
-    "principlesKicker": "What we won’t do",
-    "principlesTitle": "No rankings. No readiness scores. Just direction.",
-    "principles": {
-      "p1": "We never rank you against other students or give you a score.",
-      "p2": "Anything we guess about you is labelled as a suggestion, and one tap to change.",
-      "p3": "Demand is one input. Every recommendation also shows effort and how transferable a skill is.",
-      "p4": "Practitioners opt in and verify their work email. Silence and declines are handled privately — you always get a next step."
-    },
-    "practitionerKicker": "For practitioners",
-    "practitionerTitle": "Started in the last few years? Give 20 minutes a month.",
-    "practitionerBody": "You’ll always see why a student picked you, what they want to decide, and you can say no in one click — no reason needed.",
-    "practitionerCta": "Join as a practitioner",
     "sampleNote": "Numbers on this preview are illustrative."
   }
 }
