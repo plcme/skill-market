@@ -245,12 +245,6 @@ export interface PlacesCopy {
   join: string; // ", "
 }
 
-/** True when the spec's places are exactly all of Australia (work modes and scope aside). */
-export function isAllAustralia(spec: FilterSpec): boolean {
-  const simple = toSimpleFilter(spec);
-  return simple !== null && !simple.includeRemoteAnywhere && simple.places.length === 1 && simple.places[0] === 'au';
-}
-
 /**
  * Short label for where a spec looks: "All Australia", up to two place names,
  * or "N places", plus " + remote" when remote-anywhere is on; `custom` for
@@ -266,7 +260,7 @@ export function placesLabel(spec: FilterSpec, copy: PlacesCopy, nameOf: (id: str
   return simple.includeRemoteAnywhere ? fillTemplate(copy.withRemote, { places: base }) : base;
 }
 
-/** Conditions besides places that narrow a spec; shown as removable chips under a detail-page title. */
+/** Conditions besides places that narrow a spec; listed after the places in a detail-page title. */
 export type ScopeCondition = 'seniority' | 'work_rights' | 'work_modes';
 
 export function scopeConditions(spec: FilterSpec): ScopeCondition[] {
@@ -279,17 +273,30 @@ export function scopeConditions(spec: FilterSpec): ScopeCondition[] {
   return out;
 }
 
-/** The spec without one scope condition (work modes go back to all three). */
-export function clearScopeCondition(spec: FilterSpec, condition: ScopeCondition): FilterSpec {
-  if (condition === 'seniority') return { ...cloneFilter(spec), seniority: 'all' };
-  if (condition === 'work_rights') return { ...cloneFilter(spec), work_rights: 'all' };
-  const simple = toSimpleFilter(spec);
-  return simple ? fromSimpleFilter({ ...simple, modes: [...WORK_MODES] }, spec) : cloneFilter(spec);
+/** Copy for the detail-page title filter ("in Sydney + remote · Entry-level ▾"); from messages so it stays translatable. */
+export interface TitleFilterCopy {
+  places: PlacesCopy;
+  separator: string; // " · "
+  seniority: Record<Exclude<Seniority, 'all'>, string>; // "Entry-level", "Graduate"
+  workRights: string; // "No PR stated"
+  /** Keyed by the selected modes in WORK_MODES order joined with "_", e.g. `onsite_hybrid`. */
+  workModes: Record<string, string>;
 }
 
-/** Back to all of Australia, keeping work modes (simple specs), seniority and work rights. */
-export function resetPlaces(spec: FilterSpec): FilterSpec {
-  const simple = toSimpleFilter(spec);
-  if (simple) return fromSimpleFilter({ places: ['au'], modes: simple.modes, includeRemoteAnywhere: false }, spec);
-  return { ...cloneFilter(DEFAULT_FILTER), seniority: spec.seniority, work_rights: spec.work_rights };
+/**
+ * The active filter as a short sentence for a detail-page title: the places
+ * label (always), then only the conditions that narrow — level, work modes,
+ * work rights — joined by the separator. "All Australia" for the default.
+ */
+export function titleFilterLabel(spec: FilterSpec, copy: TitleFilterCopy, nameOf?: (id: string) => string): string {
+  const n = normaliseFilter(spec);
+  const conditions = scopeConditions(n);
+  const parts = [placesLabel(n, copy.places, nameOf)];
+  if (n.seniority !== 'all') parts.push(copy.seniority[n.seniority]);
+  if (conditions.includes('work_modes')) {
+    const key = WORK_MODES.filter(m => toSimpleFilter(n)?.modes.includes(m)).join('_');
+    parts.push(copy.workModes[key] ?? key);
+  }
+  if (n.work_rights !== 'all') parts.push(copy.workRights);
+  return parts.join(copy.separator);
 }

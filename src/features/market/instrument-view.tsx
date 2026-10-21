@@ -22,7 +22,7 @@ import { competencyLevels } from '@/lib/market/competencies';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
 import { hrefWith } from './logic';
 import { InstrumentChart } from './instrument-chart';
-import { PlacesInTitle, PlacesInTitleStatic, ScopeChips } from './instrument-places';
+import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
 
@@ -70,13 +70,10 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           </div>
           <h1 className="display mt-6 break-words text-[48px] sm:text-[72px] lg:text-[88px]">
             {inst.name}{' '}
-            <Suspense fallback={<PlacesInTitleStatic filter={filter} />}>
-              <PlacesInTitle />
+            <Suspense fallback={<TitleFilterStatic filter={filter} />}>
+              <TitleFilter />
             </Suspense>
           </h1>
-          <Suspense fallback={null}>
-            <ScopeChips className="mt-4" />
-          </Suspense>
           <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{inst.blurb}</p>
           {inst.aliases.length ? (
             <p className="mt-3 text-[13px] text-muted">

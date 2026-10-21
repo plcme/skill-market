@@ -97,10 +97,6 @@
     "talkShort": "Talk to someone",
     "places": {
       "in": "in",
-      "button": "{places}. Change places",
-      "title": "Places",
-      "close": "Close",
-      "reset": "All Australia",
       "label": {
         "all": "All Australia",
         "custom": "custom places",
@@ -109,15 +105,22 @@
         "join": ", "
       }
     },
-    "scope": {
-      "label": "Also filtered by",
-      "remove": "Remove {condition}",
+    "titleFilter": {
+      "button": "{filter}. Change filter",
+      "separator": " · ",
       "seniority": {
-        "entry": "Entry level",
-        "graduate": "Graduate only"
+        "entry": "Entry-level",
+        "graduate": "Graduate"
       },
-      "workRights": "No PR or citizenship stated",
-      "workModes": "Work mode: {modes}"
+      "workRights": "No PR stated",
+      "workModes": {
+        "onsite": "On-site only",
+        "hybrid": "Hybrid only",
+        "remote": "Remote only",
+        "onsite_hybrid": "On-site or hybrid",
+        "onsite_remote": "On-site or remote",
+        "hybrid_remote": "Hybrid or remote"
+      }
     },
     "compareWith": "Compare with…",
     "now": "Right now",

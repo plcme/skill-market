@@ -293,13 +293,17 @@ export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange:
  * Readback + edit sheet. Without `onChange` it reads and writes the `?f=` param.
  * `variant="button"` renders only a compact Filter button (with a badge counting
  * active conditions); the caller keeps the readback visible elsewhere (PRD §10.1).
+ * `trigger` replaces the built-in trigger with the caller's own element (e.g. the
+ * detail-page title), opening the same sheet.
  */
-export function FilterBar({ value, onChange, className, compact = false, variant = 'bar' }: {
+export function FilterBar({ value, onChange, className, compact = false, variant = 'bar', trigger }: {
   value?: FilterSpec;
   onChange?: (f: FilterSpec) => void;
   className?: string;
   compact?: boolean;
   variant?: 'bar' | 'button';
+  /** Custom trigger; must render a single focusable element (it is wrapped in `DialogTrigger asChild`). */
+  trigger?: (state: { current: FilterSpec; pending: boolean }) => React.ReactElement;
 }) {
   const t = useTranslations('Filter');
   const copy = useFilterCopy();
@@ -312,7 +316,9 @@ export function FilterBar({ value, onChange, className, compact = false, variant
   const count = activeConditionCount(current);
   return (
     <Dialog open={open} onOpenChange={o => { setOpen(o); if (o) setDraft(cloneFilter(current)); }}>
-      {variant === 'button' ? (
+      {trigger ? (
+        <DialogTrigger asChild>{trigger({ current, pending })}</DialogTrigger>
+      ) : variant === 'button' ? (
         <DialogTrigger asChild>
           <Button
             variant={count ? 'primary' : 'subtle'}
