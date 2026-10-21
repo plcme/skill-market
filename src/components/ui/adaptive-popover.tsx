@@ -46,20 +46,24 @@ export function AdaptivePopover({ trigger, title, closeLabel, open, onOpenChange
 }
 
 /** One choice in an AdaptivePopover menu: a name plus an optional one-line subtitle. */
-export function MenuOption({ selected, title, subtitle, onSelect }: {
+export function MenuOption({ selected, title, subtitle, disabled = false, onSelect }: {
   selected: boolean;
   title: string;
+  /** Under the title; for a disabled option, the one-line reason. */
   subtitle?: string;
+  disabled?: boolean;
   onSelect: () => void;
 }) {
   return (
     <button
       type="button"
       aria-pressed={selected}
+      disabled={disabled}
       onClick={onSelect}
       className={cn(
         'block min-h-11 w-full rounded-md border px-3 py-2 text-left transition-colors',
         selected ? 'border-accent bg-accent-soft' : 'border-rule bg-surface hover:border-ink/40 hover:bg-sunken/60',
+        'disabled:cursor-not-allowed disabled:border-dashed disabled:bg-transparent disabled:hover:border-rule disabled:hover:bg-transparent [&:disabled>span:first-child]:text-muted',
       )}
     >
       <span className="block text-[15px] font-medium text-ink">{title}</span>

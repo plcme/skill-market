@@ -461,9 +461,7 @@
     "notEnough": "Not enough ads",
     "chartLabel": "{caption}. {buckets}.",
     "thin": "Too few ads for a number: {buckets}.",
-    "filteredToGraduate": "Filtered to graduate ads.",
-    "graduateBucket": "Graduate ads",
-    "graduateShort": "Graduate",
+    "fixedByFilter": "Fixed by your filter",
     "allThin": "Too few ads under this filter to split them reliably."
   }
 }
