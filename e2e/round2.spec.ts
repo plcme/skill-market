@@ -47,7 +47,7 @@ test('remote-anywhere switch changes the readback and the URL', async ({ page })
   await expect(readback).toHaveText(/plus remote roles anywhere in Australia/);
   await dialog.getByRole('button', { name: 'Apply' }).click();
   await expect(page).toHaveURL(/f=oh\.au-nsw-sydney(\*|%2A)r\.au_all_all/, { timeout: 30000 });
-  await expect(page.getByText(/plus remote roles anywhere in Australia/).first()).toBeVisible();
+  await expect(page.locator('h1')).toHaveText(/^SQL\s+in Sydney \+ remote/);
 
   // A spec the simple controls can't express opens with Advanced expanded.
   await page.goto('/s/sql?f=o.au-nsw*h.au-vic_all_all');

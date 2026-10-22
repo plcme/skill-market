@@ -228,7 +228,9 @@ function Gap({ db }: { db: DemoDB }) {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button asChild variant="signal" size="lg"><Link href={chatHref(diagnosis.role.slug, filter)}><MessagesSquare aria-hidden />{t('talk')}</Link></Button>
-              <WatchButton slug={diagnosis.role.slug} filter={filter} size="md" className="border-night-ink/40 text-night-ink hover:bg-night-ink hover:text-night" />
+              <div className="[&_button]:border-night-ink/40 [&_button]:bg-night [&_button]:text-night-ink [&_button:hover]:bg-night-ink [&_button:hover]:text-night">
+                <WatchButton slug={diagnosis.role.slug} filter={filter} size="md" />
+              </div>
             </div>
           </section>
 
