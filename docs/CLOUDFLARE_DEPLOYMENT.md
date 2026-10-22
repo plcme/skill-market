@@ -4,7 +4,7 @@ The existing Next.js application uses OpenNext on Workers. This configuration ne
 
 ## Releases
 
-Pushing a `v*` tag runs lint, type checking, unit tests, the OpenNext build and a Wrangler dry run, then deploys that exact revision. The `codex/brewdex-cloudflare` branch runs build validation only. Automatic tag creation is not configured.
+Pushing a `v*` tag runs lint, type checking, unit tests, the OpenNext build and a Wrangler dry run, then deploys that exact revision. Manual workflow runs perform build validation without deploying; production deployment requires a v* tag. Automatic tag creation is not configured.
 
 Deployment requires the GitHub Actions repository secret `CLOUDFLARE_API_TOKEN`, scoped for Workers deployment and the brewdex.app domain. The account ID in wrangler.jsonc is public configuration. Never commit tokens. Existing Supabase migration workflows remain unchanged.
 

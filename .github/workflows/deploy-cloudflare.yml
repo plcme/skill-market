@@ -2,7 +2,6 @@ name: Brewdex release
 on:
   push:
     tags: ['v*']
-    branches: ['codex/brewdex-cloudflare']
   workflow_dispatch:
 permissions:
   contents: read
