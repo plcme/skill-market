@@ -32,19 +32,22 @@ export function PageHeader({ kicker, title, lede, actions, className, children }
 }
 
 /** Section heading with a heavy top rule, like a newspaper section break. */
-export function SectionHeader({ kicker, title, action, className, as: As = 'h2', id }: {
+export function SectionHeader({ kicker, title, info, action, className, as: As = 'h2', id }: {
   kicker?: React.ReactNode;
   title: React.ReactNode;
+  /** An ⓘ shown right after the title, outside the heading element. */
+  info?: React.ReactNode;
   action?: React.ReactNode;
   className?: string;
   as?: 'h2' | 'h3';
   id?: string;
 }) {
+  const heading = <As id={id} className="font-serif text-[26px] font-normal leading-tight tracking-[-0.015em]">{title}</As>;
   return (
     <div className={cn('flex items-end justify-between gap-4 border-t-2 border-rule-strong pb-4 pt-3', className)}>
       <div className="min-w-0">
         {kicker ? <p className="kicker mb-1.5">{kicker}</p> : null}
-        <As id={id} className="font-serif text-[26px] font-normal leading-tight tracking-[-0.015em]">{title}</As>
+        {info ? <div className="flex items-center gap-1.5">{heading}{info}</div> : heading}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>

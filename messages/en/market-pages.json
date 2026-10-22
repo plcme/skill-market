@@ -144,7 +144,6 @@
       "entry_open": "Entry-level share {from} → {to} in eight weeks ({pp} pts)"
     },
     "signalTalk": "Ask someone what’s behind it",
-    "noSignal": "Nothing flagged under this filter. We flag a move when it is at least 25% and at least 10 ads, or when entry-level openings rise by 10 points.",
     "fundKicker": "Fundamentals",
     "fundTitle": "Every measure, under your filter",
     "fundAction": "What each measure means",
@@ -175,7 +174,6 @@
       "industry": "Skills its ads mention"
     },
     "compNote": {
-      "skill": "Share of each role’s ads that mention {name}.",
       "role": "The skills that make up this role: the share of {name} ads that mention each one. An ad usually asks for several skills, so shares add up to more than 100%.",
       "industry": "Share of {name} ads that mention each skill, highest first. A list sorted by a measure, not a ranking of people."
     },
@@ -254,7 +252,6 @@
       "role": "Numbers only go so far. Ask someone who does this job.",
       "industry": "Numbers only go so far. Ask someone who works in this industry."
     },
-    "nextBody": "We’ll suggest up to three verified practitioners who opted in, plus questions worth asking. It’s free, and you can decline or reschedule at any time.",
     "nextCta": "Find someone to talk to",
     "provenance": "Where these numbers come from",
     "provSources": "Sources",

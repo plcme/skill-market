@@ -87,7 +87,7 @@ export function SupplyStats() {
   const s = selectSupply(db, clockNow(db));
   return (
     <Card className="flex flex-col gap-5 p-5">
-      <Stat label={t('supplyKicker')} value={t('supplyAvailable', { n: s.available })} detail={<ReviewText id="people.supplyAvailableDetail" proposal="info">{t('supplyAvailableDetail', { verified: s.verified })}</ReviewText>} />
+      <Stat label={t('supplyKicker')} value={t('supplyAvailable', { n: s.available })} />
       <div className="grid grid-cols-2 gap-5 border-t border-rule pt-4">
         <div>
           <p className="kicker mb-2">{t('supplyByRole')}</p>

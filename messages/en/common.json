@@ -22,7 +22,8 @@
     "or": "or",
     "new": "New",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "aboutSection": "About {section}"
   },
   "Nav": {
     "primary": "Main",

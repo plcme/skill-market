@@ -26,7 +26,7 @@ import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
 import { InstrumentMark } from '@/components/market/instrument-mark';
-import { ReviewText } from '@/features/dev/copy-review';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 /** The flagship full ticker page shared by /s/[slug], /r/[slug] and /i/[slug]. */
 export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; filter: FilterSpec }) {
@@ -47,6 +47,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const reading = snap.metric;
   const competencies = type === 'role' ? competencyLevels(inst.slug) : null;
   const tc = useTranslations('Competencies');
+  const tcommon = useTranslations('Common');
   const secondary = ([signalMetric(type), 'entry_level_share', 'ad_count'] as MetricKey[]).filter(m => m !== detail.metric).slice(0, 2);
 
   return (
@@ -68,7 +69,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             <div className="min-w-0">
               <p className="kicker">{tt(type)}{inst.skill_layer ? <>{' · '}{tt(`layer.${inst.skill_layer}`)}</> : null} · {inst.category}</p>
               <p className="mt-1 font-mono text-[12px] text-muted">
-                {type === 'role' ? (inst.anzsco ? tt('anzsco', { code: inst.anzsco }) : <ReviewText id="detail.role.noAnzsco" proposal="delete">{tt('noAnzsco')}</ReviewText>) : t('tracked', { date: formatDate(inst.tracking_since, { month: 'short', year: 'numeric' }) })}
+                {type === 'role' ? (inst.anzsco ? tt('anzsco', { code: inst.anzsco }) : tt('noAnzsco')) : t('tracked', { date: formatDate(inst.tracking_since, { month: 'short', year: 'numeric' }) })}
               </p>
             </div>
           </div>
@@ -141,9 +142,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
                 <Link href={talk}>{t('signalTalk')}</Link>
               </Button>
             </div>
-          ) : (
-            <p className="mt-6 text-[13px] leading-relaxed text-muted"><ReviewText id="detail.noSignal" proposal="delete">{t('noSignal')}</ReviewText></p>
-          )}
+          ) : null}
         </div>
 
         <Card className="min-w-0 self-start p-4 sm:p-6">
@@ -203,13 +202,12 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
       <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-12">
         <section aria-labelledby="comp-h">
           <SectionHeader id="comp-h" kicker={t(`compKicker.${type}`)} title={t(`compTitle.${type}`, { name: inst.name })} />
-          <p className="-mt-1 mb-4 text-[13px] text-muted"><ReviewText id={`detail.compNote.${type}`} proposal="info">{t(`compNote.${type}`, { name: inst.name })}</ReviewText></p>
+          {type === 'role' ? <p className="-mt-1 mb-4 text-[13px] text-muted">{t('compNote.role', { name: inst.name })}</p> : null}
           <CompositionList entries={detail.composition} parent={inst} filter={filter} mode={type === 'role' ? 'skillsOfRole' : 'rolesOfSkill'} />
         </section>
         {type === 'skill' ? (
           <section aria-labelledby="rel-h">
-            <SectionHeader id="rel-h" kicker={t('relKicker')} title={t('relTitle')} />
-            <p className="-mt-1 mb-4 text-[13px] text-muted"><ReviewText id="detail.relNote" proposal="info">{t('relNote', { name: inst.name })}</ReviewText></p>
+            <SectionHeader id="rel-h" kicker={t('relKicker')} title={t('relTitle')} info={<InfoPopover label={tcommon('aboutSection', { section: t('relTitle') })}>{t('relNote', { name: inst.name })}</InfoPopover>} />
             <RelatedSkills entries={detail.related} filter={filter} />
           </section>
         ) : (
@@ -251,7 +249,6 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         <div>
           <p className="kicker">{t('nextKicker')}</p>
           <h2 id="next-h" className="mt-2 font-serif text-[28px] leading-tight sm:text-[32px]">{t(`nextTitle.${type}`, { name: inst.name })}</h2>
-          <p className="mt-2 max-w-2xl text-ink-2"><ReviewText id="detail.nextBody" proposal="delete">{t('nextBody')}</ReviewText></p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="accent" size="lg"><Link href={talk}><MessageCircle aria-hidden />{t('nextCta')}</Link></Button>
