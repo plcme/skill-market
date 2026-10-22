@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ArrowLeftRight, ChevronRight, MessageCircle } from 'lucide-react';
 import { encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
 import { chatHref, instrumentPath } from '@/lib/links';
-import { CHART_MEASURE_METRIC, METRICS, signalMetric } from '@/lib/metrics/registry';
+import { METRICS, signalMetric } from '@/lib/metrics/registry';
 import { formatDate } from '@/lib/time';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
 import type { InstrumentDetail } from '@/lib/queries/market';
@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Card, Container, SectionHeader } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
 import { MetricLabel } from '@/components/market/metric-info';
-import { MetricSwitcher } from '@/components/market/metric-switcher';
 import { MetricValue } from '@/components/market/metric-value';
 import { SignalTag } from '@/components/market/signal-tag';
 import { SourceBadge } from '@/components/market/source-badge';
@@ -21,7 +20,7 @@ import { WatchButton } from '@/components/market/watch-button';
 import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
-import { hrefWith } from './logic';
+import { breakdownParam, chartPlanFor, hrefWith, metricParam, nextByParam } from './logic';
 import { InstrumentChart } from './instrument-chart';
 import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
@@ -39,7 +38,9 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const type = inst.type;
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
   const base = instrumentPath(type, inst.slug);
-  const metricHref = (m: MetricKey) => `${hrefWith(base, { f, metric: m === detail.metrics.default ? undefined : m })}#now`;
+  // A Fundamentals cell selects its measure for the headline and the chart; the split stays.
+  const byParam = breakdownParam(detail.chart.by);
+  const metricHref = (m: MetricKey) => `${hrefWith(base, { f, metric: metricParam(m, detail.metrics.default), by: nextByParam(byParam, filter, chartPlanFor(m, type).series) })}#now`;
   const talk = chatHref(inst.slug, filter, signal?.kind);
   const compare = hrefWith('/compare', { a: inst.slug, f });
 
@@ -73,8 +74,8 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           </div>
           <h1 className="display mt-6 break-words text-[48px] sm:text-[72px] lg:text-[88px]">
             {inst.name}{' '}
-            <Suspense fallback={<TitleFilterStatic filter={filter} />}>
-              <TitleFilter />
+            <Suspense fallback={<TitleFilterStatic filter={filter} split={detail.breakdown.by} />}>
+              <TitleFilter split={detail.breakdown.by} chart={{ metric: detail.metric, defaultMetric: detail.metrics.default, options: detail.chart.options, by: detail.chart.by, type }} />
             </Suspense>
           </h1>
           <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{inst.blurb}</p>
@@ -104,12 +105,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
 
       <section id="now" aria-labelledby="now-h" className="mt-8 grid scroll-mt-24 gap-8 border-t-2 border-rule-strong pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="now-h" tabIndex={-1} className="kicker text-ink">{t('now')}</h2>
-            <Suspense fallback={<div className="h-8 w-40" />}>
-              <MetricSwitcher type={type} value={detail.metric} />
-            </Suspense>
-          </div>
+          <h2 id="now-h" tabIndex={-1} className="kicker text-ink">{t('now')}</h2>
           <div className="mt-6">
             <MetricLabel metric={detail.metric} type={type} reading={reading} filter={filter} subject={inst.name} />
           </div>
@@ -154,12 +150,13 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           <Suspense fallback={<div className="skeleton h-[420px] w-full" />}>
             <InstrumentChart
               breakdown={detail.breakdown}
-              y={detail.chart.y}
-              measures={detail.chart.measures}
+              plan={detail.chart}
+              options={detail.chart.options}
+              metric={detail.metric}
+              defaultMetric={detail.metrics.default}
               type={type}
               filter={filter}
-              subject={inst.name}
-              reading={detail.readings[CHART_MEASURE_METRIC[detail.chart.y]]}
+              reading={detail.readings[detail.chart.series]}
             />
           </Suspense>
         </Card>

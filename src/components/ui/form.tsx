@@ -198,3 +198,27 @@ export function ChipToggleGroup<V extends string>({ value, onValueChange, option
     </ToggleGroup.Root>
   );
 }
+
+/** Single-choice pill radios that wrap (e.g. a chart's Y axis); one option is always selected. */
+export function ChipRadioGroup<V extends string>({ value, onValueChange, options, label, className }: {
+  value: V;
+  onValueChange: (v: V) => void;
+  options: ChoiceOption<V>[];
+  label: string;
+  className?: string;
+}) {
+  return (
+    <RRadio.Root aria-label={label} value={value} onValueChange={v => onValueChange(v as V)} className={cn('flex flex-wrap gap-1.5', className)}>
+      {options.map(o => (
+        <RRadio.Item
+          key={o.value}
+          value={o.value}
+          disabled={o.disabled}
+          className="inline-flex h-8 items-center rounded-full border border-rule bg-surface px-3 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink/40 data-[state=checked]:border-ink data-[state=checked]:bg-ink data-[state=checked]:text-paper disabled:opacity-40"
+        >
+          {o.label}
+        </RRadio.Item>
+      ))}
+    </RRadio.Root>
+  );
+}

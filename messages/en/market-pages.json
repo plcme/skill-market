@@ -120,7 +120,17 @@
         "onsite_hybrid": "On-site or hybrid",
         "onsite_remote": "On-site or remote",
         "hybrid_remote": "Hybrid or remote"
-      }
+      },
+      "workModesInline": {
+        "onsite": "on-site only",
+        "hybrid": "hybrid only",
+        "remote": "remote only",
+        "onsite_hybrid": "on-site or hybrid",
+        "onsite_remote": "on-site or remote",
+        "hybrid_remote": "hybrid or remote"
+      },
+      "placesWithModes": "{places} ({modes})",
+      "by": "by {dimension}"
     },
     "compareWith": "Compare with…",
     "now": "Right now",

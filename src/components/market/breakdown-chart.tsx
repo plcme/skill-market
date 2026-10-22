@@ -3,14 +3,16 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { formatAud, formatCount, formatShare } from '@/lib/market/format';
+import { METRICS } from '@/lib/metrics/registry';
 import { formatDayStable } from '@/lib/time';
 import type { Breakdown, BreakdownBucketKey } from '@/lib/market/types';
+import { CHART_RANGES, CHART_RANGE_WEEKS, type ChartRange } from '@/features/market/logic';
 import { Segmented } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type Range = '3m' | '6m' | '1y' | '2y';
-const RANGE_WEEKS: Record<Range, number> = { '3m': 13, '6m': 26, '1y': 52, '2y': 104 };
+type Range = ChartRange;
+const RANGE_WEEKS = CHART_RANGE_WEEKS;
 
 // DESIGN §2.2: ordered ramp for Experience, categorical for rights / mode,
 // "Not stated" always faint. Literal class names so Tailwind can see them.
@@ -60,25 +62,35 @@ function spread(ys: Array<{ key: BreakdownBucketKey; y: number }>, gap: number, 
  * series. Direct labels at the right edge where they fit, a legend with latest
  * values below, an optional footer line, and a data-table view.
  */
-export function BreakdownChart({ breakdown, caption, height = 280, footer, className }: {
+export function BreakdownChart({ breakdown, caption, height = 280, footer, headerStart, notes, initialRange = '1y', compare = null, className }: {
   breakdown: Breakdown;
   /** Accessible name of the figure and the table (not shown). */
   caption: string;
   height?: number;
   /** Source / window line, shown next to the table toggle. */
   footer?: React.ReactNode;
+  /** Left side of the header row; the range pills sit on the right. */
+  headerStart?: React.ReactNode;
+  /** Short notes between the header row and the plot (filtered-to, thin samples). */
+  notes?: React.ReactNode;
+  /** Range the chart opens on (key the chart to reset it). */
+  initialRange?: Range;
+  /** Change measures: shade the last `weeks` and the `weeks` before; `marks` labels the total at the end of each. */
+  compare?: { weeks: number; marks: boolean } | null;
   className?: string;
 }) {
   const t = useTranslations('Breakdown');
   const tc = useTranslations('Chart');
-  const [range, setRange] = useState<Range>('1y');
+  const [range, setRange] = useState<Range>(initialRange);
   const [showTable, setShowTable] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
   const [width, setWidth] = useState(720);
   const wrap = useRef<HTMLDivElement>(null);
   const stack = breakdown.kind === 'stack';
   const single = breakdown.by === null;
-  const fmt = (v: number) => (stack ? formatCount(v) : formatAud(v));
+  const unit = METRICS[breakdown.measure].unit;
+  const fmt = (v: number) => (unit === 'aud' ? formatAud(v) : unit === 'share' ? formatShare(v) : formatCount(v));
+  const fmtTick = (v: number) => (unit === 'share' ? `${Number((v * 100).toFixed(1))}%` : fmt(v));
   const hatchId = useId().replace(/:/g, '');
   // Stack: a band below the sample threshold is drawn hatched and never gets a number
   // (legend, end label, tooltip and table agree). Weeks below the threshold read "Not enough ads".
@@ -132,7 +144,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, footer, class
   const hi = hasData ? Math.max(...values) : 1;
   const pad = (hi - lo) * 0.12 || hi * 0.1 || 1;
   // DESIGN §6.2: counts and areas start at 0; salary lines may not.
-  const ticks = niceTicks(stack ? 0 : Math.max(0, lo - pad), hi + pad, 4, stack ? 1 : 0);
+  const ticks = niceTicks(stack ? 0 : Math.max(0, lo - pad), unit === 'share' ? Math.min(1, hi + pad) : hi + pad, 4, stack || unit !== 'share' && unit !== 'aud' ? 1 : 0);
   const yMin = stack ? 0 : ticks[0];
   const yMax = ticks[ticks.length - 1];
   const x = (i: number) => m.l + (n <= 1 ? 0 : (i / (n - 1)) * innerW);
@@ -159,6 +171,20 @@ export function BreakdownChart({ breakdown, caption, height = 280, footer, class
     });
     return d;
   };
+
+  // Change measures: the two compared windows, as shaded bands ending at the latest week.
+  const windows = (() => {
+    if (!compare || !hasData || n < 2) return [];
+    const w = compare.weeks;
+    const edge = (i: number) => Math.min(m.l + innerW, Math.max(m.l, x(i)));
+    const out: Array<{ key: 'prev' | 'last'; x0: number; x1: number; end: number }> = [];
+    const prevEnd = n - 1 - w;
+    if (prevEnd >= 0) out.push({ key: 'prev', x0: edge(n - 2 * w - 0.5), x1: edge(n - w - 0.5), end: prevEnd });
+    out.push({ key: 'last', x0: edge(n - w - 0.5), x1: m.l + innerW, end: n - 1 });
+    return out.filter(b => b.x1 - b.x0 > 1);
+  })();
+  const windowLabel = (key: 'prev' | 'last') => tc(`windows.${key}`, { weeks: compare?.weeks ?? 0 });
+  const marks = compare?.marks && stack && total ? windows.map(b => ({ key: b.key, i: b.end, v: total[b.end]?.value ?? null })).filter((p): p is { key: 'prev' | 'last'; i: number; v: number } => p.v != null) : [];
 
   // Direct labels at the right edge: band middles (if the band is tall enough) or line ends.
   const endLabels = (() => {
@@ -221,14 +247,16 @@ export function BreakdownChart({ breakdown, caption, height = 280, footer, class
   return (
     <figure className={cn('flex flex-col gap-3', className)}>
       <figcaption className="sr-only">{caption}</figcaption>
-      <div className="flex justify-end">
-        <Segmented size="sm" label={tc('rangeLabel')} value={range} onValueChange={setRange} options={(Object.keys(RANGE_WEEKS) as Range[]).map(r => ({ value: r, label: tc(`range.${r}`) }))} />
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="min-w-0">{headerStart}</div>
+        <Segmented size="sm" label={tc('rangeLabel')} value={range} onValueChange={setRange} options={CHART_RANGES.map(r => ({ value: r, label: tc(`range.${r}`) }))} className="shrink-0" />
       </div>
+      {notes}
       <div ref={wrap} className="relative w-full select-none">
         {hasData ? (
           <svg
             role="img"
-            aria-label={t('chartLabel', { caption, buckets: ariaBuckets })}
+            aria-label={`${t('chartLabel', { caption, buckets: ariaBuckets })}${marks.length === 2 ? ` ${tc('windowsSpoken', { weeks: compare?.weeks ?? 0, from: formatCount(marks[0].v), to: formatCount(marks[1].v) })}` : ''}`}
             tabIndex={0}
             viewBox={`0 0 ${width} ${height}`}
             width={width}
@@ -243,7 +271,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, footer, class
             {ticks.map(v => (
               <g key={v}>
                 <line x1={m.l} x2={m.l + innerW} y1={y(v)} y2={y(v)} className="stroke-rule" strokeDasharray={v === yMin ? undefined : '2 3'} />
-                <text x={m.l - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-muted font-mono text-[10.5px]">{fmt(v)}</text>
+                <text x={m.l - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-muted font-mono text-[10.5px]">{fmtTick(v)}</text>
               </g>
             ))}
             {monthTicks.map(tk => (
@@ -276,6 +304,20 @@ export function BreakdownChart({ breakdown, caption, height = 280, footer, class
                 <path key={b.key} d={linePath(b.points)} fill="none" className={TONE[b.key].stroke} strokeWidth={2} strokeDasharray={DASH[k % DASH.length]} strokeLinejoin="round" strokeLinecap="round" />
               ))
             )}
+            {windows.map(b => (
+              <g key={b.key} aria-hidden>
+                <rect x={b.x0} y={m.t} width={b.x1 - b.x0} height={innerH} className={cn('pointer-events-none', b.key === 'last' ? 'fill-accent/[0.16]' : 'fill-ink/[0.08]')} />
+                {b.x1 - b.x0 >= windowLabel(b.key).length * 6 + 8 ? (
+                  <text x={b.x0 + 4} y={m.t + 11} className="fill-muted font-mono text-[10px]">{windowLabel(b.key)}</text>
+                ) : null}
+              </g>
+            ))}
+            {marks.map(p => (
+              <g key={p.key} aria-hidden>
+                <circle cx={x(p.i)} cy={y(p.v)} r={4} className={cn('stroke-surface', p.key === 'last' ? 'fill-accent' : 'fill-ink')} strokeWidth={2} />
+                <text x={x(p.i)} y={Math.max(m.t + 24, y(p.v) - 9)} textAnchor={p.key === 'last' ? 'end' : 'middle'} className="num fill-ink text-[11.5px] font-medium [paint-order:stroke] stroke-surface [stroke-width:3px]">{formatCount(p.v)}</text>
+              </g>
+            ))}
             {endLabels.map(l => (
               <g key={l.key} aria-hidden>
                 <line x1={m.l + innerW + 4} x2={m.l + innerW + 12} y1={l.y} y2={l.y} className={TONE[l.key].stroke} strokeWidth={3} />
@@ -335,7 +377,7 @@ export function BreakdownChart({ breakdown, caption, height = 280, footer, class
                     ? <span className="text-muted">{t('notEnough')}</span>
                     : stack
                       ? <>{formatCount(b.latest.value)}{single ? null : <span className="text-muted">{' · '}{b.share == null ? '—' : formatShare(b.share)}</span>}</>
-                      : formatAud(b.latest.value)}
+                      : fmt(b.latest.value)}
                 </span>
               </li>
             );
