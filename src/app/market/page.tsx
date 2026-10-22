@@ -118,7 +118,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
                 <EmptyState
                   icon={SearchX}
                   title={t('emptyTitle')}
-                  action={<Button asChild variant="outline" size="sm"><Link href={resetHref}>{t('emptyReset')}</Link></Button>}
+                  action={q ? <Button asChild variant="outline" size="sm"><Link href={resetHref}>{t('emptyReset')}</Link></Button> : undefined}
                 >
                   {q ? t('emptyBodyQuery', { q }) : t('emptyBody')}
                 </EmptyState>
