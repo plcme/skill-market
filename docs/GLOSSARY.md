@@ -48,6 +48,8 @@
 |---|---|---|
 | 工作台 | My desk | 学生 `/me`；从业者 `/practitioner` |
 | 关注 | Watch / Watchlist | 不用"持仓""组合收益""仓位强弱"（PRD §10.7） |
+| 我有这个技能 | I have this skill（desk 分组 "Held — skills you have"） | watch 的 `status = 'held'`，`instrument_type = 'skill'`。学生已经掌握的技能；不进"学习中"统计 |
+| 我在这个岗位干过 | Worked in this role（desk 分组 "Worked in this role"） | watch 的 `status = 'held'`，`instrument_type = 'role'`（FE-R5，2026-10-22）。和 skill 共用 `held`，按标的类型区分文案；能否标记由 `canBeHeld` 判断（industry 不行）。标记后在 role 页邀请一次 "Join as a practitioner"（已是 practitioner 的不显示） |
 | 咖啡聊 | Coffee chat | 20 分钟、异步预约，不是 IM |
 | 从业者 | Practitioner | 主动加入、持有该技能的在职者 |
 | 数据与安全 | Data & safety | 页脚入口，含数据来源（原 Sources 页） |
