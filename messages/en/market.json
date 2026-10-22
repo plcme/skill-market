@@ -301,9 +301,8 @@
     "legendLabel": "Colour bands",
     "band": {
       "dn2": "−{strong}% or more",
-      "dn1": "−{flat} to −{strong}%",
-      "flat": "within ±{flat}%",
-      "up1": "+{flat} to +{strong}%",
+      "dn1": "under −{strong}%",
+      "up1": "under +{strong}%",
       "up2": "+{strong}% or more",
       "na": "fewer than {min} ads"
     },

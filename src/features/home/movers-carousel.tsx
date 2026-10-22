@@ -11,7 +11,7 @@ import type { ActiveInstrumentType } from '@/lib/market/types';
 import { Button } from '@/components/ui/button';
 
 import { Sparkline } from '@/components/market/sparkline';
-import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
+import { DirectionGlyph } from '@/components/market/direction-glyph';
 import { cn } from '@/lib/utils';
 import { InstrumentMark } from '@/components/market/instrument-mark';
 
@@ -41,7 +41,7 @@ function useMoveLine() {
   return (m: MoverItem) => t('moverLine', {
     type: m.type,
     name: m.name,
-    dir: m.change > 0 ? 'up' : m.change < 0 ? 'down' : 'flat',
+    dir: direction(m.change),
     from: formatCount(m.from),
     to: formatCount(m.to),
   });
@@ -107,8 +107,8 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
               </Link>
             </h3>
           </div>
-          <p className={cn('serif-num mt-4 flex items-baseline gap-2 text-[56px] leading-[0.9] sm:text-[64px]', main.change > 0 ? 'text-up' : main.change < 0 ? 'text-down' : 'text-ink')}>
-            <DirectionGlyph dir={signDirection(main.change)} className="text-[0.4em]" />
+          <p className={cn('serif-num mt-4 flex items-baseline gap-2 text-[56px] leading-[0.9] sm:text-[64px]', { up: 'text-up', down: 'text-down', flat: 'text-ink' }[direction(main.change)])}>
+            <DirectionGlyph dir={direction(main.change)} className="text-[0.4em]" />
             {formatChange(main.change)}
           </p>
           <p className="num mt-3 text-[14px] text-ink-2">{line(main)}</p>
@@ -122,7 +122,7 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
             <li key={m.slug} className="relative flex flex-col gap-1 rounded-md border border-rule bg-surface p-3 transition-colors hover:border-ink/30">
               <div className="flex items-center justify-between gap-2">
                 <span className="kicker">{tt(m.type)}</span>
-                <span className={cn('num inline-flex items-center gap-1 text-[15px] font-medium', m.change > 0 ? 'text-up' : m.change < 0 ? 'text-down' : 'text-ink')}><DirectionGlyph dir={signDirection(m.change)} />{formatChange(m.change)}</span>
+                <span className={cn('num inline-flex items-center gap-1 text-[15px] font-medium', { up: 'text-up', down: 'text-down', flat: 'text-ink' }[direction(m.change)])}><DirectionGlyph dir={direction(m.change)} />{formatChange(m.change)}</span>
               </div>
               <Link href={instrumentPath(m.type, m.slug)} className="min-w-0 truncate font-medium after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent">
                 {m.name}

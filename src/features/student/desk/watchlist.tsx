@@ -45,7 +45,7 @@ export function SinceAdded({ row, className }: { row: WatchlistRow; className?: 
   // "since added" is the difference in points, not a change of a change.
   const isChange = METRICS[item.metric].unit === 'change';
   const delta = isChange ? current.value - item.baseline_value : since_added;
-  const dir = direction(delta, isChange ? 0.005 : 0.02);
+  const dir = direction(delta);
   return (
     <span className={cn('inline-flex flex-col gap-0.5', className)}>
       <span className={cn('num inline-flex items-center gap-1 text-sm font-medium', dir === 'up' && 'text-up', dir === 'down' && 'text-down', dir === 'flat' && 'text-muted')}>

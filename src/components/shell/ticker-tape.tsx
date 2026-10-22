@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { formatChange, formatCount } from '@/lib/market/format';
+import { direction, formatChange, formatCount } from '@/lib/market/format';
 import { cn } from '@/lib/utils';
-import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
+import { DirectionGlyph } from '@/components/market/direction-glyph';
 import { useUiMode } from '@/lib/demo/ui-mode';
 import { AUTO_ADVANCE_QUERY, useMediaQuery } from '@/lib/hooks/use-media-query';
 
@@ -38,7 +38,7 @@ export function TickerTape({ items }: { items: TapeItem[] }) {
   const row = (hidden: boolean) => (
     <ul className="flex shrink-0 items-center" aria-hidden={hidden || undefined}>
       {items.map(it => {
-        const dir = signDirection(it.change);
+        const dir = direction(it.change);
         return (
           <li key={`${hidden}-${it.slug}`} className="flex items-center">
             <Link href={it.href} tabIndex={hidden ? -1 : undefined} className="flex items-center gap-2 px-4 font-mono text-[11.5px] tracking-wide hover:bg-night-ink/10">

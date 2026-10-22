@@ -1,3 +1,4 @@
+import { direction } from './format';
 import type { ActiveInstrumentType, MetricReading } from './types';
 
 // Heatmap data shape shared by the landing hero (industries) and the industry
@@ -24,8 +25,12 @@ export interface Heatmap {
   as_of: string;
 }
 
-/** Diverging bands: |change| < 2% neutral, 2–10% moderate, ≥ 10% strong. */
-export const HEAT_BANDS = { flat: 0.02, strong: 0.1 } as const;
+/**
+ * Diverging bands by sign, like every other change: under 10% either way is
+ * the light band, 10% or more the strong band. Neutral only when the change
+ * rounds to 0.0%; grey hatching only for too few ads.
+ */
+export const HEAT_BANDS = { strong: 0.1 } as const;
 
 export type HeatStep = -2 | -1 | 0 | 1 | 2 | 'na';
 
@@ -33,7 +38,7 @@ export type HeatStep = -2 | -1 | 0 | 1 | 2 | 'na';
 export function heatStep(change: Pick<MetricReading, 'status' | 'value'>): HeatStep {
   if (change.status !== 'ok' || change.value === null || !Number.isFinite(change.value)) return 'na';
   const v = change.value;
-  if (Math.abs(v) < HEAT_BANDS.flat) return 0;
+  if (direction(v) === 'flat') return 0;
   if (v >= HEAT_BANDS.strong) return 2;
   if (v > 0) return 1;
   if (v <= -HEAT_BANDS.strong) return -2;

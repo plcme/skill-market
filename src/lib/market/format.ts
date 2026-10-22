@@ -39,8 +39,17 @@ export function formatAud(n: number, compact = true): string {
 
 export type Direction = 'up' | 'down' | 'flat';
 
-export function direction(v: number | null, flatBand = 0.02): Direction {
-  if (v === null || Math.abs(v) < flatBand) return 'flat';
+/** Smallest step `formatChange` / `formatPp` show: 0.1 percentage point. */
+export const DISPLAY_STEP = 0.001;
+
+/**
+ * Direction by the sign of the value as displayed: ▲ when it shows above
+ * zero, ▼ below, and ■ only when it rounds to 0.0% at the displayed
+ * precision. Small moves keep their direction; there is no "flat band".
+ */
+export function direction(v: number | null, step = DISPLAY_STEP): Direction {
+  if (v === null || !Number.isFinite(v)) return 'flat';
+  if (Math.round(Math.abs(v) / step) === 0) return 'flat';
   return v > 0 ? 'up' : 'down';
 }
 
