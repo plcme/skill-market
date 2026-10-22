@@ -17,7 +17,7 @@ import { MetricValue } from '@/components/market/metric-value';
 import { SignalTag } from '@/components/market/signal-tag';
 import { SourceBadge } from '@/components/market/source-badge';
 import { WatchButton } from '@/components/market/watch-button';
-import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
+import { HeatmapSource, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
 import { breakdownParam, chartPlanFor, hrefWith, metricParam, nextByParam } from './logic';
@@ -183,7 +183,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
                 <div className="min-w-0">
                   <HeatmapTiles heatmap={detail.heatmap} filter={filter} label={t('industryHeatmapLabel', { name: inst.name })} />
-                  <HeatmapLegend heatmap={detail.heatmap} filter={filter} className="mt-4" />
+                  <HeatmapSource heatmap={detail.heatmap} filter={filter} className="mt-4" />
                   <HeatmapTable heatmap={detail.heatmap} caption={t('industryHeatmapLabel', { name: inst.name })} nameHead={tt('skill')} />
                 </div>
                 <div className="min-w-0">

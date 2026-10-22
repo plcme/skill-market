@@ -303,14 +303,6 @@
     "windowsSpoken": "Shaded: the previous {weeks} weeks and the last {weeks} weeks, {from} → {to} job ads."
   },
   "Heatmap": {
-    "legendLabel": "Colour bands",
-    "band": {
-      "dn2": "−{strong}% or more",
-      "dn1": "under −{strong}%",
-      "up1": "under +{strong}%",
-      "up2": "+{strong}% or more",
-      "na": "fewer than {min} ads"
-    },
     "window": "Window {start} – {end}.",
     "tileLabel": "{name}: {ads} job ads, {dir, select, up {up {change}} down {down {change}} other {no change}} in 4 weeks ({from} → {to}).",
     "tileLabelThin": "{name}: {ads} job ads. Too few ads (under {min}) to show a 4-week change.",

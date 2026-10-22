@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard, getIndustryHeatmap, getMovers } from '@/lib/queries/market';
 import { METRICS } from '@/lib/metrics/registry';
-import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
+import { HeatmapSource, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { MoversCarousel, type MoverItem } from '@/features/home/movers-carousel';
 import { Button } from '@/components/ui/button';
 import { Container, SectionHeader } from '@/components/ui/primitives';
@@ -55,7 +55,7 @@ export default async function HomePage() {
               <Link href="/market?type=industry" className="link text-[13px]">{t('heatAll')}</Link>
             </div>
             <HeatmapTiles heatmap={heat} filter={DEFAULT_FILTER} label={t('heatLabel')} />
-            <HeatmapLegend heatmap={heat} filter={DEFAULT_FILTER} className="mt-4" />
+            <HeatmapSource heatmap={heat} filter={DEFAULT_FILTER} className="mt-4" />
             <HeatmapTable heatmap={heat} caption={t('heatLabel')} nameHead={tt('industry')} />
           </section>
         </Container>
