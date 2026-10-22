@@ -16,7 +16,9 @@ export function formatShare(v: number): string {
   return `${pct.toFixed(digits)}%`;
 }
 
+/** Prefix the sign; a figure that displays as zero ("0.0%") gets none. */
 export function signed(text: string, value: number): string {
+  if (!/[1-9]/.test(text)) return text.replace('-', '');
   if (value > 0) return `+${text}`;
   if (value < 0) return `${MINUS}${text.replace('-', '')}`;
   return text;

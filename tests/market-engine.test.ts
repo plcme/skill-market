@@ -99,4 +99,14 @@ describe('direction by displayed sign', () => {
     expect(direction(null)).toBe('flat');
     expect(direction(Number.NaN)).toBe('flat');
   });
+  it('shows a change that rounds to zero without a sign', async () => {
+    const { formatChange, formatPp } = await import('@/lib/market/format');
+    expect(formatChange(0.0004)).toBe('0.0%');
+    expect(formatChange(-0.0004)).toBe('0.0%');
+    expect(formatChange(0)).toBe('0.0%');
+    expect(formatChange(0.004)).toBe('+0.4%');
+    expect(formatChange(-0.12)).toBe('−12%');
+    expect(formatPp(0.0001)).toBe('0.0');
+    expect(formatPp(-0.002)).toBe('−0.2');
+  });
 });
