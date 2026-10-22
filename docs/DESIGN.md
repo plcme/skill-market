@@ -109,7 +109,7 @@
 
 ## 5. 组件
 
-可用组件以 `src/components/ui/*` 和 `src/components/market/*` 为准，清单见 `docs/FRONTEND_V2_BRIEF.md`。这里只写使用规则。
+可用组件以 `src/components/ui/*`、`src/components/market/*` 和 `src/features/*` 的代码为准。这里只写使用规则。
 
 - **按钮层级**：
   - 每个视图最多一个 `primary`（墨色实心）。
@@ -122,7 +122,7 @@
 - **标的符号框**：统一用 `InstrumentMark`（`src/components/market/instrument-mark.tsx`）。Skills and tools with a recognisable logo show it, monochrome in ink, in the symbol box; everything else keeps letters. Logos identify the technology only (nominative use), never brand colours; drop a logo if its owner objects. 标志来自 Simple Icons（CC0），映射表在 `src/lib/market/logos.ts`，只收录图标集里确实存在的那一项技术；role、industry 永远用字母。符号框是装饰（`aria-hidden`），名称总在旁边。
 - **数字**：一律通过 `MetricValue` 和 `MetricInfo` 渲染，不要裸写数字。
 - **涨跌**：用 `ChangeBadge`，它永远显示原始计数 from → to。
-- **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level · by experience ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → （仅详情页）Y axis + Split by → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Y axis 与图表的度量下拉同步；Split by 只能在这里改，默认 None（不写 `by`），被筛选或度量固定的维度置灰并写明原因；两者和筛选一起随 Apply 生效。标题与复述在拆分时加 "· by experience"，不写 Y axis。打开了 "remote anywhere" 又只选了部分 work mode 时，模式写在地点后的括号里（"Sydney (on-site or hybrid) + remote"），避免和 "+ remote" 自相矛盾。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。
+- **筛选**：作用于整张表。行情表（`/market`）没有筛选，永远是 All Australia · All levels · 任意 work rights；旧链接里的 `?f=` 会被重定向去掉（FE-R7，2026-10-22）。行情表的度量下拉不加可见的 "Measure" 标签（只有 aria-label）。筛选只在详情页：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level · by experience ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → （仅详情页）Y axis + Split by → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Y axis 与图表的度量下拉同步；Split by 只能在这里改，默认 None（不写 `by`），被筛选或度量固定的维度置灰并写明原因；两者和筛选一起随 Apply 生效。标题与复述在拆分时加 "· by experience"，不写 Y axis。打开了 "remote anywhere" 又只选了部分 work mode 时，模式写在地点后的括号里（"Sydney (on-site or hybrid) + remote"），避免和 "+ remote" 自相矛盾。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。
 - **详情页度量**：只有一个参数 `?metric=`，"Right now" 大数字和图表一起变。"Right now" 区块不再有度量下拉；切换度量用图表左上的下拉或点 Statistics 格子。
 - **空、加载、错误三种状态**都必须设计：
   - 加载：用 `Skeleton`，形状和最终内容相同；
@@ -194,6 +194,7 @@
 - 不制造焦虑，不夸张：不写 "hot"、"skyrocketing"、"don't miss out"。
 - 被拒或超时永远说成 "still looking"，不说 rejected。
 - 数字要带单位和窗口，例如 "Job ads, last 4 weeks"。
+- **更新时间**：每个数据面都标出数据时间，用绝对时间："Updated today, 2:14 am"，跨天写 "Updated 21 Oct, 2:14 am"（用户时区）。不用 "15 hours ago"：每天结算一次的指标到傍晚会显得旧。放在来源行里，不单独占一行。行情条上的职位事件例外，用相对时间（"2 h ago"），因为事件本身是新的（2026-10-23 用户决定）。
 - 产品名只从 `APP_NAME` / `useAppName()` 读取；所有界面文案放在 `messages/en/*.json`。
 - 标语和开场动画：**待定**（候选见 PROGRESS）。
 

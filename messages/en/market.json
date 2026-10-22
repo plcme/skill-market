@@ -13,10 +13,6 @@
       "ruleRemoteAnywhere": "remote roles anywhere in Australia"
     },
     "title": "Filter",
-    "button": "Filter",
-    "buttonLabel": "Filter the whole board",
-    "buttonLabelActive": "Filter the whole board, {n, plural, one {# condition} other {# conditions}} active",
-    "scopeReset": "Reset filter",
     "edit": "Edit filter",
     "apply": "Apply",
     "reset": "Reset",

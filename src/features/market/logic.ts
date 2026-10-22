@@ -35,6 +35,11 @@ export function boardTypeParam(type: MarketTab): MarketTab | undefined {
   return type === DEFAULT_BOARD_TYPE ? undefined : type;
 }
 
+/** Link to the market board (optionally a tab). The board has no filter, so links never carry `f`. */
+export function marketHref(tab?: MarketTab): string {
+  return hrefWith('/market', { type: tab ? boardTypeParam(tab) : undefined });
+}
+
 /** The board a tab reads: Watching reads All and keeps only watched rows. */
 export function boardForTab(tab: MarketTab): BoardType {
   return tab === 'watching' ? 'all' : tab;
@@ -217,6 +222,18 @@ export function canonicalDetailQuery(sp: SearchParamsRecord, filter: FilterSpec,
   return changed ? q.toString() : null;
 }
 
+/**
+ * The market board's query string without `?f=`, or null when there is none.
+ * The board always shows all of Australia; filtering lives on detail pages,
+ * so old board links with a filter are rewritten rather than applied unseen.
+ */
+export function canonicalMarketQuery(sp: SearchParamsRecord): string | null {
+  if (!firstParam(sp.f)) return null;
+  const q = new URLSearchParams(toQueryString(sp));
+  q.delete('f');
+  return q.toString();
+}
+
 /** `metric` value for a link: omitted for the type's default measure. */
 export function metricParam(metric: MetricKey, defaultMetric: MetricKey): string | null {
   return metric === defaultMetric ? null : metric;
@@ -304,8 +321,8 @@ export function compareBlocker(selection: readonly CompareItem[], item: CompareI
 }
 
 /** Link to /compare for a selection (first two slugs as `a` and `b`). */
-export function compareHref(selection: readonly CompareItem[], f?: string): string {
-  return hrefWith('/compare', { a: selection[0]?.slug, b: selection[1]?.slug, f });
+export function compareHref(selection: readonly CompareItem[]): string {
+  return hrefWith('/compare', { a: selection[0]?.slug, b: selection[1]?.slug });
 }
 
 export type CompareState =
