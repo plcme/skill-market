@@ -281,22 +281,38 @@ export interface TitleFilterCopy {
   workRights: string; // "No PR stated"
   /** Keyed by the selected modes in WORK_MODES order joined with "_", e.g. `onsite_hybrid`. */
   workModes: Record<string, string>;
+  /** Same keys, lower case inside a sentence: "on-site or hybrid". */
+  workModesInline: Record<string, string>;
+  /** "{places} ({modes})": the places rule's modes when remote-anywhere is also on. */
+  placesWithModes: string;
 }
 
 /**
  * The active filter as a short sentence for a detail-page title: the places
  * label (always), then only the conditions that narrow — level, work modes,
- * work rights — joined by the separator. "All Australia" for the default.
+ * work rights — joined by the separator, then the chart split when one is
+ * drawn ("by experience"). "All Australia" for the default.
+ *
+ * With remote-anywhere on, the work modes belong to the places rule only, so
+ * they go in brackets after those places — "Sydney (on-site or hybrid) +
+ * remote" — instead of a separate "On-site or hybrid" that the "+ remote"
+ * would contradict.
  */
-export function titleFilterLabel(spec: FilterSpec, copy: TitleFilterCopy, nameOf?: (id: string) => string): string {
+export function titleFilterLabel(spec: FilterSpec, copy: TitleFilterCopy, nameOf?: (id: string) => string, split?: string): string {
   const n = normaliseFilter(spec);
   const conditions = scopeConditions(n);
-  const parts = [placesLabel(n, copy.places, nameOf)];
+  const simple = toSimpleFilter(n);
+  const modesKey = WORK_MODES.filter(m => simple?.modes.includes(m)).join('_');
+  const scopedModes = conditions.includes('work_modes') && simple?.includeRemoteAnywhere === true;
+  const places = scopedModes && simple
+    ? fillTemplate(copy.places.withRemote, {
+      places: fillTemplate(copy.placesWithModes, { places: placesLabel({ ...n, rules: [n.rules.find(r => !isRemoteAnywhereRule(r)) ?? n.rules[0]] }, copy.places, nameOf), modes: copy.workModesInline[modesKey] ?? modesKey }),
+    })
+    : placesLabel(n, copy.places, nameOf);
+  const parts = [places];
   if (n.seniority !== 'all') parts.push(copy.seniority[n.seniority]);
-  if (conditions.includes('work_modes')) {
-    const key = WORK_MODES.filter(m => toSimpleFilter(n)?.modes.includes(m)).join('_');
-    parts.push(copy.workModes[key] ?? key);
-  }
+  if (conditions.includes('work_modes') && !scopedModes) parts.push(copy.workModes[modesKey] ?? modesKey);
   if (n.work_rights !== 'all') parts.push(copy.workRights);
+  if (split) parts.push(split);
   return parts.join(copy.separator);
 }
