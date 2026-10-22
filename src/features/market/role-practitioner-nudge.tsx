@@ -8,7 +8,7 @@ import { useDB } from '@/lib/demo/store';
 import { Button } from '@/components/ui/button';
 
 // After a student marks a role as "I've worked in this role", invite them once
-// to join as a practitioner. Dismissal is remembered per role in this browser.
+// to join as a practitioner, unless they already are one. Dismissal is remembered per role in this browser.
 
 const KEY = 'role-nudge-dismissed-v1';
 const listeners = new Set<() => void>();
@@ -54,7 +54,9 @@ export function RolePractitionerNudge({ slug }: { slug: string }) {
   // Server and first client render: treat as dismissed so nothing flashes.
   const raw = useSyncExternalStore(subscribe, read, () => null);
   const worked = db?.session?.personas.includes('student') && db.watchlist.some(w => w.instrument_slug === slug && w.status === 'held');
-  if (!worked || raw === null || dismissedRoles(raw).includes(slug)) return null;
+  // Already a practitioner (same check as People's PractitionerCta): nothing to invite to.
+  const isPractitioner = Boolean(db?.my_practitioner_id || db?.session?.personas.includes('practitioner'));
+  if (!worked || isPractitioner || raw === null || dismissedRoles(raw).includes(slug)) return null;
   return (
     <div className="relative rounded-md border border-rule bg-surface p-4 pr-10 text-[14px] animate-fade" role="status">
       <p className="text-ink">{t('body')}</p>
