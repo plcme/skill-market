@@ -37,7 +37,15 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: pnpm deploy:cloudflare
+        run: |
+          node --input-type=module <<'JS'
+          import { spawnSync } from 'node:child_process';
+          const token = (process.env.CLOUDFLARE_API_TOKEN || '').trim();
+          if (!token || /\s/.test(token)) throw new Error('Deployment token contains unexpected whitespace; replace the repository secret with the token value only.');
+          process.env.CLOUDFLARE_API_TOKEN = token;
+          const result = spawnSync('pnpm', ['deploy:cloudflare'], { stdio: 'inherit', env: process.env });
+          process.exit(result.status ?? 1);
+          JS
       - name: Check production gate
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
