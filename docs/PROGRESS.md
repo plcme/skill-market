@@ -73,6 +73,14 @@
 | 详情页单图（Y axis + Split by + 标题地点） | `fe-r3-chart` | 已合并 dev（审查 2 轮，Round 1 退回 2 阻断：/compare 缺文案 key、键盘焦点丢失；reviewer 改用 Opus） |
 | 配色方案、单色 logo、首页短标语 | `fe-r3-colours`（另一会话） | 已合并 dev（仓库内无审查记录，用户要求直接合并；合并后全量检查通过） |
 
+## 前端反馈第 6 轮（2026-10-22）
+
+| 项 | 分支 | 状态 |
+|---|---|---|
+| 详情页默认不拆分（无 `by` 参数；旧 `by=none` 一次 307）；No PR stated 时 Work rights 拆分置灰；/market 最前加 "Watching" 标签（书签 + 数量，未登录提示登录） | `fe-r6` | 已合并 dev（审查 1 轮通过） |
+
+待拍板：Watching 是否包含 "I have this / Worked in this role"（held，目前包含）；skill 的 Median salary 不再默认按 Experience 拆开，可能被误读为"学了就能拿"（是否对 salary 单独默认拆分或加提示）。非阻断遗留：Watching 数量缺读屏说明；名称搜索时数量与列表不一致；整张 All 表传给客户端（迁 Supabase 后改服务端过滤）；Sign in 链接丢筛选参数；375px 标签行可横滑但无提示。
+
 ## 前端反馈第 5 轮（2026-10-22）
 
 | 项 | 分支 | 状态 |
@@ -97,6 +105,8 @@
 待拍板：筛选 No PR stated 时是否禁用 Work rights 拆分（演示数据 sponsorship_ok 约 6%，主会话建议禁用）；顶部行情条暂停键是否删除（WCAG 风险同轮播）。非阻断遗留：标题句子可能自相矛盾（"Sydney + remote · On-site or hybrid"）；被固定的 `by` 参数在 URL 中清不掉；e2e 文件已改未跑。
 
 ## 日志
+
+- 2026-10-22：FE-R6 合并 dev 并 push。lint/typecheck/281 单测/build 通过；未跑 e2e。子 agent 约 0.3M tokens。
 
 - 2026-10-22：FE-R5 合并 dev 并 push。lint/typecheck/280 单测/build 通过；按用户偏好未跑 e2e。子 agent 约 1.3M tokens。
 
