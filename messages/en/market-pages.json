@@ -37,7 +37,6 @@
     "textFilterLabel": "Filter this board by name",
     "textFilterPlaceholder": "Filter by name or alias",
     "textFilterClear": "Clear the name filter",
-    "sharedMetricHint": "Only measures that apply to both skills and roles are listed on the mixed board.",
     "colName": "Name",
     "colTrend": "12-month trend",
     "colChangeMixed": "Change",
