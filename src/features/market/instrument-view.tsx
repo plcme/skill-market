@@ -4,27 +4,29 @@ import { useTranslations } from 'next-intl';
 import { ArrowLeftRight, ChevronRight, MessageCircle } from 'lucide-react';
 import { encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
 import { chatHref, instrumentPath } from '@/lib/links';
-import { CHART_MEASURE_METRIC, METRICS, signalMetric } from '@/lib/metrics/registry';
+import { METRICS, signalMetric } from '@/lib/metrics/registry';
 import { formatDate } from '@/lib/time';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
 import type { InstrumentDetail } from '@/lib/queries/market';
+import { RolePractitionerNudge } from './role-practitioner-nudge';
 import { Button } from '@/components/ui/button';
-import { Card, Container, Monogram, SectionHeader } from '@/components/ui/primitives';
+import { Card, Container, SectionHeader } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
 import { MetricLabel } from '@/components/market/metric-info';
-import { MetricSwitcher } from '@/components/market/metric-switcher';
 import { MetricValue } from '@/components/market/metric-value';
 import { SignalTag } from '@/components/market/signal-tag';
 import { SourceBadge } from '@/components/market/source-badge';
 import { WatchButton } from '@/components/market/watch-button';
-import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
+import { HeatmapSource, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
-import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
-import { hrefWith } from './logic';
+import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, LocationBars, Provenance, RelatedSkills, SalaryBlock, Statistics } from './instrument-sections';
+import { breakdownParam, chartPlanFor, hrefWith, metricParam, nextByParam } from './logic';
 import { InstrumentChart } from './instrument-chart';
 import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
+import { InstrumentMark } from '@/components/market/instrument-mark';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 /** The flagship full ticker page shared by /s/[slug], /r/[slug] and /i/[slug]. */
 export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; filter: FilterSpec }) {
@@ -36,13 +38,16 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const type = inst.type;
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
   const base = instrumentPath(type, inst.slug);
-  const metricHref = (m: MetricKey) => `${hrefWith(base, { f, metric: m === detail.metrics.default ? undefined : m })}#now`;
+  // A Statistics cell selects its measure for the headline and the chart; the split stays.
+  const byParam = breakdownParam(detail.chart.by);
+  const metricHref = (m: MetricKey) => `${hrefWith(base, { f, metric: metricParam(m, detail.metrics.default), by: nextByParam(byParam, filter, chartPlanFor(m, type).series) })}#now`;
   const talk = chatHref(inst.slug, filter, signal?.kind);
   const compare = hrefWith('/compare', { a: inst.slug, f });
 
   const reading = snap.metric;
   const competencies = type === 'role' ? competencyLevels(inst.slug) : null;
   const tc = useTranslations('Competencies');
+  const tcommon = useTranslations('Common');
   const secondary = ([signalMetric(type), 'entry_level_share', 'ad_count'] as MetricKey[]).filter(m => m !== detail.metric).slice(0, 2);
 
   return (
@@ -60,7 +65,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
       <header className="grid grid-cols-1 gap-8 pb-8 pt-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-12">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <Monogram size="lg" tone={signal ? 'signal' : 'plain'}>{inst.symbol}</Monogram>
+            <InstrumentMark size="lg" tone={signal ? 'signal' : 'plain'} slug={inst.slug} symbol={inst.symbol} />
             <div className="min-w-0">
               <p className="kicker">{tt(type)}{inst.skill_layer ? <>{' · '}{tt(`layer.${inst.skill_layer}`)}</> : null} · {inst.category}</p>
               <p className="mt-1 font-mono text-[12px] text-muted">
@@ -70,8 +75,8 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           </div>
           <h1 className="display mt-6 break-words text-[48px] sm:text-[72px] lg:text-[88px]">
             {inst.name}{' '}
-            <Suspense fallback={<TitleFilterStatic filter={filter} />}>
-              <TitleFilter />
+            <Suspense fallback={<TitleFilterStatic filter={filter} split={detail.breakdown.by} />}>
+              <TitleFilter split={detail.breakdown.by} chart={{ metric: detail.metric, defaultMetric: detail.metrics.default, options: detail.chart.options, by: detail.chart.by, type }} />
             </Suspense>
           </h1>
           <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{inst.blurb}</p>
@@ -86,26 +91,21 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           <Suspense fallback={<Button variant="accent" size="lg" disabled className="w-full" aria-hidden />}>
             <WatchButton slug={inst.slug} filter={filter} metric={detail.metric} prominent />
           </Suspense>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
-            <Link href={compare} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
-              <ArrowLeftRight className="size-3.5" aria-hidden />{t('compareWith')}
-            </Link>
-            <span aria-hidden className="text-faint">·</span>
-            <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
-              <MessageCircle className="size-3.5" aria-hidden />{t('talkShort')}
-            </Link>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(9.75rem,1fr))] gap-2">
+            <Button asChild variant="outline" className="w-full px-3">
+              <Link href={compare}><ArrowLeftRight aria-hidden />{t('compareWith')}</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full px-3">
+              <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })}><MessageCircle aria-hidden />{t('talkShort')}</Link>
+            </Button>
           </div>
+          {type === 'role' ? <RolePractitionerNudge slug={inst.slug} /> : null}
         </div>
       </header>
 
       <section id="now" aria-labelledby="now-h" className="mt-8 grid scroll-mt-24 gap-8 border-t-2 border-rule-strong pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="now-h" tabIndex={-1} className="kicker text-ink">{t('now')}</h2>
-            <Suspense fallback={<div className="h-8 w-40" />}>
-              <MetricSwitcher type={type} value={detail.metric} />
-            </Suspense>
-          </div>
+          <h2 id="now-h" tabIndex={-1} className="kicker text-ink">{t('now')}</h2>
           <div className="mt-6">
             <MetricLabel metric={detail.metric} type={type} reading={reading} filter={filter} subject={inst.name} />
           </div>
@@ -141,21 +141,19 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
                 <Link href={talk}>{t('signalTalk')}</Link>
               </Button>
             </div>
-          ) : (
-            <p className="mt-6 text-[13px] leading-relaxed text-muted">{t('noSignal')}</p>
-          )}
+          ) : null}
         </div>
 
         <Card className="min-w-0 self-start p-4 sm:p-6">
           <Suspense fallback={<div className="skeleton h-[420px] w-full" />}>
             <InstrumentChart
               breakdown={detail.breakdown}
-              y={detail.chart.y}
-              measures={detail.chart.measures}
-              type={type}
+              plan={detail.chart}
+              options={detail.chart.options}
+              metric={detail.metric}
+              defaultMetric={detail.metrics.default}
               filter={filter}
-              subject={inst.name}
-              reading={detail.readings[CHART_MEASURE_METRIC[detail.chart.y]]}
+              reading={detail.readings[detail.chart.series]}
             />
           </Suspense>
         </Card>
@@ -163,9 +161,9 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
 
       <MyNotes slug={inst.slug} name={inst.name} />
 
-      <section aria-labelledby="fund-h" className="mt-16">
-        <SectionHeader id="fund-h" kicker={t('fundKicker')} title={t('fundTitle')} action={<Link href="/metrics" className="link hidden text-sm sm:inline">{t('fundAction')}</Link>} />
-        <Fundamentals detail={detail} filter={filter} metricHref={metricHref} />
+      <section aria-labelledby="stats-h" className="mt-16">
+        <SectionHeader id="stats-h" size="lg" title={t('statsTitle')} action={<Link href="/metrics" className="link hidden text-sm sm:inline">{t('statsAction')}</Link>} />
+        <Statistics detail={detail} filter={filter} metricHref={metricHref} />
       </section>
 
       {type === 'role' ? (
@@ -184,7 +182,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
                 <div className="min-w-0">
                   <HeatmapTiles heatmap={detail.heatmap} filter={filter} label={t('industryHeatmapLabel', { name: inst.name })} />
-                  <HeatmapLegend heatmap={detail.heatmap} filter={filter} parentName={inst.name} className="mt-4" />
+                  <HeatmapSource heatmap={detail.heatmap} filter={filter} className="mt-4" />
                   <HeatmapTable heatmap={detail.heatmap} caption={t('industryHeatmapLabel', { name: inst.name })} nameHead={tt('skill')} />
                 </div>
                 <div className="min-w-0">
@@ -203,13 +201,12 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
       <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-12">
         <section aria-labelledby="comp-h">
           <SectionHeader id="comp-h" kicker={t(`compKicker.${type}`)} title={t(`compTitle.${type}`, { name: inst.name })} />
-          <p className="-mt-1 mb-4 text-[13px] text-muted">{t(`compNote.${type}`, { name: inst.name })}</p>
+          {type === 'role' ? <p className="-mt-1 mb-4 text-[13px] text-muted">{t('compNote.role', { name: inst.name })}</p> : null}
           <CompositionList entries={detail.composition} parent={inst} filter={filter} mode={type === 'role' ? 'skillsOfRole' : 'rolesOfSkill'} />
         </section>
         {type === 'skill' ? (
           <section aria-labelledby="rel-h">
-            <SectionHeader id="rel-h" kicker={t('relKicker')} title={t('relTitle')} />
-            <p className="-mt-1 mb-4 text-[13px] text-muted">{t('relNote', { name: inst.name })}</p>
+            <SectionHeader id="rel-h" kicker={t('relKicker')} title={t('relTitle')} info={<InfoPopover label={tcommon('aboutSection', { section: t('relTitle') })}>{t('relNote', { name: inst.name })}</InfoPopover>} />
             <RelatedSkills entries={detail.related} filter={filter} />
           </section>
         ) : (
@@ -251,7 +248,6 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         <div>
           <p className="kicker">{t('nextKicker')}</p>
           <h2 id="next-h" className="mt-2 font-serif text-[28px] leading-tight sm:text-[32px]">{t(`nextTitle.${type}`, { name: inst.name })}</h2>
-          <p className="mt-2 max-w-2xl text-ink-2">{t('nextBody')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="accent" size="lg"><Link href={talk}><MessageCircle aria-hidden />{t('nextCta')}</Link></Button>

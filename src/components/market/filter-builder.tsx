@@ -5,17 +5,76 @@ import { useTranslations } from 'next-intl';
 import { ChevronDown, MapPin, Plus, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { Dialog, DialogTrigger, SheetContent, Popover, PopoverContent, PopoverTrigger } from '@/components/ui/overlay';
 import { Button } from '@/components/ui/button';
-import { Checkbox, ChipToggleGroup, Input, Segmented, Switch } from '@/components/ui/form';
+import { Checkbox, ChipRadioGroup, ChipToggleGroup, Input, RadioCards, Segmented, Switch } from '@/components/ui/form';
 import { PICKABLE_LOCATIONS, ancestorsOf, getLocation, narrowedPlaces, placesOrAllAustralia } from '@/lib/filters/locations';
 import {
-  activeConditionCount, cloneFilter, DEFAULT_FILTER, describeFilter, fromSimpleFilter, isDefaultFilter, MAX_RULES, normaliseFilter,
+  activeConditionCount, cloneFilter, DEFAULT_FILTER, describeFilter, encodeFilter, fromSimpleFilter, isDefaultFilter, MAX_RULES, normaliseFilter,
   remoteAnywhereRedundant, toSimpleFilter, type SimpleFilter,
 } from '@/lib/filters/spec';
-import type { FilterRule, FilterSpec, LocationLevel, Seniority, WorkMode, WorkRights } from '@/lib/market/types';
-import { WORK_MODES } from '@/lib/market/types';
+import type { BreakdownDimension, FilterRule, FilterSpec, LocationLevel, MetricKey, Seniority, WorkMode, WorkRights } from '@/lib/market/types';
+import { BREAKDOWN_DIMENSIONS, WORK_MODES, type ActiveInstrumentType } from '@/lib/market/types';
+import { chartPlanFor, chosenByParam, metricParam, splitBlockers } from '@/features/market/logic';
 import { cn } from '@/lib/utils';
 import { useFilterCopy } from './filter-readback';
-import { useUrlFilter } from './use-url-state';
+import { useSetParams, useUrlFilter } from './use-url-state';
+
+/** Detail page only: the chart's Y axis and Split by, edited in the Filter panel and applied with it. */
+export interface ChartControls {
+  type: ActiveInstrumentType;
+  /** The page's measure (`?metric=`, resolved) and its default. */
+  metric: MetricKey;
+  defaultMetric: MetricKey;
+  /** Y axis options for this type. */
+  options: MetricKey[];
+  /** Requested split (`?by=`); the panel shows it as None while the filter or measure fixes it. */
+  by: BreakdownDimension | null;
+}
+
+interface ChartDraft {
+  metric: MetricKey;
+  by: BreakdownDimension | null;
+}
+
+/** "Y axis" and "Split by" sections of the detail-page Filter panel. */
+function ChartSections({ controls, draft, filter, onChange }: { controls: ChartControls; draft: ChartDraft; filter: FilterSpec; onChange: (next: ChartDraft) => void }) {
+  const t = useTranslations('Breakdown');
+  const series = chartPlanFor(draft.metric, controls.type).series;
+  const blockers = splitBlockers(filter, series);
+  const by = draft.by && !blockers[draft.by] ? draft.by : null;
+  return (
+    <>
+      {controls.options.length > 1 ? (
+        <div>
+          <p className="mb-2 text-[13px] font-medium">{t('yAxis')}</p>
+          <ChipRadioGroup<MetricKey>
+            label={t('yAxis')}
+            value={series}
+            onValueChange={m => onChange({ ...draft, metric: m })}
+            options={controls.options.map(m => ({ value: m, label: t(`measures.${m}`) }))}
+          />
+        </div>
+      ) : null}
+      <div className={cn(controls.options.length > 1 && 'border-t border-rule pt-5')}>
+        <p className="mb-2 text-[13px] font-medium">{t('splitBy')}</p>
+        <RadioCards<'none' | BreakdownDimension>
+          label={t('splitBy')}
+          columns={2}
+          value={by ?? 'none'}
+          onValueChange={v => onChange({ ...draft, by: v === 'none' ? null : v })}
+          options={[
+            { value: 'none', label: t('none') },
+            ...BREAKDOWN_DIMENSIONS.map(d => ({
+              value: d,
+              label: t(`dims.${d}`),
+              disabled: Boolean(blockers[d]),
+              description: blockers[d] ? t(blockers[d] === 'filter' ? 'fixedByFilter' : 'fixedByMeasure') : undefined,
+            })),
+          ]}
+        />
+      </div>
+    </>
+  );
+}
 
 // The picker never lists the country level (Australia is the fixed base).
 const INDENT: Record<LocationLevel, string> = { country: 'pl-3', state: 'pl-3', city: 'pl-6', region: 'pl-9' };
@@ -219,7 +278,14 @@ function AdvancedRules({ value, onChange }: { value: FilterSpec; onChange: (f: F
  * builder sits behind "Advanced" and opens by itself when a spec can't be
  * expressed simply, so any URL stays editable.
  */
-export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange: (f: FilterSpec) => void }) {
+export function FilterEditor({ value, onChange, extra, readbackSuffix }: {
+  value: FilterSpec;
+  onChange: (f: FilterSpec) => void;
+  /** Sections between the readback and Work rights (the detail page's chart controls). */
+  extra?: React.ReactNode;
+  /** Appended to the readback, e.g. " · by experience". */
+  readbackSuffix?: string;
+}) {
   const t = useTranslations('Filter');
   const copy = useFilterCopy();
   // The simple controls keep their own state so a half-edited draft (no work
@@ -251,9 +317,10 @@ export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange:
       <div className="sticky -top-5 z-10 -mx-5 -mt-5 bg-surface px-5 pb-1 pt-5">
         <div aria-live="polite" className="rounded-md bg-accent-soft px-4 py-3 text-sm">
           <p className="kicker mb-1">{t('currentlyShowing')}</p>
-          <p className="text-ink" data-testid="filter-readback">{valid ? describeFilter(value, copy) : '…'}</p>
+          <p className="text-ink" data-testid="filter-readback">{valid ? `${describeFilter(value, copy)}${readbackSuffix ?? ''}` : '…'}</p>
         </div>
       </div>
+      {extra ? <div className="flex flex-col gap-5 border-b border-rule pb-5">{extra}</div> : null}
       <div>
         <p className="mb-2 text-[13px] font-medium">{t('workRights')}</p>
         <Segmented<WorkRights> label={t('workRights')} value={value.work_rights} onValueChange={v => setScope({ work_rights: v })} options={(['all', 'no_pr_required'] as const).map(v => ({ value: v, label: t(`workRightsOptions.${v}`) }))} />
@@ -296,7 +363,7 @@ export function FilterEditor({ value, onChange }: { value: FilterSpec; onChange:
  * `trigger` replaces the built-in trigger with the caller's own element (e.g. the
  * detail-page title), opening the same sheet.
  */
-export function FilterBar({ value, onChange, className, compact = false, variant = 'bar', trigger }: {
+export function FilterBar({ value, onChange, className, compact = false, variant = 'bar', trigger, chartControls }: {
   value?: FilterSpec;
   onChange?: (f: FilterSpec) => void;
   className?: string;
@@ -304,18 +371,37 @@ export function FilterBar({ value, onChange, className, compact = false, variant
   variant?: 'bar' | 'button';
   /** Custom trigger; must render a single focusable element (it is wrapped in `DialogTrigger asChild`). */
   trigger?: (state: { current: FilterSpec; pending: boolean }) => React.ReactElement;
+  /** Detail page: adds Y axis and Split by sections; Apply writes them with the filter in one URL change. */
+  chartControls?: ChartControls;
 }) {
   const t = useTranslations('Filter');
+  const tb = useTranslations('Breakdown');
+  const tt = useTranslations('InstrumentPage.titleFilter');
   const copy = useFilterCopy();
-  const [urlFilter, setUrlFilter, pending] = useUrlFilter();
+  const [urlFilter, setUrlFilter, urlPending] = useUrlFilter();
+  const { set: setParams, pending: paramsPending } = useSetParams();
+  const pending = urlPending || paramsPending;
   const current = value ?? urlFilter;
-  const apply = onChange ?? setUrlFilter;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<FilterSpec>(() => cloneFilter(current));
+  const chartInit = (): ChartDraft => ({ metric: chartControls?.metric ?? 'ad_count', by: chartControls?.by ?? null });
+  const [chartDraft, setChartDraft] = useState<ChartDraft>(chartInit);
+  const series = chartControls ? chartPlanFor(chartDraft.metric, chartControls.type).series : 'ad_count';
+  const draftBy = chartControls && chartDraft.by && !splitBlockers(draft, series)[chartDraft.by] ? chartDraft.by : null;
+  const apply = (f: FilterSpec) => {
+    if (chartControls) {
+      setParams({
+        f: isDefaultFilter(f) ? null : encodeFilter(f),
+        metric: metricParam(chartDraft.metric, chartControls.defaultMetric),
+        y: null,
+        by: chosenByParam(chartDraft.by, f, series),
+      });
+    } else (onChange ?? setUrlFilter)(f);
+  };
   const valid = draft.rules.every(r => r.work_modes.length && r.location_ids.length);
   const count = activeConditionCount(current);
   return (
-    <Dialog open={open} onOpenChange={o => { setOpen(o); if (o) setDraft(cloneFilter(current)); }}>
+    <Dialog open={open} onOpenChange={o => { setOpen(o); if (o) { setDraft(cloneFilter(current)); setChartDraft(chartInit()); } }}>
       {trigger ? (
         <DialogTrigger asChild>{trigger({ current, pending })}</DialogTrigger>
       ) : variant === 'button' ? (
@@ -356,7 +442,12 @@ export function FilterBar({ value, onChange, className, compact = false, variant
           </>
         )}
       >
-        <FilterEditor value={draft} onChange={setDraft} />
+        <FilterEditor
+          value={draft}
+          onChange={setDraft}
+          extra={chartControls ? <ChartSections controls={chartControls} draft={chartDraft} filter={draft} onChange={setChartDraft} /> : undefined}
+          readbackSuffix={draftBy ? `${tt('separator')}${tt('by', { dimension: tb(`dimsLower.${draftBy}`) })}` : undefined}
+        />
       </SheetContent>
     </Dialog>
   );

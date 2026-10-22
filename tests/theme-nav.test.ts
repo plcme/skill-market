@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseStoredTheme, resolveTheme, THEME_SCRIPT, toggledTheme } from '../src/lib/theme';
-import { accountLinks, deskFor, mobileMenuLinks, PRIMARY_NAV } from '../src/components/shell/nav-model';
+import { accountLinks, accountMenuLinks, deskFor, mobileMenuLinks, PRIMARY_NAV } from '../src/components/shell/nav-model';
 import type { Session } from '../src/lib/api/types';
 
 describe('two-state theme', () => {
@@ -48,18 +48,16 @@ describe('navigation model', () => {
   it('keeps the primary nav to Market and People', () => {
     expect(PRIMARY_NAV.map(l => l.href)).toEqual(['/market', '/people']);
   });
-  it('does not repeat the desk in the account menu', () => {
+  it('puts the desk first in the account menu, once', () => {
     const desk = deskFor(student);
     expect(desk?.href).toBe('/me');
     expect(accountLinks(student).map(l => l.href)).not.toContain('/me');
-    expect(accountLinks(practitioner)).toEqual([]);
-    expect(accountLinks(null)).toEqual([]);
+    expect(accountMenuLinks(student).map(l => l.href)).toEqual(['/me', '/me/skills', '/me/requests', '/me/settings']);
+    expect(accountMenuLinks(practitioner).map(l => l.href)).toEqual(['/practitioner']);
+    expect(accountMenuLinks(null)).toEqual([]);
   });
-  it('mobile menu reaches the desk exactly once', () => {
-    const hrefs = mobileMenuLinks(student).map(l => l.href);
-    expect(hrefs.filter(h => h === '/me')).toHaveLength(1);
-    expect(hrefs).toEqual(['/market', '/people', '/me', '/me/skills', '/me/requests', '/me/settings']);
-    expect(mobileMenuLinks(practitioner).map(l => l.href)).toEqual(['/market', '/people', '/practitioner']);
+  it('mobile menu sheet keeps to the primary nav (desk and account live in the account menu)', () => {
+    expect(mobileMenuLinks(student).map(l => l.href)).toEqual(['/market', '/people']);
     expect(mobileMenuLinks(null).map(l => l.href)).toEqual(['/market', '/people']);
   });
 });

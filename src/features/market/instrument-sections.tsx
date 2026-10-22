@@ -16,6 +16,7 @@ import { Notice } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
 import { barPercent, salaryAxis, togetherness, type Togetherness } from './logic';
 import { MeasureCellLink } from './measure-cell-link';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 // Building blocks of the full ticker page (FR-M2 "full page"); several are reused
 // on /compare so both views explain numbers the same way.
@@ -32,7 +33,7 @@ export function Figure({ reading, className }: { reading: MetricReading; classNa
  * Every valid measure as a figure cell; advanced ones behind a disclosure (PRD §10 rule 9).
  * Each cell selects its measure in the "Right now" headline and scrolls back up to it.
  */
-export function Fundamentals({ detail, filter, metricHref }: {
+export function Statistics({ detail, filter, metricHref }: {
   detail: InstrumentDetail;
   filter: FilterSpec;
   metricHref: (m: MetricKey) => string;
@@ -45,10 +46,10 @@ export function Fundamentals({ detail, filter, metricHref }: {
     if (!r) return null;
     const current = m === detail.metric;
     return (
-      <li key={m} className={cn('relative flex min-w-0 flex-col gap-3 border-b border-r border-rule bg-surface p-3.5 transition-colors hover:bg-sunken/50 sm:p-5', current && 'shadow-[inset_0_2px_0_var(--ink)]')}>
+      <li key={m} className={cn('relative flex min-w-0 flex-col gap-3.5 border-b border-r border-rule p-4 transition-colors sm:p-6', current ? 'bg-picked shadow-[inset_0_0_0_2px_var(--ink)]' : 'bg-surface hover:bg-sunken/50')}>
         <MeasureCellLink href={metricHref(m)} current={current} label={t('showMeasureLabel', { metric: tm(`${m}.label`) })} />
         <MetricLabel metric={m} type={type} reading={r} filter={filter} subject={detail.snapshot.instrument.name} infoClassName="relative z-10" />
-        <Figure reading={r} />
+        <Figure reading={r} className="[&>span:first-child]:text-[32px] sm:[&>span:first-child]:text-[40px]" />
         <div className="mt-auto pt-1">
           <SourceBadge kind={r.source} short />
         </div>
@@ -203,7 +204,7 @@ export function RelatedSkills({ entries, filter }: { entries: CompositionEntry[]
                 href={instrumentPath('skill', e.instrument.slug, filter)}
                 className="inline-flex h-8 items-center gap-2 rounded-full border border-rule bg-surface pl-1 pr-3 text-[13px] font-medium transition-colors hover:border-ink/40 hover:bg-sunken/50"
               >
-                <span className="grid size-6 place-items-center rounded-full bg-sunken font-mono text-[9.5px] uppercase text-ink-2" aria-hidden>{e.instrument.symbol}</span>
+                <InstrumentMark size="sm" slug={e.instrument.slug} symbol={e.instrument.symbol} className="size-6 rounded-full border-0 bg-sunken text-[9.5px] font-normal text-ink-2" />
                 {e.instrument.name}
               </Link>
             ))}

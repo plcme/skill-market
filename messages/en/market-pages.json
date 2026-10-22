@@ -4,17 +4,25 @@
       "skill": "Skills market",
       "role": "Roles market",
       "industry": "Industries market",
-      "all": "Market"
+      "all": "Market",
+      "watching": "Watching"
     },
     "metaDescription": "Every skill and role we track in Australian job ads, with the measure you choose, its change and a 12-month trend.",
     "title": "The market",
     "boardHeading": "Board",
     "typeTabsLabel": "Instrument type",
     "types": {
+      "watching": "Watching",
       "skill": "Skills",
       "role": "Roles",
       "industry": "Industries",
       "all": "All"
+    },
+    "watching": {
+      "signedOut": "Sign in to see what you watch.",
+      "signIn": "Sign in",
+      "empty": "Nothing watched yet.",
+      "browseAll": "Browse all"
     },
     "sortLabel": "Order",
     "sort": {
@@ -120,7 +128,17 @@
         "onsite_hybrid": "On-site or hybrid",
         "onsite_remote": "On-site or remote",
         "hybrid_remote": "Hybrid or remote"
-      }
+      },
+      "workModesInline": {
+        "onsite": "on-site only",
+        "hybrid": "hybrid only",
+        "remote": "remote only",
+        "onsite_hybrid": "on-site or hybrid",
+        "onsite_remote": "on-site or remote",
+        "hybrid_remote": "hybrid or remote"
+      },
+      "placesWithModes": "{places} ({modes})",
+      "by": "by {dimension}"
     },
     "compareWith": "Compare with…",
     "now": "Right now",
@@ -134,10 +152,8 @@
       "entry_open": "Entry-level share {from} → {to} in eight weeks ({pp} pts)"
     },
     "signalTalk": "Ask someone what’s behind it",
-    "noSignal": "Nothing flagged under this filter. We flag a move when it is at least 25% and at least 10 ads, or when entry-level openings rise by 10 points.",
-    "fundKicker": "Fundamentals",
-    "fundTitle": "Every measure, under your filter",
-    "fundAction": "What each measure means",
+    "statsTitle": "Statistics",
+    "statsAction": "What each measure means",
     "showMeasureLabel": "Show {metric} at the top",
     "moreMeasures": "{n, plural, one {# more measure} other {# more measures}}",
     "fewerMeasures": "Fewer measures",
@@ -165,7 +181,6 @@
       "industry": "Skills its ads mention"
     },
     "compNote": {
-      "skill": "Share of each role’s ads that mention {name}.",
       "role": "The skills that make up this role: the share of {name} ads that mention each one. An ad usually asks for several skills, so shares add up to more than 100%.",
       "industry": "Share of {name} ads that mention each skill, highest first. A list sorted by a measure, not a ranking of people."
     },
@@ -244,7 +259,6 @@
       "role": "Numbers only go so far. Ask someone who does this job.",
       "industry": "Numbers only go so far. Ask someone who works in this industry."
     },
-    "nextBody": "We’ll suggest up to three verified practitioners who opted in, plus questions worth asking. It’s free, and you can decline or reschedule at any time.",
     "nextCta": "Find someone to talk to",
     "provenance": "Where these numbers come from",
     "provSources": "Sources",
@@ -484,6 +498,7 @@
       "official": "Occupation-level demand for roles, including the 12-month change.",
       "practitioner": "What people in the work said after coffee chats — only ever shown in aggregate."
     },
+    "logos": "Technology logos come from Simple Icons (CC0). They are trademarks of their owners and are used only to identify the technology.",
     "licence": "Licence",
     "cadence": "Updated",
     "lastRun": "Last run",
@@ -561,5 +576,10 @@
     "with": "Chat with {name}",
     "open": "Open chat",
     "private": "Your debriefs stay private. They’re never shown to practitioners or other students."
+  },
+  "RoleNudge": {
+    "body": "You know this job. Give 20 minutes a month to students asking about it.",
+    "cta": "Join as a practitioner",
+    "dismiss": "Dismiss"
   }
 }

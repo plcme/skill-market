@@ -295,25 +295,15 @@
     "caption": "{metric}, weekly, {start} – {end}",
     "range": { "3m": "3M", "6m": "6M", "1y": "1Y", "2y": "2Y" },
     "rangeLabel": "Time range",
-    "noData": "No data for this range"
+    "noData": "No data for this range",
+    "windows": {
+      "prev": "{weeks, select, 52 {Previous 12 months} other {Previous {weeks} weeks}}",
+      "last": "{weeks, select, 52 {Last 12 months} other {Last {weeks} weeks}}"
+    },
+    "windowsSpoken": "Shaded: the previous {weeks} weeks and the last {weeks} weeks, {from} → {to} job ads."
   },
   "Heatmap": {
-    "sizeLabel": "Size:",
-    "sizeIndustries": "job ads in each industry in the last 4 weeks.",
-    "sizeSkills": "job ads in {industry} that mention each skill, last 4 weeks.",
-    "colourLabel": "Colour:",
-    "colourBody": "4-week change — the last 4 weeks against the 4 weeks before.",
-    "legendLabel": "Colour bands",
-    "band": {
-      "dn2": "−{strong}% or more",
-      "dn1": "−{flat} to −{strong}%",
-      "flat": "within ±{flat}%",
-      "up1": "+{flat} to +{strong}%",
-      "up2": "+{strong}% or more",
-      "na": "fewer than {min} ads"
-    },
     "window": "Window {start} – {end}.",
-    "thinNote": "Grey, hatched tiles have fewer than {min} ads in the earlier 4 weeks, so no change is shown.",
     "tileLabel": "{name}: {ads} job ads, {dir, select, up {up {change}} down {down {change}} other {no change}} in 4 weeks ({from} → {to}).",
     "tileLabelThin": "{name}: {ads} job ads. Too few ads (under {min}) to show a 4-week change.",
     "thinShort": "Too few ads",
@@ -395,17 +385,28 @@
   },
   "Breakdown": {
     "yAxis": "Y axis",
-    "yAxisButton": "Y axis: {measure}. Change",
     "splitBy": "Split by",
-    "splitButton": "Split by {dimension}. Change",
-    "splitNoneButton": "Not split. Choose a split",
-    "clearSplit": "Stop splitting",
     "none": "None",
     "close": "Close",
     "measures": {
-      "ads": "Job ads",
-      "salary": "Median salary"
+      "ad_count": "Job ads",
+      "salary_median": "Median salary",
+      "entry_level_share": "Entry-level share",
+      "no_pr_required_share": "No PR stated",
+      "employer_concentration": "Employers hiring",
+      "remote_share": "Remote or hybrid",
+      "contract_share": "Contract share"
     },
+    "measureButton": "Chart: {measure}. Change measure",
+    "measureMenu": "Measure",
+    "captionBy": "{measure}, {window}, by {dimension}",
+    "captionAll": "{measure}, {window}",
+    "rolling": {
+      "weeks": "{n}-week rolling",
+      "months": "rolling {n} months"
+    },
+    "gapsAds": "Too few ads for {buckets}.",
+    "fixedByMeasure": "Not for this measure",
     "dims": {
       "experience": "Experience",
       "rights": "Work rights",
@@ -442,10 +443,6 @@
       "hybrid": "Hybrid",
       "remote": "Remote"
     },
-    "captionStack": "Job ads by {dimension}, 4-week rolling",
-    "captionLines": "Median advertised salary by {dimension}, rolling 12 months",
-    "captionSingleStack": "Job ads, 4-week rolling",
-    "captionSingleLines": "Median advertised salary, rolling 12 months",
     "filteredTo": "Filtered to {buckets}.",
     "estimated": "Estimated",
     "methodLabel": "How {dimension} is estimated",

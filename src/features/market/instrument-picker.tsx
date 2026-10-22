@@ -7,9 +7,10 @@ import { INSTRUMENTS, searchInstruments } from '@/lib/market/catalog';
 import type { ActiveInstrumentType, Instrument } from '@/lib/market/types';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/overlay';
-import { Monogram } from '@/components/ui/primitives';
+
 import { useSetParams } from '@/components/market/use-url-state';
 import { cn } from '@/lib/utils';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 /** Searchable combobox that writes one side of the comparison (`?a=` / `?b=`) to the URL. */
 export function InstrumentPicker({ param, slug, restrictType, excludeSlug, label, tone }: {
@@ -58,7 +59,7 @@ export function InstrumentPicker({ param, slug, restrictType, excludeSlug, label
         >
           {current ? (
             <>
-              <Monogram size="sm" tone={tone === 'accent' ? 'accent' : 'ink'}>{current.symbol}</Monogram>
+              <InstrumentMark size="sm" tone={tone === 'accent' ? 'accent' : 'ink'} slug={current.slug} symbol={current.symbol} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{current.name}</span>
                 <span className="block truncate text-[12px] text-muted">{tt(current.type)} · {current.category}</span>
@@ -98,7 +99,7 @@ export function InstrumentPicker({ param, slug, restrictType, excludeSlug, label
                   onClick={() => choose(o)}
                   className={cn('flex w-full items-center gap-3 rounded-[4px] px-2.5 py-2 text-left', i === active && 'bg-sunken')}
                 >
-                  <Monogram size="sm">{o.symbol}</Monogram>
+                  <InstrumentMark size="sm" slug={o.slug} symbol={o.symbol} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{o.name}</span>
                     <span className="block truncate text-[12px] text-muted">{tt(o.type)} · {o.category}</span>

@@ -11,7 +11,7 @@ import { formatChange, formatCount, formatShare } from '@/lib/market/format';
 import { instrumentPath } from '@/lib/links';
 import { formatDate, formatDateTime, formatTime } from '@/lib/time';
 import { Button } from '@/components/ui/button';
-import { Avatar, Badge, Card, Monogram } from '@/components/ui/primitives';
+import { Avatar, Badge, Card } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
 import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
 import { FilterReadback } from '@/components/market/filter-readback';
@@ -19,6 +19,7 @@ import { MetricLabel } from '@/components/market/metric-info';
 import { SignalTag } from '@/components/market/signal-tag';
 import { cn } from '@/lib/utils';
 import { locationName, MatchReasons, TopicChips, tzLabel } from './shared';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 /** Signal with the absolute numbers behind it (FR-D3). */
 export function SignalFigures({ signal, className }: { signal: Pick<Signal, 'kind' | 'metric' | 'from' | 'to' | 'magnitude'>; className?: string }) {
@@ -64,7 +65,7 @@ export function ContextPanel({ instrument, filter, signal, change, question, pra
       <div>
         <p className="kicker">{t('contextInstrument')}</p>
         <Link href={instrumentPath(instrument.type, instrument.slug, filter)} className="group mt-1.5 flex items-center gap-2.5">
-          <Monogram tone="ink" size="sm">{instrument.symbol}</Monogram>
+          <InstrumentMark tone="ink" size="sm" slug={instrument.slug} symbol={instrument.symbol} />
           <span className="font-serif text-xl leading-tight group-hover:underline">{instrument.name}</span>
         </Link>
       </div>

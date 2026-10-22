@@ -9,13 +9,14 @@ import { formatDate } from '@/lib/time';
 import type { FilterSpec, Instrument } from '@/lib/market/types';
 import type { Comparison, InstrumentDetail } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
-import { Card, Monogram, Notice, SectionHeader } from '@/components/ui/primitives';
+import { Card, Notice, SectionHeader } from '@/components/ui/primitives';
 import { MetricLabel } from '@/components/market/metric-info';
 import { MetricValue } from '@/components/market/metric-value';
 import { SampleWarning } from '@/components/market/sample-warning';
 import { cn } from '@/lib/utils';
 import { chartMetricFor, correlationBand, hrefWith, keyMetrics, SUGGESTED_PAIRS, togetherness } from './logic';
 import { ClientTrendChart as TrendChart } from './trend-chart-client';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 // /compare (FR-M5): evidence and trade-offs side by side — never a winner.
 
@@ -65,7 +66,7 @@ function SideHeader({ d, filter, tone }: { d: InstrumentDetail; filter: FilterSp
     <div className="flex min-w-0 flex-col gap-3">
       <div className="flex items-center gap-2">
         <Legend tone={tone} />
-        <Monogram size="sm" tone={tone === 'accent' ? 'accent' : 'ink'}>{inst.symbol}</Monogram>
+        <InstrumentMark size="sm" tone={tone === 'accent' ? 'accent' : 'ink'} slug={inst.slug} symbol={inst.symbol} />
       </div>
       <div className="min-w-0">
         <h2 className="break-words font-serif text-[24px] leading-[1.05] sm:text-[36px]">{inst.name}</h2>

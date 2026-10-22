@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Bookmark, MoreHorizontal, Package, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Bookmark, BriefcaseBusiness, MoreHorizontal, Package, SlidersHorizontal, Trash2 } from 'lucide-react';
 import type { WatchlistRow } from '@/lib/api/watchlist';
-import { removeWatchlistItem, restoreWatchlistItem, updateWatchlistItem } from '@/lib/api/watchlist';
+import { canBeHeld, removeWatchlistItem, restoreWatchlistItem, updateWatchlistItem } from '@/lib/api/watchlist';
 import { useAction } from '@/lib/api/client';
 import { computeSparkline } from '@/lib/market/engine';
 import { getInstrument } from '@/lib/market/catalog';
@@ -15,7 +15,7 @@ import { chatHref, instrumentPath } from '@/lib/links';
 import { formatDate } from '@/lib/time';
 import { Button } from '@/components/ui/button';
 import { Dialog, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger, SheetContent } from '@/components/ui/overlay';
-import { Monogram } from '@/components/ui/primitives';
+
 import { useToast } from '@/components/ui/toast';
 import { FilterEditor } from '@/components/market/filter-builder';
 import { FilterReadback } from '@/components/market/filter-readback';
@@ -28,6 +28,7 @@ import { DirectionGlyph, signDirection } from '@/components/market/direction-gly
 import { cn } from '@/lib/utils';
 import { METRICS } from '@/lib/metrics/registry';
 import { useErrorText, useModeT } from '../shared';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 function valueAt(reading: MetricReading, value: number): string {
   return primaryValue({ ...reading, status: 'ok', value }) ?? '—';
@@ -44,7 +45,7 @@ export function SinceAdded({ row, className }: { row: WatchlistRow; className?: 
   // "since added" is the difference in points, not a change of a change.
   const isChange = METRICS[item.metric].unit === 'change';
   const delta = isChange ? current.value - item.baseline_value : since_added;
-  const dir = direction(delta, isChange ? 0.005 : 0.02);
+  const dir = direction(delta);
   return (
     <span className={cn('inline-flex flex-col gap-0.5', className)}>
       <span className={cn('num inline-flex items-center gap-1 text-sm font-medium', dir === 'up' && 'text-up', dir === 'down' && 'text-down', dir === 'flat' && 'text-muted')}>
@@ -139,7 +140,7 @@ function RowActions({ row, instrument }: { row: WatchlistRow; instrument: Instru
   const onToggle = async () => {
     const next = item.status === 'held' ? 'watching' : 'held';
     const r = await update({ id: item.id, status: next });
-    if (r?.ok) toast({ tone: 'success', title: next === 'held' ? t('movedHeld', { name: instrument.name }) : t('movedWatching', { name: instrument.name }) });
+    if (r?.ok) toast({ tone: 'success', title: next === 'held' ? t(instrument.type === 'role' ? 'movedWorked' : 'movedHeld', { name: instrument.name }) : t('movedWatching', { name: instrument.name }) });
     else if (r) toast({ tone: 'warn', title: errorText(r.error) });
   };
   return (
@@ -152,10 +153,10 @@ function RowActions({ row, instrument }: { row: WatchlistRow; instrument: Instru
         </MenuTrigger>
         <MenuContent>
           <MenuItem onSelect={() => setEditing(true)}><SlidersHorizontal aria-hidden />{t('editFilter')}</MenuItem>
-          {instrument.type === 'skill' ? (
+          {canBeHeld(instrument.type) ? (
             <MenuItem onSelect={onToggle}>
-              {item.status === 'held' ? <Bookmark aria-hidden /> : <Package aria-hidden />}
-              {item.status === 'held' ? t('toWatching') : t('toHeld')}
+              {item.status === 'held' ? <Bookmark aria-hidden /> : instrument.type === 'role' ? <BriefcaseBusiness aria-hidden /> : <Package aria-hidden />}
+              {item.status === 'held' ? t('toWatching') : t(instrument.type === 'role' ? 'toWorked' : 'toHeld')}
             </MenuItem>
           ) : null}
           <MenuSeparator />
@@ -175,7 +176,7 @@ export function WatchRow({ row }: { row: WatchlistRow }) {
   const spark = computeSparkline(instrument.slug, row.item.filter);
   return (
     <li className={cn('grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 px-3 py-3.5 sm:grid-cols-[auto_minmax(0,1.4fr)_minmax(120px,1fr)_minmax(140px,1fr)_96px_auto] sm:items-center sm:gap-x-5 sm:px-4', row.signal && 'bg-signal-soft/40')}>
-      <Monogram tone={row.signal ? 'signal' : 'plain'}>{instrument.symbol}</Monogram>
+      <InstrumentMark tone={row.signal ? 'signal' : 'plain'} slug={instrument.slug} symbol={instrument.symbol} />
       <div className="min-w-0">
         <Link href={instrumentPath(instrument.type, instrument.slug, row.item.filter)} className="block truncate font-medium hover:underline">{instrument.name}</Link>
         <FilterReadback filter={row.item.filter} className="block text-[12.5px] leading-snug text-muted" />
@@ -218,7 +219,7 @@ export function SignalCard({ row }: { row: WatchlistRow }) {
   return (
     <li className="flex flex-col gap-4 rounded-md border border-ink/20 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
-        <Monogram tone="signal">{instrument.symbol}</Monogram>
+        <InstrumentMark tone="signal" slug={instrument.slug} symbol={instrument.symbol} />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Link href={instrumentPath(instrument.type, instrument.slug, row.item.filter)} className="font-serif text-[20px] leading-tight hover:underline">{instrument.name}</Link>
