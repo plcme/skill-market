@@ -73,6 +73,16 @@
 | 详情页单图（Y axis + Split by + 标题地点） | `fe-r3-chart` | 已合并 dev（审查 2 轮，Round 1 退回 2 阻断：/compare 缺文案 key、键盘焦点丢失；reviewer 改用 Opus） |
 | 配色方案、单色 logo、首页短标语 | `fe-r3-colours`（另一会话） | 已合并 dev（仓库内无审查记录，用户要求直接合并；合并后全量检查通过） |
 
+## 前端反馈第 5 轮（2026-10-22）
+
+| 项 | 分支 | 状态 |
+|---|---|---|
+| 首页删热力图图例行与 How it works；行情条去暂停键（仅鼠标设备自动滚动）；技能单色 logo（simple-icons，CC0，25 个）；头像与 My desk 合并；涨跌只看正负号；role 可标 "I've worked in this role" 并邀请成为从业者 | `fe-r5` | 已合并 dev |
+| 详情页：单一 `?metric=` 同时驱动 Right now 与大图；图左上为度量下拉、右上只有 3M/6M/1Y/2Y；4-week / 12-month change 自动切范围并标出对比窗口；Y axis 与 Split by 放进标题 Filter 面板；Fundamentals 改名 Statistics，选中格整格填色 | 同上 | 已合并 dev |
+| 文案批注（用户在 `?review=copy` 中逐条批复 11 条）已执行，批注层已移除；Compare / Talk 改为按钮 | 同上 | 已合并 dev（审查 3 轮：R1 退回图表下拉焦点丢失，R3 退回热力图缺 4-week change ⓘ，主会话一行修复后未再复审） |
+
+待拍板：详情页标题默认带 "· by experience"（主会话建议默认不拆分）；Market 加 "Watching" 标签页的位置（建议放最前，书签图标 + 数字）；No PR stated 时是否禁用 Work rights 拆分；role 的 12-month change 大数字来自官方序列、图为 Job ads（接入真实数据后再定）。上 main 前 e2e 需大面积同步（`detail-chart`、`round2`、`frontend`、`responsive`）。
+
 ## 前端反馈第 4 轮（2026-10-21）
 
 用户反馈后直接实施，预览截图确认后合并。
@@ -87,6 +97,8 @@
 待拍板：筛选 No PR stated 时是否禁用 Work rights 拆分（演示数据 sponsorship_ok 约 6%，主会话建议禁用）；顶部行情条暂停键是否删除（WCAG 风险同轮播）。非阻断遗留：标题句子可能自相矛盾（"Sydney + remote · On-site or hybrid"）；被固定的 `by` 参数在 URL 中清不掉；e2e 文件已改未跑。
 
 ## 日志
+
+- 2026-10-22：FE-R5 合并 dev 并 push。lint/typecheck/280 单测/build 通过；按用户偏好未跑 e2e。子 agent 约 1.3M tokens。
 
 - 2026-10-22：FE-R4 合并 dev 并 push。lint/typecheck/251 单测/build 通过（reviewer 复核）；按用户偏好未跑 e2e。子 agent 约 0.6M tokens。
 
