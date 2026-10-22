@@ -45,7 +45,7 @@ test('sample student: desk, skills and gap diagnosis', async ({ page }) => {
   await loadSampleStudent(page);
   await page.goto('/me');
   await expect(page.getByRole('heading', { name: /Sam/, level: 1 })).toBeVisible();
-  await expect(page.getByText('Signals on your watchlist')).toBeVisible();
+  await expect(page.locator('#signals-h')).toBeVisible();
   await fitsViewport(page);
   await noSeriousAxe(page);
   await page.goto('/me/gap?role=data-engineer');
@@ -75,10 +75,10 @@ test('signed-out visitors are asked to sign in on private pages', async ({ page 
 });
 
 test.describe('market board', () => {
-  test('opens on All with the Filter button, search first and no A–Z or category pills', async ({ page }) => {
+  test('opens on All with name search and no whole-board filter or A–Z pills', async ({ page }) => {
     await page.goto('/market');
     const tabs = page.getByRole('navigation', { name: 'Instrument type' });
-    await expect(tabs.getByRole('link')).toHaveText(['All', 'Skills', 'Roles', 'Industries']);
+    await expect(tabs.getByRole('link')).toHaveText(['Watching', 'All', 'Skills', 'Roles', 'Industries']);
     await expect(tabs.getByRole('link', { name: 'All' })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('button', { name: 'A–Z' })).toHaveCount(0);
     await expect(page.getByRole('radio', { name: 'A–Z' })).toHaveCount(0);
@@ -87,7 +87,7 @@ test.describe('market board', () => {
     await expect(page.getByLabel('Filter this board by name')).toBeVisible();
     await page.goto('/market?type=skill&sort=az');
     await expect(page.getByText('Job ads', { exact: true }).filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Measure\s*Demand/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Measure:\s*Demand/ })).toBeVisible();
     await expect(page.getByRole('radio', { name: 'By measure' })).toHaveAttribute('aria-checked', 'true');
   });
 
@@ -100,24 +100,13 @@ test.describe('market board', () => {
     await expect(popover.getByText(/appears in [\d.]+% of all/)).toHaveCount(0);
   });
 
-  test('Filter button opens the builder and shows the scope when active', async ({ page }) => {
-    test.slow();
-    await page.goto('/market?f=r.au-nt-darwin_graduate_npr');
-    const button = page.getByRole('button', { name: /Filter the whole board, 3 conditions active/ });
-    await expect(button).toBeVisible();
-    await expect(page.getByText(/Showing remote roles in Darwin/).first()).toBeVisible();
-    await button.click();
-    await expect(page.getByRole('dialog', { name: 'Filter' })).toBeVisible();
+  test('legacy whole-board filters are removed from the URL', async ({ page }) => {
+    await page.goto('/market?type=skill&f=r.au-nt-darwin_graduate_npr');
+    await expect(page).toHaveURL(/\/market\?type=skill$/);
+    await expect(page.getByRole('button', { name: /Filter the whole board/ })).toHaveCount(0);
+    await expect(page.getByLabel('Filter this board by name')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Reset filter' })).toHaveCount(0);
     await noSeriousAxe(page);
-    await page.keyboard.press('Escape');
-    const reset = page.getByRole('link', { name: 'Reset filter' });
-    await expect(reset).toHaveAttribute('href', '/market');
-    // The click can land before hydration under load; retry until the URL changes.
-    await expect(async () => {
-      if (!/\/market$/.test(page.url())) await reset.click({ timeout: 5000 });
-      await expect(page).toHaveURL(/\/market$/, { timeout: 10000 });
-    }).toPass({ timeout: 40000 });
-    await expect(page.getByRole('button', { name: 'Filter the whole board' })).toBeVisible();
   });
 
   test('select two skills on the board and compare them', async ({ page }) => {
@@ -160,14 +149,14 @@ test('primary nav is Market and People; Sources sits in the footer', async ({ pa
   await expect(nav.getByRole('link')).toHaveText(['Market', 'Coffee chats']);
 });
 
-test('account menu does not repeat My desk', async ({ page }, info) => {
-  test.skip(info.project.name === 'mobile', 'Avatar menu is desktop-only');
+test('account menu contains one desk entry at every width', async ({ page }) => {
   await loadSampleStudent(page);
-  await expect(page.getByRole('banner').getByRole('link', { name: 'My desk' })).toBeVisible();
-  await page.getByRole('button', { name: 'Account' }).click();
+  await expect(page.getByRole('banner').getByRole('link', { name: 'My desk' })).toHaveCount(0);
+  await page.getByRole('banner').getByRole('button', { name: /My desk/ }).click();
   const menu = page.getByRole('menu');
   await expect(menu.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
-  await expect(menu.getByRole('menuitem', { name: 'My desk' })).toHaveCount(0);
+  await expect(menu.getByRole('menuitem', { name: 'My desk' })).toHaveCount(1);
+  await expect(menu.getByRole('menuitem', { name: 'My desk' })).toHaveAttribute('href', '/me');
 });
 
 test('settings offer Light / Dark and a way back to matching the device', async ({ page }) => {
@@ -193,7 +182,7 @@ test.describe('industries', () => {
     // Follow the link directly: a click before hydration can be lost under load.
     await page.goto('/market?type=industry');
     await expect(page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Industries' })).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByRole('button', { name: /Measure\s*Demand/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Measure:\s*Demand/ })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Health Care and Social Assistance' }).first()).toBeVisible();
   });
 
@@ -202,7 +191,8 @@ test.describe('industries', () => {
     const map = page.getByRole('list', { name: /Industries by job ads/ }).filter({ visible: true });
     const tile = map.getByRole('link', { name: /^Mining: [\d,]+ job ads/ });
     await expect(tile).toBeVisible();
-    await expect(page.getByRole('list', { name: 'Colour bands' })).toBeVisible();
+    await expect(tile).toHaveAttribute('aria-label', /4.week|up|down|unchanged/i);
+    await expect(page.getByRole('table').filter({ hasText: 'Industries by job ads' })).toHaveCount(1);
     await tile.click();
     await expect(page).toHaveURL(/\/i\/mining$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
@@ -212,7 +202,9 @@ test.describe('industries', () => {
   test('movers carousel states its rule, advances and links to the instrument', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
+    await page.getByRole('button', { name: 'About Today’s signals' }).click();
     await expect(page.getByText(/biggest 4-week changes, up or down/)).toBeVisible();
+    await page.keyboard.press('Escape');
     const carousel = page.getByRole('region', { name: 'Biggest 4-week moves' });
     const first = await carousel.getByRole('heading', { level: 3 }).textContent();
     await expect(carousel.getByRole('heading', { level: 3 }).getByRole('link')).toHaveAttribute('href', /^\/(s|r|i)\/[a-z0-9-]+$/);
