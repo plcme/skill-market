@@ -106,6 +106,8 @@
 
 ## 日志
 
+- 2026-10-22：API 契约（分支 `contract-v1`，worktree `../skill-market-contract`）：`src/lib/contract/` 用 Zod 描述全部 98 个读、写、定时任务接口（权限、输入输出、错误、触发按钮、对应表、与演示版差异），`tests/contract-*.test.ts` 校验覆盖与演示后端一致性；已合并 FE-R5/R6 后的 `dev` 并同步（单一 `?metric=` 驱动图、岗位可标 worked、Watching 标签）。用户决定：首次公开上线不开咖啡聊（前端保留供作业展示），入口只留等待名单，相关 42 个接口标 `phase: 'later'`；不再估算花费；目标一周内快速上线，数据源方向（ATS 公开接口 + JSA IVI，放弃 Adzuna）待用户确认。
+
 - 2026-10-22：FE-R6 合并 dev 并 push。lint/typecheck/281 单测/build 通过；未跑 e2e。子 agent 约 0.3M tokens。
 
 - 2026-10-22：FE-R5 合并 dev 并 push。lint/typecheck/280 单测/build 通过；按用户偏好未跑 e2e。子 agent 约 1.3M tokens。

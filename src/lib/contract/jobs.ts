@@ -14,22 +14,22 @@ const jobOutput = z.object({ stats: z.record(z.string(), z.number()) });
 
 export const jobOps = {
   refreshSlots: op({
-    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    phase: 'later', kind: 'job', access: 'system', input: jobInput, output: jobOutput,
     does: 'Generate 20-minute open slots for the next 28 days from each weekly template; drop past open slots and ones the template no longer covers.',
     ui: '', tables: ['availability_templates', 'availability_slots'], fr: ['FR-P3'],
   }),
   expireRequests: op({
-    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    phase: 'later', kind: 'job', access: 'system', input: jobInput, output: jobOutput,
     does: 'Pending past expires_at → expired, free the slot and silently re-match (skipping tried practitioners, email request_still_looking); unanswered reschedule → cancelled.',
     ui: '', tables: ['chat_requests', 'chat_request_events', 'availability_slots', 'notifications_outbox', 'waitlist_entries'], fr: ['FR-C7', 'FR-C8'],
   }),
   chatReminders: op({
-    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    phase: 'later', kind: 'job', access: 'system', input: jobInput, output: jobOutput,
     does: 'Once per chat: reminder_24h to both sides 24h before; 1h after the slot, debrief_prompt to the student and attendance_prompt to the practitioner.',
     ui: '', tables: ['chat_requests', 'chat_request_events', 'notifications_outbox'], fr: ['FR-C9', 'FR-R1', 'FR-R2'],
   }),
   completeChats: op({
-    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    phase: 'later', kind: 'job', access: 'system', input: jobInput, output: jobOutput,
     does: 'Both sides confirmed, or one side confirmed 7 days ago → completed. Two no-shows in 30 days pause that person for 30 days.',
     ui: '', tables: ['chat_requests', 'reliability_records', 'practitioner_profiles'], fr: ['FR-R2', 'FR-C10'],
   }),

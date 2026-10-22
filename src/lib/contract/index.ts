@@ -39,6 +39,9 @@ export type OutputOf<K extends OperationName> = z.output<(typeof CONTRACT)[K]['o
 /** What a backend must provide: every operation, same input, Result-wrapped output. */
 export type Backend = { [K in OperationName]: (input: InputOf<K>) => Promise<Result<OutputOf<K>>> };
 
+/** What the first public launch builds a backend for (coffee chats are `later`). */
+export const LAUNCH_OPERATIONS = (Object.keys(CONTRACT) as OperationName[]).filter(k => (CONTRACT[k] as OpSpec).phase !== 'later');
+
 /** Operations grouped by area, for tests and tooling. */
 export const AREAS: Record<string, Record<string, OpSpec>> = {
   market: marketOps,

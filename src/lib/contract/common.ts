@@ -55,6 +55,12 @@ export interface OpSpec<I extends z.ZodType = z.ZodType, O extends z.ZodType = z
   fr: readonly string[];
   /** Where production intentionally differs from today's demo implementation. */
   delta?: string;
+  /**
+   * `later` = the page exists (coursework) but the backend is not built for the
+   * first public launch; the entry point is closed or replaced by the waitlist.
+   * Default: in the launch.
+   */
+  phase?: 'later';
 }
 
 export const op = <I extends z.ZodType, O extends z.ZodType>(spec: OpSpec<I, O>): OpSpec<I, O> => spec;

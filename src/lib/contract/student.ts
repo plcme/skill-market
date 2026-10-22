@@ -93,7 +93,10 @@ export const watchlistRowSchema = z.object({
 });
 export const watchlistGroupsSchema = z.object({
   signals: z.array(watchlistRowSchema),
+  /** Skills I have. */
   held: z.array(watchlistRowSchema),
+  /** Roles I've worked in. */
+  worked: z.array(watchlistRowSchema),
   watching: z.array(watchlistRowSchema),
 });
 
@@ -213,8 +216,8 @@ export const studentOps = {
   }),
   getWatchlist: op({
     kind: 'read', access: 'student', input: noInput, output: watchlistGroupsSchema,
-    does: 'Watchlist with live values, change since added and signals; grouped Signals / Held / Watching.',
-    ui: '/me desk',
+    does: 'Watchlist with live values, change since added and signals; grouped Signals / Skills I have / Roles I\'ve worked in / Watching.',
+    ui: '/me desk; /market Watching tab',
     tables: ['watchlist_items', 'metric_points', 'signals'], fr: ['FR-W1', 'FR-W2', 'FR-W3'],
   }),
   findWatchItem: op({
@@ -225,16 +228,16 @@ export const studentOps = {
   }),
   addWatchlistItem: op({
     kind: 'action', access: 'student', input: addWatchlistInput, output: watchlistItemSchema,
-    does: 'Track instrument + filter + metric, recording today\'s value as the baseline. Only skills can be Held.',
-    ui: 'Detail page "Watch" (primary header action) → Held / Watching',
-    errors: ['not_found:instrumentNotFound', 'validation:rolesCannotBeHeld', 'validation:industriesCannotBeHeld', 'conflict:alreadyWatching', 'validation:watchlistFull'],
+    does: 'Track instrument + filter + metric, recording today\'s value as the baseline. Held = "I have this" (skills) or "I\'ve worked in this role" (roles); industries are only watched.',
+    ui: 'Detail page "Watch" (primary header action) → I have this / I\'ve worked in this role / Watch',
+    errors: ['not_found:instrumentNotFound', 'validation:industriesCannotBeHeld', 'conflict:alreadyWatching', 'validation:watchlistFull'],
     tables: ['watchlist_items'], fr: ['FR-W1', 'FR-F6'],
   }),
   updateWatchlistItem: op({
     kind: 'action', access: 'student', input: updateWatchlistInput, output: watchlistItemSchema,
     does: 'Change Held/Watching, filter or metric; a new filter or metric restarts the baseline.',
     ui: 'Watch button menu; /me row menu',
-    errors: ['not_found:notFound', 'validation:rolesCannotBeHeld', 'validation:industriesCannotBeHeld', 'conflict:alreadyWatching'],
+    errors: ['not_found:notFound', 'validation:industriesCannotBeHeld', 'conflict:alreadyWatching'],
     tables: ['watchlist_items'], fr: ['FR-W1'],
   }),
   removeWatchlistItem: op({

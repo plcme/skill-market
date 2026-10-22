@@ -39,20 +39,20 @@ export const aliasRowSchema = z.object({
 
 export const adminOps = {
   getReports: op({
-    kind: 'read', access: 'admin', input: noInput, output: z.object({ open: z.array(reportSchema), closed: z.array(reportSchema) }),
+    phase: 'later', kind: 'read', access: 'admin', input: noInput, output: z.object({ open: z.array(reportSchema), closed: z.array(reportSchema) }),
     does: 'Reports, open first.',
     ui: '/admin/reports',
     tables: ['reports'], fr: ['FR-X1'],
   }),
   resolveReport: op({
-    kind: 'action', access: 'admin', input: z.object({ id: z.string().min(1), status: z.enum(['resolved', 'dismissed']), resolution: z.string().trim().min(3).max(500) }), output: reportSchema,
+    phase: 'later', kind: 'action', access: 'admin', input: z.object({ id: z.string().min(1), status: z.enum(['resolved', 'dismissed']), resolution: z.string().trim().min(3).max(500) }), output: reportSchema,
     does: 'Close a report with a note.',
     ui: '/admin/reports "Resolve" / "Dismiss"',
     errors: ['not_found:notFound'],
     tables: ['reports'], fr: ['FR-X1'],
   }),
   suspendUser: op({
-    kind: 'action', access: 'admin', input: z.object({ practitioner_id: z.string().min(1), report_id: z.string().nullable() }), output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'admin', input: z.object({ practitioner_id: z.string().min(1), report_id: z.string().nullable() }), output: practitionerSelfSchema,
     does: 'Suspend a practitioner for 30 days (drops out of matching).',
     ui: '/admin/reports "Suspend 30 days"',
     errors: ['not_found:notFound'],
@@ -60,27 +60,27 @@ export const adminOps = {
     delta: 'Students cannot be suspended yet; needs profiles.suspended_until.',
   }),
   liftSuspension: op({
-    kind: 'action', access: 'admin', input: idInput, output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'admin', input: idInput, output: practitionerSelfSchema,
     does: 'End a suspension early.',
     ui: '/admin/reports "Lift suspension"',
     errors: ['not_found:notFound'],
     tables: ['practitioner_profiles'], fr: ['FR-X1'],
   }),
   getReviewQueue: op({
-    kind: 'read', access: 'admin', input: noInput, output: z.array(practitionerReviewSchema),
+    phase: 'later', kind: 'read', access: 'admin', input: noInput, output: z.array(practitionerReviewSchema),
     does: 'Practitioners waiting for a manual check, with their evidence.',
     ui: '/admin/review',
     tables: ['practitioner_profiles', 'work_email_verifications'], fr: ['FR-X2'],
   }),
   approvePractitioner: op({
-    kind: 'action', access: 'admin', input: idInput, output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'admin', input: idInput, output: practitionerSelfSchema,
     does: 'Mark verified.',
     ui: '/admin/review "Approve"',
     errors: ['not_found:notFound'],
     tables: ['practitioner_profiles'], fr: ['FR-X2'],
   }),
   rejectPractitioner: op({
-    kind: 'action', access: 'admin', input: z.object({ id: z.string().min(1), note: z.string().trim().min(3).max(500) }), output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'admin', input: z.object({ id: z.string().min(1), note: z.string().trim().min(3).max(500) }), output: practitionerSelfSchema,
     does: 'Reject with a note.',
     ui: '/admin/review "Reject"',
     errors: ['not_found:notFound'],
@@ -100,7 +100,7 @@ export const adminOps = {
     delta: 'Demo takes a bare job name; production calls /api/jobs/[job] and returns the started run.',
   }),
   getFunnel: op({
-    kind: 'read', access: 'admin', input: noInput, output: funnelSchema,
+    phase: 'later', kind: 'read', access: 'admin', input: noInput, output: funnelSchema,
     does: 'Activation → request → accept in 72h → completed → debriefed, plus North Star; each rate with its numerator and denominator.',
     ui: '/admin/metrics',
     tables: ['chat_requests', 'chat_request_events', 'waitlist_entries'], fr: ['FR-X4'],

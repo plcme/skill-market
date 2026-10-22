@@ -69,7 +69,7 @@ export const studentSkillSchema = z.object({
 export const watchlistItemSchema = z.object({
   id: z.string(),
   instrument_slug: slug,
-  /** Only skills can be `held`. */
+  /** `held` = I have this skill / I've worked in this role; industries are only `watching`. */
   status: z.enum(['held', 'watching']),
   filter: filterSpecSchema,
   metric: metricKey,

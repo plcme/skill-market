@@ -57,21 +57,21 @@ export const manualReviewInput = z.object({
 
 export const practitionerOps = {
   getMyPractitioner: op({
-    kind: 'read', access: 'signed_in', input: noInput,
+    phase: 'later', kind: 'read', access: 'signed_in', input: noInput,
     output: z.object({ record: practitionerSelfSchema.nullable(), step: z.enum(JOIN_STEPS) }),
     does: 'My practitioner record (null before joining) and where the join flow is up to (resumable).',
     ui: '/practitioner/join, /practitioner',
     tables: ['practitioner_profiles', 'work_email_verifications', 'availability_templates'], fr: ['FR-P1'],
   }),
   joinAsPractitioner: op({
-    kind: 'action', access: 'signed_in', input: z.object({ agree_18: z.literal(true), agree_conduct: z.literal(true) }), output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'signed_in', input: z.object({ agree_18: z.literal(true), agree_conduct: z.literal(true) }), output: practitionerSelfSchema,
     does: 'Start onboarding: create my record, paused and unverified. Idempotent.',
     ui: '/practitioner/join step 1 "Start" (two checkboxes)',
     errors: ['validation:agreeRequired'],
     tables: ['practitioner_profiles', 'consents'], fr: ['FR-P1'],
   }),
   sendWorkEmailCode: op({
-    kind: 'action', access: 'signed_in', input: z.object({ email: z.string().trim().toLowerCase().email().max(254) }),
+    phase: 'later', kind: 'action', access: 'signed_in', input: z.object({ email: z.string().trim().toLowerCase().email().max(254) }),
     output: z.object({ email: z.string(), expires_at: isoDateTime }),
     does: 'Email a 6-digit code to a work address (10-minute expiry). Personal/free domains are refused and pointed to manual review.',
     ui: '/practitioner/join step 2 "Send code" / "Resend"',
@@ -80,14 +80,14 @@ export const practitionerOps = {
     delta: 'Production stores only a hash of the code; the demo shows the code in the preview outbox.',
   }),
   verifyWorkEmailCode: op({
-    kind: 'action', access: 'signed_in', input: z.object({ code: z.string().trim().regex(/^\d{6}$/) }), output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'signed_in', input: z.object({ code: z.string().trim().regex(/^\d{6}$/) }), output: practitionerSelfSchema,
     does: 'Check the code (3 tries); success marks me verified by work-email domain.',
     ui: '/practitioner/join step 2 "Verify"',
     errors: ['validation:codeFormat', 'validation:codeExpired', 'not_found:codeExpired', 'validation:codeIncorrect', 'rate_limited:codeAttempts'],
     tables: ['work_email_verifications', 'practitioner_profiles'], fr: ['FR-P1'],
   }),
   requestManualReview: op({
-    kind: 'action', access: 'signed_in', input: manualReviewInput, output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'signed_in', input: manualReviewInput, output: practitionerSelfSchema,
     does: 'No work email: queue for a human with a LinkedIn profile link.',
     ui: '/practitioner/join step 2 "Ask for a manual review"',
     errors: ['validation:linkedinUrl', 'validation:invalidEmail', 'not_found:notFound', 'conflict:alreadyVerified'],
@@ -95,28 +95,28 @@ export const practitionerOps = {
     delta: 'Evidence needs a column: practitioner_profiles.review_evidence jsonb (or its own table).',
   }),
   updatePractitionerProfile: op({
-    kind: 'action', access: 'signed_in', input: practitionerProfileInput, output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'signed_in', input: practitionerProfileInput, output: practitionerSelfSchema,
     does: 'Edit the card students see: title, role, employer, entry year, location, skills, topics, path, bio, meeting link.',
     ui: '/practitioner/join step 3 and /practitioner Profile "Save"',
     errors: ['not_found:notFound', 'validation:entry_year'],
     tables: ['practitioner_profiles', 'practitioner_skills', 'practitioner_topics'], fr: ['FR-P2'],
   }),
   updateAvailabilityTemplate: op({
-    kind: 'action', access: 'signed_in', input: availabilityInput, output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'signed_in', input: availabilityInput, output: practitionerSelfSchema,
     does: 'Replace the weekly template (each window ≥ 20 min, no overlaps); slots for the next 28 days regenerate.',
     ui: '/practitioner/join step 4 and /practitioner Availability "Save"',
     errors: ['validation:availabilityInvalid', 'not_found:notFound'],
     tables: ['availability_templates', 'availability_slots'], fr: ['FR-P3'],
   }),
   finishPractitionerSetup: op({
-    kind: 'action', access: 'signed_in', input: noInput, output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'signed_in', input: noInput, output: practitionerSelfSchema,
     does: 'Open for requests: unpause, add the practitioner persona and switch to it; notify matching waitlisted students if verified.',
     ui: '/practitioner/join last step "Finish and open my desk"',
     errors: ['not_found:notFound', 'validation:profileIncomplete', 'validation:availabilityMissing'],
     tables: ['practitioner_profiles', 'profiles', 'waitlist_entries', 'notifications_outbox'], fr: ['FR-P1'],
   }),
   setPaused: op({
-    kind: 'action', access: 'practitioner', input: z.object({ paused: z.boolean() }), output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'practitioner', input: z.object({ paused: z.boolean() }), output: practitionerSelfSchema,
     does: 'Pause or resume new requests; existing chats are unaffected.',
     ui: '/practitioner "Pause new requests" switch',
     errors: ['not_found:notFound'],
@@ -124,7 +124,7 @@ export const practitionerOps = {
     delta: 'Demo takes a bare boolean argument.',
   }),
   updateCap: op({
-    kind: 'action', access: 'practitioner', input: z.object({ cap: z.number().int().min(CAP_MIN).max(CAP_MAX) }), output: practitionerSelfSchema,
+    phase: 'later', kind: 'action', access: 'practitioner', input: z.object({ cap: z.number().int().min(CAP_MIN).max(CAP_MAX) }), output: practitionerSelfSchema,
     does: 'Monthly chat cap, 1–4.',
     ui: '/practitioner Profile "Chats per month"',
     errors: ['not_found:notFound'],
@@ -132,7 +132,7 @@ export const practitionerOps = {
     delta: 'Demo takes a bare number argument.',
   }),
   getDesk: op({
-    kind: 'read', access: 'practitioner', input: noInput,
+    phase: 'later', kind: 'read', access: 'practitioner', input: noInput,
     output: z.object({ record: practitionerSelfSchema, stats: deskStatsSchema, inbox: practitionerInboxSchema, slots: z.array(slotSchema) }),
     does: 'My desk: private stats (never shown to students), requests grouped Pending / Waiting on student / Upcoming / Confirm / Past, and the next 14 days of slots.',
     ui: '/practitioner',

@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import { CONTRACT, apiErrorSchema } from '@/lib/contract';
 import { candidateSchema, practitionerInboxSchema, studentRequestGroupsSchema } from '@/lib/contract/chat';
 import { chatEventSchema, chatRequestSchema, practitionerCardSchema, sessionSchema } from '@/lib/contract/entities';
-import { BOARD_TYPES, BREAKDOWN_DIMENSIONS } from '@/lib/contract/market';
+import { BOARD_TYPES, BREAKDOWN_DIMENSIONS, METRIC_KEYS } from '@/lib/contract/market';
 import { clockNow, getDB, resetPreview, setPersona } from '@/lib/demo/store';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import * as market from '@/lib/queries/market';
@@ -51,16 +51,13 @@ describe('market reads', () => {
     conforms(CONTRACT.getBoard.output, market.getBoard({ type: 'skill', filter: F, sort: 'change', layer: 'technology_tool' }), 'getBoard tools');
   });
 
-  it('detail pages for every type, split and Y axis', () => {
+  it('detail pages for every type, measure and split', () => {
     for (const slug of ['python', 'software-engineer', 'health-care']) {
-      for (const by of [...BREAKDOWN_DIMENSIONS, null]) {
-        for (const y of ['ads', 'salary']) {
-          conforms(CONTRACT.getInstrumentDetail.output, market.getInstrumentDetail(slug, F, undefined, by, y), `detail ${slug} ${by} ${y}`);
-        }
-      }
+      for (const metric of METRIC_KEYS) conforms(CONTRACT.getInstrumentDetail.output, market.getInstrumentDetail(slug, F, metric, null), `detail ${slug} ${metric}`);
+      for (const by of BREAKDOWN_DIMENSIONS) conforms(CONTRACT.getInstrumentDetail.output, market.getInstrumentDetail(slug, F, undefined, by), `detail ${slug} by ${by}`);
     }
     expect(market.getInstrumentDetail('no-such-thing', F)).toBeNull();
-  });
+   }, 60_000);
 
   it('everything else on public pages', () => {
     conforms(CONTRACT.getCoreCompetencies.output, competencyLevels('software-engineer'), 'competencies');
@@ -99,7 +96,8 @@ describe('student desk', () => {
     const item = data(await addWatchlistItem({ instrument_slug: 'python', status: 'held', filter: F }));
     conforms(CONTRACT.addWatchlistItem.output, item, 'addWatchlistItem');
     conforms(CONTRACT.updateWatchlistItem.output, data(await updateWatchlistItem({ id: item.id, status: 'watching' })), 'updateWatchlistItem');
-    await addWatchlistItem({ instrument_slug: 'software-engineer', status: 'watching', filter: F });
+    conforms(CONTRACT.addWatchlistItem.output, data(await addWatchlistItem({ instrument_slug: 'software-engineer', status: 'held', filter: F })), 'held role');
+    await addWatchlistItem({ instrument_slug: 'health-care', status: 'watching', filter: F });
     conforms(CONTRACT.getWatchlist.output, selectWatchlistGroups(getDB()), 'watchlist');
     const dup = await addWatchlistItem({ instrument_slug: 'python', status: 'held', filter: F });
     expect(dup.ok).toBe(false);

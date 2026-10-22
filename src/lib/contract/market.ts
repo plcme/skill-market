@@ -20,7 +20,7 @@ export const SOURCE_KINDS = ['official', 'ads', 'practitioner'] as const;
 export const SKILL_LAYERS = ['technology_tool', 'specialist_task'] as const;
 export const SIGNAL_KINDS = ['rise', 'fall', 'entry_open', 'since_added'] as const;
 export const BREAKDOWN_DIMENSIONS = ['experience', 'rights', 'mode'] as const;
-export const CHART_MEASURES = ['ads', 'salary'] as const;
+export const CHART_RANGES = ['3m', '6m', '1y', '2y'] as const;
 export const BREAKDOWN_BUCKET_KEYS = ['entry', 'mid', 'senior', 'expert', 'requires_pr', 'not_stated', 'sponsorship_ok', 'onsite', 'hybrid', 'remote', 'all'] as const;
 
 export const metricKey = z.enum(METRIC_KEYS);
@@ -175,7 +175,17 @@ export const instrumentDetailSchema = z.object({
   /** Job ads by state. */
   locations: z.array(z.object({ location_id: z.string(), name: z.string(), count: z.number() })),
   breakdown: breakdownSchema,
-  chart: z.object({ y: z.enum(CHART_MEASURES), measures: z.array(z.enum(CHART_MEASURES)) }),
+  /** How the selected measure is charted. Change measures chart Job ads with the two compared windows shaded. */
+  chart: z.object({
+    /** Weekly series drawn; one of `options`. */
+    series: metricKey,
+    range: z.enum(CHART_RANGES),
+    compare: z.object({ weeks: z.number().int(), marks: z.boolean() }).nullable(),
+    /** Y axis options for this type. */
+    options: z.array(metricKey),
+    /** Requested split; `breakdown.by` is the one drawn (fixed by the filter or the measure → unsplit). */
+    by: z.enum(BREAKDOWN_DIMENSIONS).nullable(),
+  }),
   signal: signalSchema.nullable(),
   as_of: z.string(),
 });
@@ -253,12 +263,10 @@ export const boardQuery = z.object({
 export const detailQuery = z.object({
   slug,
   filter: filterSpecSchema,
-  /** `?metric=` */
+  /** `?metric=` drives both the Right now figure and the chart; invalid → the type's default. */
   metric: z.string().optional(),
-  /** `?by=`; null = not split. */
-  by: z.enum(BREAKDOWN_DIMENSIONS).nullable().default('experience'),
-  /** `?y=`; salary only where it applies, else ads. */
-  y: z.string().optional(),
+  /** `?by=`; null = not split (default). */
+  by: z.enum(BREAKDOWN_DIMENSIONS).nullable().default(null),
 });
 
 const filterOnly = z.object({ filter: filterSpecSchema });
@@ -274,8 +282,8 @@ export const marketOps = {
   }),
   getInstrumentDetail: op({
     kind: 'read', access: 'public', input: detailQuery, output: instrumentDetailSchema.nullable(),
-    does: 'Everything on /s|/r|/i/[slug]: headline, Right now, Fundamentals, the chart with Y axis and Split by, composition, places. null = unknown slug (404).',
-    ui: 'Detail pages; title sentence (opens Filter), Y axis and Split by controls, Fundamentals cells (pick the Right now measure)',
+    does: 'Everything on /s|/r|/i/[slug]: headline, Right now, Statistics, the one chart (measure, range, split), composition, places. null = unknown slug (404).',
+    ui: 'Detail pages; title sentence (opens Filter), chart measure dropdown, range pills, Split by in the Filter panel, Statistics cells (pick the measure)',
     tables: ['instruments', 'instrument_components', 'metric_points', 'signals'], fr: ['FR-M2', 'FR-M3', 'FR-D2', 'FR-D3', 'FR-D4'],
     delta: 'Breakdown needs experience buckets (entry/mid/senior/expert) in the cell model and per-bucket salary sample counts; cells today only have graduate/entry_other/other.',
   }),
