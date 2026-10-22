@@ -10,20 +10,19 @@
 
 ## 总览
 
-| # | 名称 | 规模 | 主要 FR | 需要人类先完成 | 估算花费（AUD） |
-|---|---|---|---|---|---|
-| M0 | 仓库、CI、基础设施接入 | S | NFR-5/10/11 | SETUP §1 §2 §3 | 6–10 |
-| M1 | 数据基础：分类、采集、抽取、指标、信号、任务运行时 | L | D1–D7, X3 | SETUP §6（Adzuna key、JSA 许可） | 20–28 |
-| M2 | 公开盘面：ticker card、指标切换、规则筛选、对比 | L | M1–M6, F1–F5, D2–D5 | — | 20–28 |
-| M3 | 账号、onboarding、技能画像、watchlist | M | A1–A3, A8, O1–O6, W1–W3, F6 | SETUP §4 §5 | 12–16 |
-| M4 | 缺口诊断、隐私控制、账号删除与导出、法律页 | M | G1–G3, A4–A6, C11(模型) | — | 10–14 |
-| M5 | 从业者侧：注册、工作邮箱验证、时段、审核队列 | M | P1–P6, X2 | — | 12–16 |
-| M6 | 匹配与咖啡聊全流程：候选、请求、状态机、超时、邮件、提醒、出席 | L | C1–C10, R2, W4(信号提醒) | SETUP §4（Resend 可发到测试邮箱） | 22–30 |
-| M7 | 复盘、举报屏蔽、管理后台、可靠度、安全加固 | M | R1, A7, X1, X4, C10 | — | 10–14 |
-| M8 | 上线准备：域名、生产配置、可观测性、性能与无障碍审计、runbook、供给门 | M | NFR-1/3/7/8 | SETUP §7 全部 + 新增（域名、Sentry、拨测、Vercel 商用决定） | 10–14 |
-| | **合计到 MVP 上线** | | | | **122–170** |
+| # | 名称 | 规模 | 主要 FR | 需要人类先完成 |
+|---|---|---|---|---|
+| M0 | 仓库、CI、基础设施接入 | S | NFR-5/10/11 | SETUP §1 §2 §3 |
+| M1 | 数据基础：分类、采集（ATS 公开 API + JSA IVI）、抽取、指标、覆盖率、信号、任务运行时 | L | D1–D7, X3 | SETUP §6（JSA 许可） |
+| M2 | 公开盘面：ticker card、指标切换、规则筛选、对比 | L | M1–M6, F1–F5, D2–D5 | — |
+| M3 | 账号、onboarding、技能画像、watchlist | M | A1–A3, A8, O1–O6, W1–W3, F6 | SETUP §4 §5 |
+| M4 | 缺口诊断、隐私控制、账号删除与导出、法律页 | M | G1–G3, A4–A6, C11(模型) | — |
+| M5 | 从业者侧：注册、工作邮箱验证、时段、审核队列 | M | P1–P6, X2 | — |
+| M6 | 匹配与咖啡聊全流程：候选、请求、状态机、超时、邮件、提醒、出席 | L | C1–C10, R2, W4(信号提醒) | SETUP §4（Resend 可发到测试邮箱） |
+| M7 | 复盘、举报屏蔽、管理后台、可靠度、安全加固 | M | R1, A7, X1, X4, C10 | — |
+| M8 | 上线准备：域名、生产配置、可观测性、性能与无障碍审计、runbook、供给门 | M | NFR-1/3/7/8 | SETUP §7 全部 + 新增（域名、Sentry、拨测、Vercel 商用决定） |
 
-估算口径：含 implementer（Opus）、reviewer（Fable）各一轮与主会话调度开销；每次审查退回约 +5–8。**这是未经校准的估计**：M0 与 M1 完成后用实际用量重新校准，并在 AUD 50 检查点向用户汇报。预算 AUD 150 大概率只够到 M7–M8，见 `docs/PROGRESS.md` 待拍板 #26。
+**当前所处位置（2026-10-23）**：M0 本地完成；之后先做了七轮前端原型迭代（FE-R1 到 FE-R7，见 `docs/PROGRESS.md`），M2–M7 的界面大多已有原型，数据来自合成引擎与浏览器内演示后端。接真实数据时从 M1 开始（ATS 公开 API + JSA IVI），再把原型逐页接到 Supabase。
 
 依赖链：M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8。M4 与 M5 互不依赖，可以对调；M5 可在 M3 后立即开始。
 
@@ -66,7 +65,7 @@
 - `grep -rn "skill-market" src/` 只命中 `src/config/app.ts` 的缺省值
 - `supabase db reset` 后 `supabase test db` 通过
 
-**需要人类完成**：SETUP_CHECKLIST §1 GitHub、§2 Supabase（两个项目：`skill-market`、`skill-market-dev`，均 Sydney）、§3 Vercel；把 §2 的变量填入 `.env.local` 与 Vercel 环境；新增 `NEXT_PUBLIC_APP_NAME`、`NEXT_PUBLIC_APP_URL`、`JOBS_SECRET` 到 `.env.example`（见 PROGRESS.md）。
+**需要人类完成**：SETUP §1 GitHub、§2 Supabase（两个项目：`skill-market`、`skill-market-dev`，均 Sydney）、§3 Vercel；把 §2 的变量填入 `.env.local` 与 Vercel 环境；新增 `NEXT_PUBLIC_APP_NAME`、`NEXT_PUBLIC_APP_URL`、`JOBS_SECRET` 到 `.env.example`（见 PROGRESS.md）。
 
 ---
 
@@ -77,10 +76,13 @@
 **覆盖 FR**：FR-D1、D4（阈值）、D5（来源类型）、D6、D7；FR-X3。
 
 **范围内**
-- Migrations：`instruments`（enum 五类）、`instrument_aliases`、`instrument_relations`、`locations`、`metric_cells`、`metric_definitions`、`metric_points`、`data_sources`、`ingestion_runs`、`job_ads`、`job_ad_skills`、`job_runs`、`signals`（全局部分）、`feature_flags`；全部 RLS
+- Migrations：`instruments`（enum 五类）、`instrument_aliases`、`instrument_relations`、`locations`、`metric_cells`、`metric_definitions`、`metric_points`、`data_sources`、`employers`、`ingestion_runs`、`job_ads`、`job_ad_skills`、`job_runs`、`signals`（全局部分）、`feature_flags`；全部 RLS
 - 种子：`skills.yaml`（约 150）、`roles.yaml`（约 25 ANZSCO）、`locations.yaml`（AU 国 / 州 / 首府与主要城市；只做澳洲）、`data_sources`；`pnpm seed`
 - `src/lib/metrics/registry.ts` + `pnpm metrics:sync` + CI 一致性检查
-- 数据源适配层接口 + `FixtureSource` + `AdzunaAdsSource`（universe + per-skill，含调用预算与轮转游标）+ `JsaIviSeries`（CSV/XLSX 下载解析）+ `AscTaxonomy`（岗位成分初始权重）；NERO / SPL 只做导入骨架（基本面面板在 M2 用）
+- 数据源适配层接口 + `FixtureSource` + `AtsAdsSource`（Greenhouse / Lever / Ashby 三个适配器；轻量列表检查 + 新 id 拉全文；新增 / 关闭判断）+ `JsaIviSeries`（CSV/XLSX 下载解析）+ `AscTaxonomy`（岗位成分初始权重）；NERO / SPL 不在第一版
+- 采集调度：`poll-ats` 每小时、`fetch-ats-details`；按雇主发布速率 λ 调整检查频率（`employers.post_rate`、`next_poll_at`）；可识别 User-Agent、错峰、429 退避（架构 §6.7）
+- `employers` 登记表与种子（ASX 200、四大、银行、大学、政府、澳洲科技公司；记录 ATS 与公开接口地址）
+- 覆盖率：`compute-coverage` 按 ANZSCO 4 位 × 州 × 月对照 IVI 计算 `coverage_ratio`，并给 skill 的 `share_of_ads` 重新加权（架构 §6.8）
 - 抽取规则（seniority / work_mode / work_rights / 字典技能）带 version；`fixtures/ads/*.json` 约 500 条 + 人工标注集 200 条与回归测试
 - SQL 函数：`assign_metric_cell`、`compute_metric_points(date)`、`compute_relations()`、`detect_signals()`（全局默认 cell 部分）
 - 任务运行时：`/api/jobs/[job]`、租约、分片游标、`pnpm job <name>`；pg_cron schedule migration（URL/secret 取自 Vault）
@@ -92,10 +94,10 @@
 **任务**
 1. 分类与地点 migrations + 种子 + 别名归一函数 `resolve_instrument(text)`
 2. 适配层接口与 Fixture 源；全管道在 fixture 上跑通
-3. Adzuna 源：分页、去重、预算、错误重试、`ingestion_runs.stats`
+3. ATS 源：三家适配器、轻量检查、跨来源去重、新增 / 关闭判断、按活跃度调频、退避重试、个人信息剥离、`ingestion_runs.stats`
 4. 抽取规则 + 标注集 + 精确率 / 召回率报告脚本 `pnpm extraction:report`
 5. cell 分配与 `compute_metric_points`；pgTAP 用 fixture 校验 `share_of_ads`、`entry_level_share`、`no_pr_required_share`、`employer_concentration`、`change_4w` 的数值
-6. IVI 导入 → 岗位 month `metric_points`；ASC → `role_has_skill`
+6. IVI 导入 → 岗位 month `metric_points`；ASC → `role_has_skill`；`compute-coverage` 与重新加权
 7. 任务运行时 + pg_cron + Vault；`job_runs` 幂等测试
 8. `detect_signals()` 全局部分 + 阈值 flag
 9. admin 管道页（admin 守卫用 `is_admin()`）
@@ -104,16 +106,18 @@
 
 **验收标准**
 - `pnpm verify` 通过
-- `pnpm job ingest-adzuna-universe --source=fixture && pnpm job extract-features && pnpm job compute-metrics` 在本地空库上跑通，`select count(*) from metric_points` > 0
+- `pnpm job poll-ats --source=fixture && pnpm job fetch-ats-details --source=fixture && pnpm job extract-features && pnpm job compute-metrics` 在本地空库上跑通，`select count(*) from metric_points` > 0
 - `pnpm test:db` 中指标数值用例：fixture 集的手算值与 `compute_metric_points` 输出一致（至少 5 个指标 × 3 个 cell 组合）
 - 同一 job 连续运行两次，`job_ads` 与 `metric_points` 行数不变（幂等）
 - `pnpm extraction:report` 输出每条规则的精确率 / 召回率，seniority 与 work_rights 的精确率 ≥ 0.85（标注集）
 - `pnpm metrics:sync --check` 通过（registry 与 `metric_definitions` 一致）
-- 真实 Adzuna：`pnpm job ingest-adzuna-universe --max-calls=5` 返回 HTTP 200 与条数（只打印计数）
+- 真实 ATS：`pnpm job poll-ats --max-employers=5` 返回各家 HTTP 状态与职位数（只打印计数）
+- 调频：fixture 上高活跃雇主每小时被调度、低活跃雇主每天一次（单测）
+- `coverage_ratio` 在 fixture 上与手算值一致；覆盖率低于阈值的格子不产生信号
 - `/admin/pipeline` 对 admin 用户显示最近运行；对非 admin 404
 - 生产项目 pg_cron 任务列表可查（`select jobname from cron.job`），并在次日看到 `ingestion_runs` 新记录（由用户在 Supabase 后台核对）
 
-**需要人类完成**：SETUP_CHECKLIST §6（Adzuna app_id / app_key；JSA 各数据集下载地址、许可确认；Adzuna 商用与存储条款结论写入 SETUP_STATUS）；在 Supabase Vault 写入 `jobs_url`、`jobs_secret`（implementer 给出 SQL，用户执行）。
+**需要人类完成**：SETUP §6 的 M1 前部分（JSA 各数据集下载地址与许可）；在 Supabase Vault 写入 `jobs_url`、`jobs_secret`（implementer 给出 SQL，用户执行）。
 
 ---
 
@@ -127,7 +131,8 @@
 - 页面：`/`、`/market`、`/s/[slug]`、`/r/[slug]`、`/compare`、`/search`、`/metrics/[key]`、`/sources`
 - 组件：`TickerRow` / `TickerCard` / `TickerPage`、`ChangeBadge`、`MetricDefinitionPopover`、`SourceBadge`、`MetricSwitcher`、`FilterRuleBuilder` + `FilterReadback`、`SparklineSvg`、`TrendChart` + 数据表、`SampleWarning`、`CompositionList`
 - `expandFilterToCells`、`aggregateForFilter`、`describeFilter`、`filterHash`；筛选状态全部在 URL
-- 岗位基本面面板（NERO、SPL、成分技能、同现技能）
+- 岗位基本面面板（成分技能、同现技能；NERO、SPL 后续）
+- 行情条接真实职位事件、各标的"今日新增"；每个数据面标出更新时间（架构 §6.7、`DESIGN.md` §8）
 - ISR + `revalidateTag('market')`（`compute-metrics` 完成后调用）
 - 对比视图：两标的同指标并排、共同 / 独有的同现技能、entry-level 占比、样本量；"相关性 / 可迁移性 / 学习投入"为文案化的规则说明（不做分数）
 - `ui_mode`（cookie）切换术语
@@ -199,7 +204,7 @@
 - `/me/skills` 的 DOM 不含 `%`、`rank`、`score` 字样（e2e 断言）
 - Google 登录在 preview 环境用测试账号跑通（用户手动验证一次）
 
-**需要人类完成**：SETUP_CHECKLIST §4 Resend（API key；Supabase Auth SMTP 改为 Resend）、§5 Google OAuth（Testing 模式，添加测试邮箱）。
+**需要人类完成**：SETUP §4 Resend（API key；Supabase Auth SMTP 改为 Resend）、§5 Google OAuth（Testing 模式，添加测试邮箱）。
 
 ---
 
@@ -390,7 +395,7 @@
 - `docs/LAUNCH_CHECKLIST.md` 每项勾选（用户确认）
 - 备份 workflow 至少成功运行一次
 
-**需要人类完成**：SETUP_CHECKLIST §7 全部（域名、Resend DNS、Google consent Production、Sentry 账号）；新增：拨测账号（UptimeRobot 等免费）、Vercel 商用决定；法律文本审阅；把 `booking_enabled` 在从业者 ≥ 30 时打开。
+**需要人类完成**：SETUP §7 全部（域名、Resend DNS、Google consent Production、Sentry 账号）；新增：拨测账号（UptimeRobot 等免费）、Vercel 商用决定；法律文本审阅；把 `booking_enabled` 在从业者 ≥ 30 时打开。
 
 ---
 
@@ -400,7 +405,7 @@
 
 ## 上线后迭代（Post-MVP，顺序可调）
 
-| # | 名称 | 规模 | 覆盖 | 说明 |
+| # | 名称 | 规模 | 主要 FR | 需要人类先完成 |
 |---|---|---|---|---|
 | M9 | 周 / 月 digest 与 watchlist 提醒 | S | FR-W4 | outbox 已有；加 digest 模板与偏好 |
 | M10 | 复盘 L1 填空 + 情绪面聚合 | M | FR-R3、R4 | 聚合 N < 阈值不展示；标的页 "analyst view" 面板 |
