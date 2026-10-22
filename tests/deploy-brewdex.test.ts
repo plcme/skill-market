@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const fs = vi.hoisted(() => ({ readFile: vi.fn(), readdir: vi.fn() }));
 vi.mock('node:fs/promises', () => fs);
+let runWorkerFirst: boolean;
 let metadata: Record<string, unknown>;
 let calls: { url: string; init: RequestInit }[];
 beforeEach(() => {
   vi.resetModules();
   vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token');
-  metadata = { main_module: 'worker.js', assets: { config: { run_worker_first: true } }, bindings: ['ASSETS', 'WORKER_SELF_REFERENCE', 'INVITE_RATE_LIMITER'].map(name => ({ name })) };
+  runWorkerFirst = true;
+  metadata = { main_module: 'worker.js', bindings: ['ASSETS', 'WORKER_SELF_REFERENCE', 'INVITE_RATE_LIMITER'].map(name => ({ name })) };
   calls = [];
   fs.readdir.mockResolvedValue([{ name: 'app.js', isDirectory: () => false, isFile: () => true }]);
   fs.readFile.mockImplementation(async (path: string) => {
-    if (path === 'wrangler.jsonc') return JSON.stringify({ name: 'brewdex', account_id: 'b1eb3d7d03b40f01f9e9c3ef18cf00d5', assets: { directory: 'assets' } });
+    if (path === 'wrangler.jsonc') return JSON.stringify({ name: 'brewdex', account_id: 'b1eb3d7d03b40f01f9e9c3ef18cf00d5', assets: { directory: 'assets', run_worker_first: runWorkerFirst } });
     if (path === '.wrangler/worker.bundle') {
       const form = new FormData();
       form.set('metadata', JSON.stringify(metadata));
@@ -38,7 +40,7 @@ it('uploads only Brewdex, retains secrets and keeps asset requests behind the ga
   expect(form.has('worker.js')).toBe(true);
 });
 it('refuses to deploy if static assets could bypass the invite gate', async () => {
-  metadata.assets = { config: { run_worker_first: false } };
+  runWorkerFirst = false;
   await expect(import('../scripts/deploy-brewdex.mjs')).rejects.toThrow('invite gate');
   expect(calls).toHaveLength(0);
 });
