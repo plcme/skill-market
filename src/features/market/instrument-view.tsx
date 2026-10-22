@@ -91,14 +91,13 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           <Suspense fallback={<Button variant="accent" size="lg" disabled className="w-full" aria-hidden />}>
             <WatchButton slug={inst.slug} filter={filter} metric={detail.metric} prominent />
           </Suspense>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
-            <Link href={compare} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
-              <ArrowLeftRight className="size-3.5" aria-hidden />{t('compareWith')}
-            </Link>
-            <span aria-hidden className="text-faint">·</span>
-            <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
-              <MessageCircle className="size-3.5" aria-hidden />{t('talkShort')}
-            </Link>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(9.75rem,1fr))] gap-2">
+            <Button asChild variant="outline" className="w-full px-3">
+              <Link href={compare}><ArrowLeftRight aria-hidden />{t('compareWith')}</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full px-3">
+              <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })}><MessageCircle aria-hidden />{t('talkShort')}</Link>
+            </Button>
           </div>
           {type === 'role' ? <RolePractitionerNudge slug={inst.slug} /> : null}
         </div>
