@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Bookmark, MoreHorizontal, Package, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Bookmark, BriefcaseBusiness, MoreHorizontal, Package, SlidersHorizontal, Trash2 } from 'lucide-react';
 import type { WatchlistRow } from '@/lib/api/watchlist';
-import { removeWatchlistItem, restoreWatchlistItem, updateWatchlistItem } from '@/lib/api/watchlist';
+import { canBeHeld, removeWatchlistItem, restoreWatchlistItem, updateWatchlistItem } from '@/lib/api/watchlist';
 import { useAction } from '@/lib/api/client';
 import { computeSparkline } from '@/lib/market/engine';
 import { getInstrument } from '@/lib/market/catalog';
@@ -140,7 +140,7 @@ function RowActions({ row, instrument }: { row: WatchlistRow; instrument: Instru
   const onToggle = async () => {
     const next = item.status === 'held' ? 'watching' : 'held';
     const r = await update({ id: item.id, status: next });
-    if (r?.ok) toast({ tone: 'success', title: next === 'held' ? t('movedHeld', { name: instrument.name }) : t('movedWatching', { name: instrument.name }) });
+    if (r?.ok) toast({ tone: 'success', title: next === 'held' ? t(instrument.type === 'role' ? 'movedWorked' : 'movedHeld', { name: instrument.name }) : t('movedWatching', { name: instrument.name }) });
     else if (r) toast({ tone: 'warn', title: errorText(r.error) });
   };
   return (
@@ -153,10 +153,10 @@ function RowActions({ row, instrument }: { row: WatchlistRow; instrument: Instru
         </MenuTrigger>
         <MenuContent>
           <MenuItem onSelect={() => setEditing(true)}><SlidersHorizontal aria-hidden />{t('editFilter')}</MenuItem>
-          {instrument.type === 'skill' ? (
+          {canBeHeld(instrument.type) ? (
             <MenuItem onSelect={onToggle}>
-              {item.status === 'held' ? <Bookmark aria-hidden /> : <Package aria-hidden />}
-              {item.status === 'held' ? t('toWatching') : t('toHeld')}
+              {item.status === 'held' ? <Bookmark aria-hidden /> : instrument.type === 'role' ? <BriefcaseBusiness aria-hidden /> : <Package aria-hidden />}
+              {item.status === 'held' ? t('toWatching') : t(instrument.type === 'role' ? 'toWorked' : 'toHeld')}
             </MenuItem>
           ) : null}
           <MenuSeparator />

@@ -5,7 +5,7 @@ import { computeMetric, detectSignal } from '@/lib/market/engine';
 import { getInstrument } from '@/lib/market/catalog';
 import { filterSpecSchema, normaliseFilter, sameFilter } from '@/lib/filters/spec';
 import { isValidMetric, defaultMetric } from '@/lib/metrics/registry';
-import type { FilterSpec, MetricKey, MetricReading, Signal } from '@/lib/market/types';
+import type { ActiveInstrumentType, FilterSpec, MetricKey, MetricReading, Signal } from '@/lib/market/types';
 import { fail, guard, latency, ok } from './client';
 import type { DemoDB, Result, WatchStatus, WatchlistItem } from './types';
 import { transact, uid } from '@/lib/demo/store';
@@ -37,7 +37,7 @@ export async function addWatchlistItem(input: AddWatchlistInput): Promise<Result
   if (!parsed.success) return fail('validation', 'validation');
   const inst = getInstrument(parsed.data.instrument_slug);
   if (!inst) return fail('not_found', 'instrumentNotFound');
-  if (inst.type !== 'skill' && parsed.data.status === 'held') return fail('validation', inst.type === 'industry' ? 'industriesCannotBeHeld' : 'rolesCannotBeHeld');
+  if (!canBeHeld(inst.type) && parsed.data.status === 'held') return fail('validation', 'industriesCannotBeHeld');
   const metric: MetricKey = parsed.data.metric && isValidMetric(inst.type, parsed.data.metric) ? parsed.data.metric : defaultMetric(inst.type);
   const filter = normaliseFilter(parsed.data.filter as FilterSpec);
   return transact((d, now) => {
@@ -73,7 +73,7 @@ export async function updateWatchlistItem(input: UpdateWatchlistInput): Promise<
     if (!item) return fail('not_found', 'notFound');
     const inst = getInstrument(item.instrument_slug);
     if (parsed.data.status) {
-      if (inst && inst.type !== 'skill' && parsed.data.status === 'held') return fail('validation', inst.type === 'industry' ? 'industriesCannotBeHeld' : 'rolesCannotBeHeld');
+      if (inst && !canBeHeld(inst.type) && parsed.data.status === 'held') return fail('validation', 'industriesCannotBeHeld');
       item.status = parsed.data.status as WatchStatus;
     }
     let rebaseline = false;
@@ -159,12 +159,27 @@ export async function restoreWatchlistItem(item: WatchlistItem): Promise<Result<
   });
 }
 
-/** Desk read model: signal rows first, then everything grouped Held / Watching (FR-W1–W3). */
-export function selectWatchlistGroups(d: DemoDB): { signals: WatchlistRow[]; held: WatchlistRow[]; watching: WatchlistRow[] } {
+/**
+ * "Held" means "I have this skill" for skills and "I've worked in this role"
+ * for roles. Industries are only watched.
+ */
+export function canBeHeld(type: ActiveInstrumentType): boolean {
+  return type === 'skill' || type === 'role';
+}
+
+/**
+ * Desk read model: signal rows first, then everything grouped Skills I have /
+ * Roles I've worked in / Watching (FR-W1–W3). Held roles never land in the
+ * skills group.
+ */
+export function selectWatchlistGroups(d: DemoDB): { signals: WatchlistRow[]; held: WatchlistRow[]; worked: WatchlistRow[]; watching: WatchlistRow[] } {
   const rows = selectWatchlist(d);
+  const held = rows.filter(r => r.item.status === 'held');
+  const typeOf = (r: WatchlistRow) => getInstrument(r.item.instrument_slug)?.type;
   return {
     signals: rows.filter(r => r.signal),
-    held: rows.filter(r => r.item.status === 'held'),
+    held: held.filter(r => typeOf(r) === 'skill'),
+    worked: held.filter(r => typeOf(r) === 'role'),
     watching: rows.filter(r => r.item.status === 'watching'),
   };
 }

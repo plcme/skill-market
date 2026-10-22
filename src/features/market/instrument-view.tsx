@@ -8,6 +8,7 @@ import { CHART_MEASURE_METRIC, METRICS, signalMetric } from '@/lib/metrics/regis
 import { formatDate } from '@/lib/time';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
 import type { InstrumentDetail } from '@/lib/queries/market';
+import { RolePractitionerNudge } from './role-practitioner-nudge';
 import { Button } from '@/components/ui/button';
 import { Card, Container, SectionHeader } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
@@ -97,6 +98,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               <MessageCircle className="size-3.5" aria-hidden />{t('talkShort')}
             </Link>
           </div>
+          {type === 'role' ? <RolePractitionerNudge slug={inst.slug} /> : null}
         </div>
       </header>
 

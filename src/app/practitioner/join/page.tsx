@@ -8,6 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('metaTitle'), description: t('lede') };
 }
 
-export default function JoinPage() {
-  return <ClientPage><PractitionerJoin /></ClientPage>;
+export default async function JoinPage({ searchParams }: { searchParams: Promise<{ role?: string | string[] }> }) {
+  const { role } = await searchParams;
+  return <ClientPage><PractitionerJoin role={typeof role === 'string' ? role : undefined} /></ClientPage>;
 }

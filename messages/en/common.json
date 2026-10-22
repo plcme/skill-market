@@ -133,6 +133,10 @@
     "signIn": "Sign in",
     "added": "{name} added to your watchlist",
     "heldAdded": "{name} added to skills you have",
+    "worked": "Worked in this role",
+    "iWorkedHere": "I’ve worked in this role",
+    "markWorked": "Mark as a role I’ve worked in",
+    "workedAdded": "{name} added to roles you’ve worked in",
     "filterIncluded": "Saved with the current filter.",
     "removed": "{name} removed"
   },
@@ -143,7 +147,6 @@
     "forbidden": "You don’t have access to that.",
     "notFound": "We couldn’t find that.",
     "instrumentNotFound": "We don’t track that skill or role yet.",
-    "rolesCannotBeHeld": "Roles can be watched, not held.",
     "industriesCannotBeHeld": "Industries can be watched, not held.",
     "alreadyWatching": "That’s already on your watchlist with this filter.",
     "watchlistFull": "Your watchlist is full (30 items).",
@@ -230,6 +233,10 @@
     "signIn": "Sign in",
     "added": "Now tracking {name}",
     "heldAdded": "{name} added to skills you have",
+    "worked": "Worked in this role",
+    "iWorkedHere": "I’ve worked in this role",
+    "markWorked": "Mark as a role I’ve worked in",
+    "workedAdded": "{name} added to roles you’ve worked in",
     "filterIncluded": "Saved with the current filter.",
     "removed": "{name} removed"
   }

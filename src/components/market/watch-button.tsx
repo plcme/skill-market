@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Bookmark, BookmarkCheck, ChevronDown, Package, Trash2 } from 'lucide-react';
+import { Bookmark, BookmarkCheck, BriefcaseBusiness, ChevronDown, Package, Trash2 } from 'lucide-react';
 import { useDB } from '@/lib/demo/store';
 import { useUiMode } from '@/lib/demo/ui-mode';
-import { addWatchlistItem, findWatchItem, removeWatchlistItem, updateWatchlistItem } from '@/lib/api/watchlist';
+import { addWatchlistItem, canBeHeld, findWatchItem, removeWatchlistItem, updateWatchlistItem } from '@/lib/api/watchlist';
 import { useAction } from '@/lib/api/client';
 import { getInstrument } from '@/lib/market/catalog';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
@@ -14,7 +14,11 @@ import { Menu, MenuContent, MenuItem, MenuTrigger } from '@/components/ui/overla
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
-/** Add "instrument + filter" to the watchlist as held or watching (FR-W1, FR-F6). */
+/**
+ * Add "instrument + filter" to the watchlist as held or watching (FR-W1, FR-F6).
+ * Held reads "I have this skill" for skills and "I've worked in this role"
+ * for roles; industries are only watched.
+ */
 export function WatchButton({ slug, filter, metric, size = 'sm', prominent = false, className, labelClassName }: {
   slug: string;
   filter: FilterSpec;
@@ -53,6 +57,11 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
 
   if (!db || !inst) return <Button variant={callVariant} size={sz} disabled className={cn(labelClassName ? iconPad : prominent ? wide : 'w-[108px]', className)}><Bookmark aria-hidden />{label(t('watch'))}</Button>;
 
+  const isRole = inst.type === 'role';
+  const HeldIcon = isRole ? BriefcaseBusiness : Package;
+  const heldCopy = isRole
+    ? { label: t('worked'), add: t('iWorkedHere'), mark: t('markWorked'), added: t('workedAdded', { name: inst.name }) }
+    : { label: t('held'), add: t('iHaveThis'), mark: t('markHeld'), added: t('heldAdded', { name: inst.name }) };
   const signedIn = db.session?.personas.includes('student');
   const item = signedIn ? findWatchItem(db, slug, filter) : undefined;
 
@@ -71,26 +80,26 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
 
   const doAdd = async (status: 'held' | 'watching') => {
     const r = await add({ instrument_slug: slug, status, filter, metric });
-    if (r?.ok) toast({ tone: 'success', title: status === 'held' ? t('heldAdded', { name: inst.name }) : t('added', { name: inst.name }), body: t('filterIncluded') });
+    if (r?.ok) toast({ tone: 'success', title: status === 'held' ? heldCopy.added : t('added', { name: inst.name }), body: t('filterIncluded') });
     else if (r && !r.ok) onError(r.error.message);
   };
 
   if (item) {
-    const Icon = item.status === 'held' ? Package : BookmarkCheck;
+    const Icon = item.status === 'held' ? HeldIcon : BookmarkCheck;
     return (
       <Menu>
         <MenuTrigger asChild>
           <Button variant={prominent ? 'outline' : 'primary'} size={sz} loading={busy} className={cn(iconPad, wide, className)} aria-label={t('manage', { name: inst.name })}>
             {!busy ? <Icon aria-hidden /> : null}
-            {label(item.status === 'held' ? t('held') : t('watching'))}
+            {label(item.status === 'held' ? heldCopy.label : t('watching'))}
             <ChevronDown className="!size-3.5 opacity-70" aria-hidden />
           </Button>
         </MenuTrigger>
         <MenuContent>
-          {inst.type === 'skill' ? (
+          {canBeHeld(inst.type) ? (
             <MenuItem onSelect={async () => { const r = await update({ id: item.id, status: item.status === 'held' ? 'watching' : 'held' }); if (r && !r.ok) onError(r.error.message); }}>
-              {item.status === 'held' ? <Bookmark aria-hidden /> : <Package aria-hidden />}
-              {item.status === 'held' ? t('markWatching') : t('markHeld')}
+              {item.status === 'held' ? <Bookmark aria-hidden /> : <HeldIcon aria-hidden />}
+              {item.status === 'held' ? t('markWatching') : heldCopy.mark}
             </MenuItem>
           ) : null}
           <MenuItem onSelect={async () => { const r = await remove(item.id); if (r?.ok) toast({ title: t('removed', { name: inst.name }) }); }} className="text-danger [&_svg]:text-danger">
@@ -101,8 +110,8 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
     );
   }
 
-  // Only skills can be "held"; roles and industries are watched.
-  if (inst.type !== 'skill') {
+  // Industries are only watched.
+  if (!canBeHeld(inst.type)) {
     return <Button variant={addVariant} size={sz} loading={busy} className={cn(iconPad, wide, className)} onClick={() => doAdd('watching')}>{!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}</Button>;
   }
 
@@ -119,7 +128,7 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
         </MenuTrigger>
         <MenuContent>
           <MenuItem onSelect={() => doAdd('watching')}><Bookmark aria-hidden />{t('watchThis')}</MenuItem>
-          <MenuItem onSelect={() => doAdd('held')}><Package aria-hidden />{t('iHaveThis')}</MenuItem>
+          <MenuItem onSelect={() => doAdd('held')}><HeldIcon aria-hidden />{heldCopy.add}</MenuItem>
         </MenuContent>
       </Menu>
     </span>

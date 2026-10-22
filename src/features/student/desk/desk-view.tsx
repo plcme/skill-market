@@ -71,7 +71,7 @@ function Desk({ db }: { db: DemoDB }) {
   const groups = selectWatchlistGroups(db);
   const board = selectSkillBoard(db);
   const name = (db.student?.display_name ?? db.session?.display_name ?? '').split(' ')[0];
-  const total = groups.held.length + groups.watching.length;
+  const total = groups.held.length + groups.worked.length + groups.watching.length;
   const watchedRole = db.watchlist.find(w => getInstrument(w.instrument_slug)?.type === 'role')?.instrument_slug ?? null;
   const setupPending = db.student?.onboarding.tier0 === 'pending';
 
@@ -115,6 +115,7 @@ function Desk({ db }: { db: DemoDB }) {
               <>
                 <p className="text-[13px] text-muted">{t('watchNote')}</p>
                 <Group title={t('held')} rows={groups.held} emptyText={t('heldEmpty')} />
+                {groups.worked.length ? <Group title={t('worked')} rows={groups.worked} emptyText="" /> : null}
                 <Group title={t('watching')} rows={groups.watching} emptyText={t('watchingEmpty')} />
               </>
             )}

@@ -561,5 +561,10 @@
     "with": "Chat with {name}",
     "open": "Open chat",
     "private": "Your debriefs stay private. They’re never shown to practitioners or other students."
+  },
+  "RoleNudge": {
+    "body": "You know this job. Give 20 minutes a month to students asking about it.",
+    "cta": "Join as a practitioner",
+    "dismiss": "Dismiss"
   }
 }
