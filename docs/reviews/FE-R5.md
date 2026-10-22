@@ -147,3 +147,61 @@ Round 1 的建议，处理情况：
 
 ### 建议（不阻断）
 1. `src/features/market/logic.ts:121` 的注释放错了位置：`/** How the detail chart shows the selected measure */` 现在挂在 `ChartRangeState` 上面，而 `ChartPlan` 失去了自己的文档注释。建议把这行注释挪回 `ChartPlan` 前面
+
+## Round 3 — 退回
+
+审查范围：`git diff 5380b80..fe-r5`（5 个 commit，6e05cc2..ec9550a）。
+
+验收命令结果：
+- `pnpm lint && pnpm typecheck && pnpm test:unit`：全部通过，退出码 0。vitest 26 个文件、280 个测试全过，`copy-review` 测试已随 overlay 删除
+- `next-env.d.ts` 没有改动
+
+逐项结论（通过的部分）：
+- **审查层清理**：
+  - `src/features/dev/` 已整体删除
+  - 在 `src`、`tests`、`e2e` 里搜 `ReviewText`、`CopyReview`、`copy-review`、`features/dev`，都是 0 处
+  - `layout.tsx` 已恢复到 dev 的样子
+  - 解包后保留下来的文本，逐处和 dev 对比过，结构和 key 都一样：market 计数行、orderNote、people 规则正文、行里的 category 和 SignalTag、supplyDefinition、advancedNote、payRange、payCaveat、locationsNote、competencies 的两段、demandIsOneInput、noAnzsco、compNote.role / industry
+- **删除与转进 ⓘ 的文案**：
+  - 删除的 key 都没有残留引用：`skillsKicker`、`rolesKicker`、`noSignal`、`nextBody`、`supplyAvailableDetail`、`compNote.skill`、`fund*`、`Heatmap.band.*`、`Heatmap.legendLabel`
+  - 新 key `Common.aboutSection`、`statsTitle`、`statsAction` 都有使用
+  - `compNote.industry` 仍在使用，不是孤儿
+- **InfoPopover**：
+  - 基于 Radix Popover：Esc 关闭，焦点会进入内容、关闭后回到触发器，`aria-expanded` 自动处理
+  - 可访问名是 "About {section}"
+  - 触发器放在标题元素之外，不会污染标题的可访问名
+  - 移动端宽度是 `min(360px, 100vw-24px)`
+  - 触发器和 MetricInfo 一样是 20px 的圆，周围有间距，可以按 WCAG 2.5.8 的间距例外处理
+- **Compare / Talk**：
+  - 改成两个 outline 按钮，`auto-fit` 网格，窄屏会换行
+  - Talk 的 `aria-label` 包含可见文字 "Talk to someone"，满足 2.5.3
+- **Statistics 改名**：
+  - 组件名、`stats-h`、文案、DESIGN、GLOSSARY、注释都已一致
+  - 代码、e2e 和文档里只剩 GLOSSARY 那一处有意写的"旧名 Fundamentals"
+  - `SectionHeader size="lg"` 和 DESIGN 的字号表对得上
+- **picked 格子**：
+  - 选中状态有三处表达：`bg-picked` 背景、2px 墨色内边框、`aria-current`（在 MeasureCellLink 上），不只靠颜色
+  - 对比度测试覆盖了每个配色方案下 picked 底上的 ink、ink-2、muted（≥ 4.5:1）和 up、down（≥ 3:1）
+  - 格子里唯一用 up / down 颜色的是 ChangeBadge 的首个 span，已经放大到 32 / 40px，属于 large text，3:1 够用；绝对计数那一行是 muted
+- **热力图**：
+  - 每块都有方向字形和带符号的百分比
+  - 链接的 aria-label 和 desktop 的 `title` 都说明了 "up/down X% in 4 weeks (from → to)"
+  - 样本不足的块显示 "Too few ads"（小块显示 "—"，并有 title）
+  - 列表的 aria-label 写明了 "size = job ads, colour = 4-week change"
+  - 还有 HeatmapTable 可用
+  - 结论：没有图例，颜色本身仍然可以理解，可访问性也没有问题
+
+### 必须修复（阻断）
+
+1. **[src/components/market/heatmap.tsx:56–67 `HeatmapSource`] 热力图上的百分比没有可见的定义入口了（PRD §10："每个数字有定义与来源"）**
+   - 问题：
+     - 旧图例那一行的开头有 `MetricInfo metric="change_4w"`，这次和色块一起删掉了
+     - 现在剩下的只有 `ad_count` 的 ⓘ（解释的是格子大小）
+     - 首页标题是 "Industries this month"，在可见层面没有任何地方说明格子里的 "▲ 12%" 是 4-week change，也看不到它的分母和窗口
+     - 手机上的格子没有 `title`，连悬停提示都没有
+     - 文件顶部注释写的是 "definition and source, one click away under the tiles"，现在只对格子大小成立
+   - 建议：在 `HeatmapSource` 里把 `<MetricInfo metric="change_4w" type={type} reading={sample?.change} filter={filter} />` 加回来，放在 `ad_count` 的 ⓘ 旁边。只是一个 ⓘ，不加回色块，也不需要新文案
+
+### 建议（不阻断）
+1. `Heatmap.adsShort`、`Heatmap.tableToggle`、`Home.sampleNote` 在 dev 上就已经没人引用了，不是这一轮引入的。可以顺手删掉
+2. InfoPopover 的内容区域没有可访问名（Radix 给它的 role 是 `dialog`）。可以给 `PopoverContent` 加 `aria-label={label}`，和 MetricInfo 的做法对齐（如果 MetricInfo 有的话）

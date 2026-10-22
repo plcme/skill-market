@@ -62,6 +62,7 @@ export function HeatmapSource({ heatmap, filter, className }: { heatmap: Heatmap
       <SourceBadge kind="ads" />
       {window ? <span>{t('window', { start: formatDate(window.start), end: formatDate(window.end) })}</span> : null}
       <MetricInfo metric="ad_count" type={type} reading={heatmap.kind === 'industries' ? sample?.ads : undefined} filter={filter} />
+      <MetricInfo metric="change_4w" type={type} reading={sample?.change} filter={filter} />
     </p>
   );
 }
