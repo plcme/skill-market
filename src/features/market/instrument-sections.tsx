@@ -17,7 +17,6 @@ import { cn } from '@/lib/utils';
 import { barPercent, salaryAxis, togetherness, type Togetherness } from './logic';
 import { MeasureCellLink } from './measure-cell-link';
 import { InstrumentMark } from '@/components/market/instrument-mark';
-import { ReviewText } from '@/features/dev/copy-review';
 
 // Building blocks of the full ticker page (FR-M2 "full page"); several are reused
 // on /compare so both views explain numbers the same way.
@@ -68,7 +67,7 @@ export function Fundamentals({ detail, filter, metricHref }: {
             <span className="group-open:hidden">{t('moreMeasures', { n: detail.metrics.advanced.length })}</span>
             <span className="hidden group-open:inline">{t('fewerMeasures')}</span>
           </summary>
-          <p className="mb-3 mt-1 max-w-2xl text-[13px] text-muted"><ReviewText id="detail.advancedNote" proposal="delete">{t('advancedNote')}</ReviewText></p>
+          <p className="mb-3 mt-1 max-w-2xl text-[13px] text-muted">{t('advancedNote')}</p>
           <ul className={grid}>{detail.metrics.advanced.map(cell)}</ul>
         </details>
       ) : null}
@@ -131,13 +130,13 @@ export function SalaryBlock({ median, range, filter }: { median?: MetricReading;
               </span>
             </div>
             <figcaption className="mt-2 text-[13px] text-ink-2">
-              <ReviewText id="detail.role.payRange" proposal="info">{t('payRangeSentence', { low: formatAud(band.low), high: formatAud(band.high), median: formatAud(median.value) })}</ReviewText>
+              {t('payRangeSentence', { low: formatAud(band.low), high: formatAud(band.high), median: formatAud(median.value) })}
             </figcaption>
           </figure>
         ) : (
           <p className="mt-4 text-sm text-muted">{t('payRangeInsufficient')}</p>
         )}
-        <p className="mt-3 text-[12.5px] text-muted"><ReviewText id="detail.role.payCaveat" proposal="info">{t('payCaveat')}</ReviewText></p>
+        <p className="mt-3 text-[12.5px] text-muted">{t('payCaveat')}</p>
       </div>
     </div>
   );
@@ -238,7 +237,7 @@ export function LocationBars({ locations }: { locations: InstrumentDetail['locat
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-[12.5px] text-muted"><ReviewText id="detail.locationsNote" proposal="delete">{t('locationsNote', { total: formatCount(total) })}</ReviewText></p>
+      <p className="mt-3 text-[12.5px] text-muted">{t('locationsNote', { total: formatCount(total) })}</p>
     </div>
   );
 }
@@ -269,7 +268,7 @@ export function CoreCompetencies({ levels, name }: { levels: CompetencyLevel[]; 
   const t = useTranslations('Competencies');
   return (
     <div>
-      <p className="-mt-1 mb-4 max-w-3xl text-[13px] text-muted"><ReviewText id="detail.role.competenciesIntro" proposal="info">{t('roleNote', { name })}{' '}{t('notTracked')}</ReviewText></p>
+      <p className="-mt-1 mb-4 max-w-3xl text-[13px] text-muted">{t('roleNote', { name })}{' '}{t('notTracked')}</p>
       <ul aria-label={t('listLabel', { name })} className="grid gap-x-12 gap-y-3 md:grid-cols-2">
         {levels.map(c => {
           const label = t(`items.${c.slug}.name`);
@@ -290,7 +289,7 @@ export function CoreCompetencies({ levels, name }: { levels: CompetencyLevel[]; 
         })}
       </ul>
       <div className="mt-4 flex flex-col gap-1 text-[12.5px] text-muted">
-        <p><ReviewText id="detail.role.competenciesScale" proposal="info"><span className="font-medium text-ink-2">{t('illustrative')}</span>{' · '}{t('scaleNote')}</ReviewText></p>
+        <p><span className="font-medium text-ink-2">{t('illustrative')}</span>{' · '}{t('scaleNote')}</p>
         <p>{t('attribution')}{' · '}<Link href="/metrics#core-competencies" className="link">{t('explainerLink')}</Link></p>
       </div>
     </div>
@@ -315,7 +314,7 @@ export function BeforeYouDecide({ instrument, layout = 'wide' }: { instrument: I
         <Scale steps={TRANSFER} value={instrument.transferability} label={v => t(`transferShort.${v}`)} />
         <p className="mt-3 text-sm text-ink-2">{t(`transferBody.${instrument.transferability}`)}</p>
       </div>
-      <Notice tone="signal" title={<ReviewText id="detail.demandIsOneInput" proposal="delete">{t('demandIsOneInput')}</ReviewText>} className={cn(layout === 'wide' && 'self-start')}>
+      <Notice tone="signal" title={t('demandIsOneInput')} className={cn(layout === 'wide' && 'self-start')}>
         {t('demandIsOneInputBody')}
       </Notice>
     </div>

@@ -15,7 +15,6 @@ import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitc
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
 import { BOARD_TYPES, boardTypeParam, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView } from '@/features/market/logic';
 import { cn } from '@/lib/utils';
-import { ReviewText } from '@/features/dev/copy-review';
 
 export async function generateMetadata({ searchParams }: PageProps<'/market'>): Promise<Metadata> {
   const t = await getTranslations('MarketPage');
@@ -103,11 +102,9 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
         </Suspense>
 
         <p className="num mt-5 text-[13px] text-muted" aria-live="polite">
-          <ReviewText id="market.countLine" proposal="delete">
-            {t(`count.${type}`, { n: board.rows.length })}
-            {' · '}
-            {t('signalCount', { n: board.signals })}
-          </ReviewText>
+          {t(`count.${type}`, { n: board.rows.length })}
+          {' · '}
+          {t('signalCount', { n: board.signals })}
           {q ? <>{' · '}{t('matching', { q })}</> : null}
         </p>
 
@@ -131,7 +128,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
         </div>
 
         <div className="mt-6 grid gap-3 text-[13px] leading-relaxed text-muted md:grid-cols-2 md:gap-8">
-          <p><ReviewText id="market.orderNote" proposal="delete">{t('orderNote')}</ReviewText></p>
+          <p>{t('orderNote')}</p>
           <p>
             {t('illustrativeNote')}{' '}
             <Link href="/sources" className="link inline-flex items-center gap-1">{t('sourcesLink')}<ArrowRight className="size-3" aria-hidden /></Link>

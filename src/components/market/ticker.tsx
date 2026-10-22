@@ -10,7 +10,6 @@ import { MetricValue } from './metric-value';
 import { SignalTag } from './signal-tag';
 import { Sparkline } from './sparkline';
 import { InstrumentMark } from '@/components/market/instrument-mark';
-import { ReviewText } from '@/features/dev/copy-review';
 
 // Ticker card family (FR-M2): row / card share one data shape; the full page
 // composes the same pieces at a larger size.
@@ -66,8 +65,8 @@ export function TickerRow({ snap, href, action, select, showType = false }: {
           </Link>
           <p className="flex min-w-0 items-center gap-2 truncate text-[12.5px] text-muted">
             {showType ? <span className="kicker">{t(snap.instrument.type)}</span> : null}
-            <span className="truncate">{snap.instrument.type === 'industry' ? <ReviewText id="market.industryDivision" proposal="delete">{snap.instrument.category}</ReviewText> : snap.instrument.category}</span>
-            {snap.signal ? <ReviewText id="market.rowSignalTag" proposal="delete" hint="Replace the text with the icon plus a tooltip."><SignalTag signal={snap.signal} className="hidden @4xl:inline-flex" /></ReviewText> : null}
+            <span className="truncate">{snap.instrument.category}</span>
+            {snap.signal ? <SignalTag signal={snap.signal} className="hidden @4xl:inline-flex" /> : null}
           </p>
         </div>
         <div className="min-w-0 text-right @xl:text-left">

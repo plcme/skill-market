@@ -14,7 +14,6 @@ import { SiteFooter } from '@/components/shell/site-footer';
 import { SiteHeader } from '@/components/shell/site-header';
 import { TickerTape } from '@/components/shell/ticker-tape';
 import { getTape } from '@/lib/queries/market';
-import { CopyReviewPanel } from '@/features/dev/copy-review';
 import '@/styles/theme.css';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,7 +43,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <SiteFooter appName={APP_NAME} />
             <MobileTabBar />
             <PreviewDock />
-            <CopyReviewPanel />
             <CommandPalette />
           </AppProvider>
         </NextIntlClientProvider>
