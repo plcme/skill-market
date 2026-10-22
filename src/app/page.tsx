@@ -13,6 +13,7 @@ import { MetricInfo } from '@/components/market/metric-info';
 import { ROW_WATCH_LABEL, TickerRow, instrumentHref } from '@/components/market/ticker';
 import { WatchButton } from '@/components/market/watch-button';
 import { PractitionerJoinCard } from '@/features/community/practitioner-join-card';
+import { ReviewText } from '@/features/dev/copy-review';
 
 export default async function HomePage() {
   const t = await getTranslations('Home');
@@ -61,14 +62,14 @@ export default async function HomePage() {
 
       <Container className="mt-14">
         <SectionHeader kicker={t('signalsKicker')} title={t('signalsTitle')} action={<Link href="/market" className="link text-sm">{t('seeMarket')}</Link>} />
-        <p className="-mt-2 mb-4 max-w-3xl text-[13px] text-ink-2">{t('moversRule', { min: movers[0]?.minSample ?? METRICS.change_4w.min_sample })}</p>
+        <p className="-mt-2 mb-4 max-w-3xl text-[13px] text-ink-2"><ReviewText id="home.signalsRule" proposal="info">{t('moversRule', { min: movers[0]?.minSample ?? METRICS.change_4w.min_sample })}</ReviewText></p>
         <MoversCarousel items={movers} />
-        <p className="mt-3 max-w-2xl text-[13px] text-muted">{t('signalsNote')}</p>
+        <p className="mt-3 max-w-2xl text-[13px] text-muted"><ReviewText id="home.signalsNote" proposal="delete">{t('signalsNote')}</ReviewText></p>
       </Container>
 
       <Container className="mt-16 grid gap-12 lg:grid-cols-[1.35fr_1fr]">
         <section aria-labelledby="skills-h">
-          <SectionHeader id="skills-h" kicker={t('skillsKicker')} title={t('skillsTitle')} action={<MetricInfo metric={skills.metric} type="skill" reading={skills.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
+          <SectionHeader id="skills-h" kicker={<ReviewText id="home.skillsKicker" proposal="delete" hint="Shorten to just the measure name, e.g. “Job ads”.">{t('skillsKicker')}</ReviewText>} title={t('skillsTitle')} action={<MetricInfo metric={skills.metric} type="skill" reading={skills.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
           <div className="divide-y divide-rule border-b border-rule">
             {skills.rows.slice(0, 8).map(snap => (
               <TickerRow key={snap.instrument.id} snap={snap} href={instrumentHref(snap)} action={<WatchButton slug={snap.instrument.slug} filter={DEFAULT_FILTER} metric={skills.metric} labelClassName={ROW_WATCH_LABEL} />} />
@@ -76,7 +77,7 @@ export default async function HomePage() {
           </div>
         </section>
         <section aria-labelledby="roles-h">
-          <SectionHeader id="roles-h" kicker={t('rolesKicker')} title={t('rolesTitle')} action={<MetricInfo metric="growth_12m" type="role" reading={roles.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
+          <SectionHeader id="roles-h" kicker={<ReviewText id="home.rolesKicker" proposal="delete" hint="Shorten to just the measure name, e.g. “12-month change”.">{t('rolesKicker')}</ReviewText>} title={t('rolesTitle')} action={<MetricInfo metric="growth_12m" type="role" reading={roles.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
           <ul className="divide-y divide-rule border-b border-rule">
             {[...roles.rows].sort((a, b) => (b.metric.value ?? 0) - (a.metric.value ?? 0)).slice(0, 8).map(snap => (
               <li key={snap.instrument.id} className="relative flex items-center justify-between gap-4 py-3 hover:bg-surface">

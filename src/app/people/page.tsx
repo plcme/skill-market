@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Container, PageHeader, SectionHeader } from '@/components/ui/primitives';
 import { StartFromSignal, SupplyStats, type MarketSignal } from '@/features/community/people-client';
 import { PractitionerJoinCard } from '@/features/community/practitioner-join-card';
+import { ReviewText } from '@/features/dev/copy-review';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('People');
@@ -60,7 +61,7 @@ export default async function PeoplePage() {
             {RULES.map(r => (
               <li key={r} className="bg-night p-6">
                 <h3 className="font-serif text-xl">{t(`rules.${r}.title`)}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-night-ink/80">{t(`rules.${r}.body`)}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-night-ink/80"><ReviewText id={`people.rules.${r}.body`} proposal="delete" hint="Keep the titles only.">{t(`rules.${r}.body`)}</ReviewText></p>
               </li>
             ))}
           </ul>

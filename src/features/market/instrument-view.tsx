@@ -26,6 +26,7 @@ import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
 import { InstrumentMark } from '@/components/market/instrument-mark';
+import { ReviewText } from '@/features/dev/copy-review';
 
 /** The flagship full ticker page shared by /s/[slug], /r/[slug] and /i/[slug]. */
 export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; filter: FilterSpec }) {
@@ -65,7 +66,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             <div className="min-w-0">
               <p className="kicker">{tt(type)}{inst.skill_layer ? <>{' · '}{tt(`layer.${inst.skill_layer}`)}</> : null} · {inst.category}</p>
               <p className="mt-1 font-mono text-[12px] text-muted">
-                {type === 'role' ? (inst.anzsco ? tt('anzsco', { code: inst.anzsco }) : tt('noAnzsco')) : t('tracked', { date: formatDate(inst.tracking_since, { month: 'short', year: 'numeric' }) })}
+                {type === 'role' ? (inst.anzsco ? tt('anzsco', { code: inst.anzsco }) : <ReviewText id="detail.role.noAnzsco" proposal="delete">{tt('noAnzsco')}</ReviewText>) : t('tracked', { date: formatDate(inst.tracking_since, { month: 'short', year: 'numeric' }) })}
               </p>
             </div>
           </div>
@@ -143,7 +144,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               </Button>
             </div>
           ) : (
-            <p className="mt-6 text-[13px] leading-relaxed text-muted">{t('noSignal')}</p>
+            <p className="mt-6 text-[13px] leading-relaxed text-muted"><ReviewText id="detail.noSignal" proposal="delete">{t('noSignal')}</ReviewText></p>
           )}
         </div>
 
@@ -204,13 +205,13 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
       <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-12">
         <section aria-labelledby="comp-h">
           <SectionHeader id="comp-h" kicker={t(`compKicker.${type}`)} title={t(`compTitle.${type}`, { name: inst.name })} />
-          <p className="-mt-1 mb-4 text-[13px] text-muted">{t(`compNote.${type}`, { name: inst.name })}</p>
+          <p className="-mt-1 mb-4 text-[13px] text-muted"><ReviewText id={`detail.compNote.${type}`} proposal="info">{t(`compNote.${type}`, { name: inst.name })}</ReviewText></p>
           <CompositionList entries={detail.composition} parent={inst} filter={filter} mode={type === 'role' ? 'skillsOfRole' : 'rolesOfSkill'} />
         </section>
         {type === 'skill' ? (
           <section aria-labelledby="rel-h">
             <SectionHeader id="rel-h" kicker={t('relKicker')} title={t('relTitle')} />
-            <p className="-mt-1 mb-4 text-[13px] text-muted">{t('relNote', { name: inst.name })}</p>
+            <p className="-mt-1 mb-4 text-[13px] text-muted"><ReviewText id="detail.relNote" proposal="info">{t('relNote', { name: inst.name })}</ReviewText></p>
             <RelatedSkills entries={detail.related} filter={filter} />
           </section>
         ) : (
@@ -252,7 +253,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
         <div>
           <p className="kicker">{t('nextKicker')}</p>
           <h2 id="next-h" className="mt-2 font-serif text-[28px] leading-tight sm:text-[32px]">{t(`nextTitle.${type}`, { name: inst.name })}</h2>
-          <p className="mt-2 max-w-2xl text-ink-2">{t('nextBody')}</p>
+          <p className="mt-2 max-w-2xl text-ink-2"><ReviewText id="detail.nextBody" proposal="delete">{t('nextBody')}</ReviewText></p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="accent" size="lg"><Link href={talk}><MessageCircle aria-hidden />{t('nextCta')}</Link></Button>

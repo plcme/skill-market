@@ -15,6 +15,7 @@ import { FilterReadback } from '@/components/market/filter-readback';
 import { SignalTag } from '@/components/market/signal-tag';
 import { SignalFigures } from './chat-parts';
 import { InstrumentMark } from '@/components/market/instrument-mark';
+import { ReviewText } from '@/features/dev/copy-review';
 
 export interface MarketSignal {
   slug: string;
@@ -86,7 +87,7 @@ export function SupplyStats() {
   const s = selectSupply(db, clockNow(db));
   return (
     <Card className="flex flex-col gap-5 p-5">
-      <Stat label={t('supplyKicker')} value={t('supplyAvailable', { n: s.available })} detail={t('supplyAvailableDetail', { verified: s.verified })} />
+      <Stat label={t('supplyKicker')} value={t('supplyAvailable', { n: s.available })} detail={<ReviewText id="people.supplyAvailableDetail" proposal="info">{t('supplyAvailableDetail', { verified: s.verified })}</ReviewText>} />
       <div className="grid grid-cols-2 gap-5 border-t border-rule pt-4">
         <div>
           <p className="kicker mb-2">{t('supplyByRole')}</p>
@@ -97,7 +98,7 @@ export function SupplyStats() {
           <ul className="flex flex-col gap-1 text-[13px]">{s.byState.map(r => <li key={r.state_id} className="flex justify-between gap-2"><span className="text-ink-2">{r.name}</span><span className="num">{r.count}</span></li>)}</ul>
         </div>
       </div>
-      <p className="border-t border-rule pt-3 text-[12.5px] text-muted">{t('supplyDefinition')} {t('supplyNote')}</p>
+      <p className="border-t border-rule pt-3 text-[12.5px] text-muted"><ReviewText id="people.supplyDefinition" proposal="info">{t('supplyDefinition')} {t('supplyNote')}</ReviewText></p>
     </Card>
   );
 }
