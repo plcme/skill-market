@@ -194,6 +194,7 @@
 - 不制造焦虑，不夸张：不写 "hot"、"skyrocketing"、"don't miss out"。
 - 被拒或超时永远说成 "still looking"，不说 rejected。
 - 数字要带单位和窗口，例如 "Job ads, last 4 weeks"。
+- **更新时间**：每个数据面都标出数据时间，用绝对时间："Updated today, 2:14 am"，跨天写 "Updated 21 Oct, 2:14 am"（用户时区）。不用 "15 hours ago"：每天结算一次的指标到傍晚会显得旧。放在来源行里，不单独占一行。行情条上的职位事件例外，用相对时间（"2 h ago"），因为事件本身是新的（2026-10-23 用户决定）。
 - 产品名只从 `APP_NAME` / `useAppName()` 读取；所有界面文案放在 `messages/en/*.json`。
 - 标语和开场动画：**待定**（候选见 PROGRESS）。
 

@@ -2,7 +2,7 @@
 
 ## 项目是什么
 
-一个面向澳洲大学生的可商用 Web 产品：把劳动力市场需求做成可追踪的"盘面"（skill / role 两类标的），并由市场信号触发，把学生匹配给持有该技能的在职从业者做 20 分钟咖啡聊。产品名未定，代号 `skill-market`。
+一个面向澳洲大学生的可商用 Web 产品：把劳动力市场需求做成可追踪的"盘面"（skill / role 两类标的），并由市场信号触发，把学生匹配给持有该技能的在职从业者做 20 分钟咖啡聊。产品名未定，代号 `skill-market`。域名已买：`brewdex.app`（2026-10-23）；代码里不写死域名，绝对链接一律读 `NEXT_PUBLIC_APP_URL`。
 
 **唯一需求来源是 `docs/PRD.md`。** 研究依据在 `docs/research/`。**术语以 `docs/GLOSSARY.md` 为准**（所有 agent 必读；界面文案、变量命名、需求讨论都按它的用词）。PRD 与研究冲突时以 PRD 为准；PRD 没说清的，做合理假设并记录到 `docs/PROGRESS.md` 的"待拍板"，不要停下来问。
 
@@ -19,10 +19,10 @@
 ## 已定约束（不要推翻，除非在"待拍板"里说明理由）
 
 - 技术栈：Next.js（TypeScript）+ Supabase（Postgres、Auth、Storage，区域 ap-southeast-2 Sydney）+ Vercel + Resend + GitHub Actions
-- **全部使用免费档**；唯一预期付费项是域名（上线前才买）
+- **全部使用免费档**；唯一付费项是域名（已买 `brewdex.app`）
 - Vercel Hobby 不允许商用 → 不要依赖 Vercel 专有功能，保持可迁移到 Cloudflare 等平台
 - 数据只用许可允许的来源；禁止抓取禁止抓取的平台（LinkedIn、SEEK 等）
-- 第一版数据来源：技能级用招聘系统（ATS）公开职位 API（Greenhouse、Lever、Ashby 等），岗位级与覆盖率校准用 JSA IVI 等政府数据；不接 Adzuna（见架构 §6.2、§6.8）
+- 第一版数据来源：技能级只用 Greenhouse、Lever、Ashby 三家招聘系统（ATS）的公开职位接口；岗位级与覆盖率校准用 JSA IVI；分类用 ASC、ANZSCO。不接 Adzuna，不用 Workday（没有公开接口），其余 ATS 核实条款后再加（见架构 §6.2、§6.7、§6.8）。付费数据合作（Adzuna、Indeed 等）等有客户后由用户去谈
 - 遵守澳洲 Privacy Act / APPs；个人数据存放在澳洲区域
 - 付费方不限（见 PRD §12.1），但收入永远不影响盘面数据与展示；MVP 不做付费功能与雇主侧功能
 

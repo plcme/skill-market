@@ -79,7 +79,8 @@
 - Migrations：`instruments`（enum 五类）、`instrument_aliases`、`instrument_relations`、`locations`、`metric_cells`、`metric_definitions`、`metric_points`、`data_sources`、`employers`、`ingestion_runs`、`job_ads`、`job_ad_skills`、`job_runs`、`signals`（全局部分）、`feature_flags`；全部 RLS
 - 种子：`skills.yaml`（约 150）、`roles.yaml`（约 25 ANZSCO）、`locations.yaml`（AU 国 / 州 / 首府与主要城市；只做澳洲）、`data_sources`；`pnpm seed`
 - `src/lib/metrics/registry.ts` + `pnpm metrics:sync` + CI 一致性检查
-- 数据源适配层接口 + `FixtureSource` + `AtsAdsSource`（Greenhouse / Lever / Ashby / Workable / SmartRecruiters 适配器；按 `employers` 登记表每家每天一次，新增 / 关闭判断）+ `JsaIviSeries`（CSV/XLSX 下载解析）+ `AscTaxonomy`（岗位成分初始权重）；NERO / SPL 只做导入骨架（基本面面板在 M2 用）
+- 数据源适配层接口 + `FixtureSource` + `AtsAdsSource`（Greenhouse / Lever / Ashby 三个适配器；轻量列表检查 + 新 id 拉全文；新增 / 关闭判断）+ `JsaIviSeries`（CSV/XLSX 下载解析）+ `AscTaxonomy`（岗位成分初始权重）；NERO / SPL 不在第一版
+- 采集调度：`poll-ats` 每小时、`fetch-ats-details`；按雇主发布速率 λ 调整检查频率（`employers.post_rate`、`next_poll_at`）；可识别 User-Agent、错峰、429 退避（架构 §6.7）
 - `employers` 登记表与种子（ASX 200、四大、银行、大学、政府、澳洲科技公司；记录 ATS 与公开接口地址）
 - 覆盖率：`compute-coverage` 按 ANZSCO 4 位 × 州 × 月对照 IVI 计算 `coverage_ratio`，并给 skill 的 `share_of_ads` 重新加权（架构 §6.8）
 - 抽取规则（seniority / work_mode / work_rights / 字典技能）带 version；`fixtures/ads/*.json` 约 500 条 + 人工标注集 200 条与回归测试
@@ -93,7 +94,7 @@
 **任务**
 1. 分类与地点 migrations + 种子 + 别名归一函数 `resolve_instrument(text)`
 2. 适配层接口与 Fixture 源；全管道在 fixture 上跑通
-3. ATS 源：各家适配器、跨来源去重、新增 / 关闭判断、限速与错误重试、个人信息剥离、`ingestion_runs.stats`
+3. ATS 源：三家适配器、轻量检查、跨来源去重、新增 / 关闭判断、按活跃度调频、退避重试、个人信息剥离、`ingestion_runs.stats`
 4. 抽取规则 + 标注集 + 精确率 / 召回率报告脚本 `pnpm extraction:report`
 5. cell 分配与 `compute_metric_points`；pgTAP 用 fixture 校验 `share_of_ads`、`entry_level_share`、`no_pr_required_share`、`employer_concentration`、`change_4w` 的数值
 6. IVI 导入 → 岗位 month `metric_points`；ASC → `role_has_skill`；`compute-coverage` 与重新加权
@@ -105,12 +106,13 @@
 
 **验收标准**
 - `pnpm verify` 通过
-- `pnpm job ingest-ats --source=fixture && pnpm job extract-features && pnpm job compute-metrics` 在本地空库上跑通，`select count(*) from metric_points` > 0
+- `pnpm job poll-ats --source=fixture && pnpm job fetch-ats-details --source=fixture && pnpm job extract-features && pnpm job compute-metrics` 在本地空库上跑通，`select count(*) from metric_points` > 0
 - `pnpm test:db` 中指标数值用例：fixture 集的手算值与 `compute_metric_points` 输出一致（至少 5 个指标 × 3 个 cell 组合）
 - 同一 job 连续运行两次，`job_ads` 与 `metric_points` 行数不变（幂等）
 - `pnpm extraction:report` 输出每条规则的精确率 / 召回率，seniority 与 work_rights 的精确率 ≥ 0.85（标注集）
 - `pnpm metrics:sync --check` 通过（registry 与 `metric_definitions` 一致）
-- 真实 ATS：`pnpm job ingest-ats --max-employers=5` 返回各家 HTTP 状态与职位数（只打印计数）
+- 真实 ATS：`pnpm job poll-ats --max-employers=5` 返回各家 HTTP 状态与职位数（只打印计数）
+- 调频：fixture 上高活跃雇主每小时被调度、低活跃雇主每天一次（单测）
 - `coverage_ratio` 在 fixture 上与手算值一致；覆盖率低于阈值的格子不产生信号
 - `/admin/pipeline` 对 admin 用户显示最近运行；对非 admin 404
 - 生产项目 pg_cron 任务列表可查（`select jobname from cron.job`），并在次日看到 `ingestion_runs` 新记录（由用户在 Supabase 后台核对）
@@ -129,7 +131,8 @@
 - 页面：`/`、`/market`、`/s/[slug]`、`/r/[slug]`、`/compare`、`/search`、`/metrics/[key]`、`/sources`
 - 组件：`TickerRow` / `TickerCard` / `TickerPage`、`ChangeBadge`、`MetricDefinitionPopover`、`SourceBadge`、`MetricSwitcher`、`FilterRuleBuilder` + `FilterReadback`、`SparklineSvg`、`TrendChart` + 数据表、`SampleWarning`、`CompositionList`
 - `expandFilterToCells`、`aggregateForFilter`、`describeFilter`、`filterHash`；筛选状态全部在 URL
-- 岗位基本面面板（NERO、SPL、成分技能、同现技能）
+- 岗位基本面面板（成分技能、同现技能；NERO、SPL 后续）
+- 行情条接真实职位事件、各标的"今日新增"；每个数据面标出更新时间（架构 §6.7、`DESIGN.md` §8）
 - ISR + `revalidateTag('market')`（`compute-metrics` 完成后调用）
 - 对比视图：两标的同指标并排、共同 / 独有的同现技能、entry-level 占比、样本量；"相关性 / 可迁移性 / 学习投入"为文案化的规则说明（不做分数）
 - `ui_mode`（cookie）切换术语

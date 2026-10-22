@@ -23,7 +23,7 @@
 | A2 | Supabase = Postgres + Auth + Storage + **pg_cron 调度**；schema 用纯 SQL migration 管理 | RLS 与调度都放在数据库里，迁移托管商时零改动 |
 | A3 | 所有后台任务是幂等、可分片的 HTTP job（`/api/jobs/*`），由 pg_cron + pg_net 定时调用 | 不依赖 Vercel Cron（Hobby 只能每日一次且锁定平台） |
 | A4 | **广告级存储 + 可加总的 filter cell** 模型：每条广告归入唯一 (location, work_mode, seniority, work_rights) 格子，指标存 numerator/denominator，任意规则式筛选靠加总得到精确值 | PRD 要求筛选条件是 watchlist 条目的一部分；预计算全部组合不可能，加总模型让任意组合 O(cells) |
-| A5 | 数据源适配层：`AdsSource`（ATS 公开职位 API：Greenhouse / Lever / Ashby / Workable / SmartRecruiters 等，技能级）+ `OfficialSeries`（JSA IVI / NERO / SPL / ASC，岗位级与覆盖率分母）+ `fixture`（测试）。第一版只用这两类来源（2026-10-23 用户决定） | 招聘系统公开接口是雇主自己发布的第一手职位；政府口径（IVI）给出总量，用来算覆盖率并重新加权（§6.8） |
+| A5 | 数据源适配层：`AdsSource`（ATS 公开职位接口，第一版只接 Greenhouse / Lever / Ashby，技能级）+ `OfficialSeries`（JSA IVI，岗位级与覆盖率分母；ASC / ANZSCO 作分类；NERO / SPL 后续）+ `fixture`（测试）。第一版只用这两类来源（2026-10-23 用户决定） | 招聘系统公开接口是雇主自己发布的第一手职位；政府口径（IVI）给出总量，用来算覆盖率并重新加权（§6.8） |
 | A6 | 指标注册表（metric registry）是代码 + 数据库双份、单一来源生成：定义、单位、分母、适用标的类型、最小样本、可用时间窗 | FR-D2 "每个数字解释自己"、FR-M4 "只提供有效组合"变成数据而非散落的 if |
 | A7 | 匹配与 conversation starter 全部为**确定性规则**，MVP 不接 LLM | 可解释（FR-C3）、可测试、零 API 成本 |
 | A8 | 咖啡聊请求是显式状态机（`pending → accepted/declined/expired/...`），超时由 pg_cron SQL 函数处理，邮件走 outbox 表 | FR-C7/C8 的"静默换人"需要事务性与可重放 |
@@ -78,8 +78,8 @@ flowchart LR
         A["管理员 = 产品负责人"]
     end
     subgraph ext[外部系统]
-        ATS["ATS 公开职位 API<br/>Greenhouse / Lever / Ashby …"]
-        JSA["JSA 开放数据<br/>IVI / NERO / SPL / ASC<br/>CC BY 4.0"]
+        ATS["ATS 公开职位接口<br/>Greenhouse / Lever / Ashby"]
+        JSA["JSA 开放数据<br/>IVI / ASC<br/>许可待核实"]
         GOOG[Google OAuth]
         RES[Resend 邮件]
         VID["从业者自带会议链接<br/>Meet / Zoom / Teams"]
@@ -149,7 +149,7 @@ flowchart LR
         V1 --> R1
     end
     subgraph prod["Production = 分支 main"]
-        V2[Vercel Production<br/>自有域名]
+        V2[Vercel Production<br/>brewdex.app]
         S2[("Supabase 项目 1: skill-market<br/>Sydney")]
         V2 --> S2
         R2[Resend 自有域名 SPF/DKIM]
@@ -194,6 +194,7 @@ Supabase 免费档允许 2 个项目，正好一 prod 一 dev。migration 通过
 /search?q=                         搜索（别名归一）
 /metrics · /metrics/[key]          指标定义页（ⓘ 的落地页版本）
 /sources                           数据来源、许可、抽取方法与已知误差、更新时间
+/bot                               采集说明：我们采集什么、频率、联系方式、雇主如何退出（User-Agent 指向这里）
 /people                            咖啡聊入口与从业者招募
 /onboarding                        Tier 0 → Tier 1（可随时跳过）
 /me                                My desk：watchlist + 信号高亮 + 待处理请求（与头像菜单合并）
@@ -531,12 +532,13 @@ RLS 策略矩阵（`anon` = 未登录，`auth` = 已登录本人，`pract` = 已
 
 | 任务 | 类型 | 频率（pg_cron，AEST） | 说明 |
 |---|---|---|---|
-| `ingest-ats` | HTTP 分片 | 每日 02:00 启动，之后每 5 分钟 tick 直到 done | 按 `employers` 登记表逐家调用其 ATS 公开职位接口（每家每天一次，游标存表），拉取全部在招职位：新出现 = 新增，消失 = 关闭（写 `closed_at`）；去重写入 `job_ads` |
-| `extract-features` | SQL + TS | 采集后 | 对新广告跑 `seniority` / `work_mode` / `work_rights` 规则与字典技能匹配（title + 职位全文），剥离个人姓名 / 邮箱 / 电话，写 `extraction_version` |
+| `poll-ats` | HTTP 分片 | 每小时，错开发出 | 只拉各雇主职位列表的轻量版本（id、标题、更新时间，不含全文）；按雇主活跃度决定本小时查不查（§6.7）；新 id 入队，消失的 id 写 `closed_at` |
+| `fetch-ats-details` | HTTP 分片 | `poll-ats` 之后 | 只为新 id 拉全文，去重写入 `job_ads` |
+| `extract-features` | SQL + TS | 每次拉到全文后 | 对新广告跑 `seniority` / `work_mode` / `work_rights` 规则与字典技能匹配（title + 职位全文），剥离个人姓名 / 邮箱 / 电话，写 `extraction_version` |
 | `compute-metrics` | SQL 函数 `compute_metric_points(date)` | 每日 04:00 | 按 cell × instrument × metric 写 `metric_points`（day 粒度；month 粒度由 IVI 导入写入） |
 | `compute-relations` | SQL 函数 | 每周日 | 重算共现与岗位成分权重 |
 | `detect-signals` | SQL 函数 `detect_signals()` | 每日 04:30 | 对每个 watchlist item 与每个全局默认 cell 评估阈值（§6.5），写 `signals`，入 outbox（若用户开启提醒） |
-| `ingest-jsa` | HTTP 分片 | 每月 1 日；也可手动 | 下载 IVI / NERO / SPL 文件，写 month 粒度 `metric_points` 与岗位基本面 |
+| `ingest-jsa` | HTTP 分片 | 每月 1 日；也可手动 | 下载 IVI 文件，写 month 粒度 `metric_points`（NERO / SPL 后续再接） |
 | `compute-coverage` | SQL 函数 | `ingest-jsa` 之后 | 按 ANZSCO 4 位 × 州 × 月计算 `coverage_ratio` 与重新加权系数（§6.8） |
 | `expire-requests` | SQL 函数 `expire_chat_requests()` | 每 15 分钟 | `pending` 且 `expires_at < now()` → `expired`，释放 slot，入 outbox "we're finding someone else" |
 | `generate-slots` | SQL 函数 | 每日 | 按 `availability_templates` 生成未来 28 天 slot，过期未预订的置 `expired` |
@@ -556,10 +558,10 @@ pg_cron 的 schedule 语句写在 migration 中；URL 与 secret 从 Supabase Va
 ```mermaid
 flowchart LR
     subgraph sources[数据源适配层 src/data-sources]
-        A1["AtsAdsSource<br/>Greenhouse / Lever / Ashby / Workable / SmartRecruiters …<br/>按 employers 登记表逐家拉取"]
+        A1["AtsAdsSource<br/>Greenhouse / Lever / Ashby<br/>按 employers 登记表逐家拉取"]
         A2["JsaIviSeries<br/>月度 ANZSCO x 州/区域 招聘量"]
-        A3[JsaNeroSeries<br/>月度 就业量 nowcast]
-        A4[JsaSplTable<br/>年度 短缺评级]
+        A3[JsaNeroSeries 后续<br/>月度 就业量 nowcast]
+        A4[JsaSplTable 后续<br/>年度 短缺评级]
         A5["AscTaxonomy<br/>职业→技术工具/技能"]
         A6[FixtureSource<br/>测试与本地]
     end
@@ -602,10 +604,10 @@ flowchart LR
 
 | 源 | 内容 | 粒度 | 历史 | 许可 / 商用 | 在本产品中的用途 | 状态 |
 |---|---|---|---|---|---|---|
-| ATS 公开职位 API：Greenhouse、Lever、Ashby、Workable、SmartRecruiters、Recruitee、Workday | 单条职位：标题、雇主、地点、部门、全文、申请链接，部分有薪资 | 广告级 → 技能级 | 只有在招职位；从开始采集起自建历史 | 接口公开、无需认证；**各家服务条款中的商用与聚合条款逐家人工核实**（`docs/SETUP.md`） | 技能级计数、entry-level / 远程 / 工作权利 / 雇主集中度 / 薪资，全部自建快照 | 第一版主力 |
-| JSA Internet Vacancy Index | 月度在线招聘广告量（来源 SEEK、CareerOne、Workforce Australia），ANZSCO 4 位 × 州 / SA4 | 岗位级 | 2006 起 | JSA 出版物普遍 CC BY 4.0；IVI 数据集许可需复核 | 岗位 `ad_count` / `growth_12m` 上线即有多年历史；`coverage_ratio` 的分母与重新加权的权重（§6.8）；季节性（Post-MVP） | 第一版主力（政府口径） |
-| JSA NERO | 月度就业量 nowcast，355 职业 × 88 区域 | 岗位级 | 2015 起 | CC BY 4.0（需复核） | 岗位基本面面板："该区域约 N 人从事" | 待复核 |
-| JSA Skills Priority List | 职业短缺评级 | 岗位级 | 年度 | CC BY 4.0（需复核） | 岗位基本面："全国短缺：是/否" | 待复核 |
+| ATS 公开职位接口：Greenhouse、Lever、Ashby | 单条职位：标题、雇主、地点、部门、全文、申请链接，部分有薪资 | 广告级 → 技能级 | 只有在招职位；从开始采集起自建历史 | 官方文档公开、无需认证；**没有明文许可，也没有明文禁止**（见下方核实现状） | 技能级计数、entry-level / 远程 / 工作权利 / 雇主集中度 / 薪资，全部自建快照 | 第一版主力 |
+| JSA Internet Vacancy Index | 月度在线招聘广告量（来源 SEEK、CareerOne、Workforce Australia），ANZSCO 4 位 × 州 / SA4 | 岗位级 | 2006 起 | JSA 出版物普遍 CC BY 4.0；**IVI 数据集在 data.gov.au 上写的是 "Not Specified"**，需向 JSA 书面确认 | 岗位 `ad_count` / `growth_12m` 上线即有多年历史；`coverage_ratio` 的分母与重新加权的权重（§6.8）；季节性（Post-MVP） | 第一版主力（政府口径） |
+| JSA NERO | 月度就业量 nowcast，355 职业 × 88 区域 | 岗位级 | 2015 起 | CC BY 4.0（需复核） | 岗位基本面面板："该区域约 N 人从事" | 后续（第一版不接） |
+| JSA Skills Priority List | 职业短缺评级 | 岗位级 | 年度 | CC BY 4.0（需复核） | 岗位基本面："全国短缺：是/否" | 后续（第一版不接） |
 | JSA Australian Skills Classification | 职业 → 技术工具 / 专业任务 / 核心能力 | 岗位→技能映射 | 版本化 | CC BY 4.0（需复核） | 岗位成分技能的初始权重；技能字典的种子 | 待复核 |
 | ANZSCO（ABS） | 职业分类 | — | — | CC BY 4.0 | `instruments(type=role).anzsco_code` | 待复核 |
 | 首发大学课程目录 | unit code、名称 | — | — | 人工整理公开事实（不抓取） | Tier 1 勾选、技能推断 | 假设 |
@@ -615,6 +617,19 @@ flowchart LR
 **署名**：`/sources` 页与每个 `SourceBadge` popover 显示各源的署名文本与许可链接；`data_sources.attribution` 字段驱动，不写死。
 
 **存储合规**：`job_ads.raw_snippet` 只保留 30 天用于重跑抽取（`purge` 任务）；长期只保留派生字段与聚合。若某家 ATS 条款禁止存储职位内容，则把该来源的 `raw_snippet` 保留期设为 0 天（抽取在采集事务内完成），代码路径不变。入库前剥离招聘人员姓名、邮箱、电话（APP 3）。
+
+**条款核实现状（2026-10-23，查官方文档）**
+
+| 来源 | 官方文档怎么说 | 结论 |
+|---|---|---|
+| Greenhouse Job Board API | GET 公开、无需认证；用途是给雇主搭自己的招聘页；没有使用条款、缓存或商用条款 | 没禁止，也没授权 |
+| Lever Postings API | 用途是"帮你搭一个招聘网站"；写明已发布职位 "may be scraped by third parties"；没有许可条款 | 承认第三方读取，不等于授权 |
+| Ashby Public Job Posting API | 用途是拉取本组织职位填充招聘页；没有条款、限速或商用说明 | 没禁止，也没授权 |
+| Workday | 没有公开职位接口，只有招聘页内部用的 JSON | **不用**（等于抓网页） |
+| Workable、SmartRecruiters、Recruitee | Workable 只有非官方 widget 接口；其余没查到条款 | 第一版不接，核实后再加 |
+| JSA IVI | 数据集许可未注明 | 需书面确认 |
+
+降低风险的做法（已在本节和 §6.7 落实）：不转载职位原文，只存派生字段与聚合计数，原文 30 天后删；入库前剥离个人信息；礼貌采集；雇主要求退出即从登记表删除。商业化前需要厂商与 JSA 的书面答复，并请澳洲律师审查数据来源、版权与隐私（`docs/SETUP.md` §6）。
 
 **第一版不用的来源**：Adzuna 免费 API 禁止商业机构以聚合形式（职位计数、平均薪资）持续使用，没有书面授权前不接；LinkedIn、SEEK、Indeed 网站一律不抓取。依据见 `docs/research/data-sources.md`。
 
@@ -654,8 +669,8 @@ type FilterSpec = {
 | `volatility` | 近 12 周周度广告数的变异系数 | — | skill, role | 进阶 | ≥ 84 天 |
 | `skill_premium` | 提到该技能的岗位薪资中位数 vs 同岗位不提该技能的 | — | skill | 进阶 | 标薪样本 ≥ 2 × min_sample |
 | `coverage_ratio` | 我们看到的新增广告 ÷ JSA IVI 同职业同州新增广告（§6.8） | ours / IVI | skill, role | 定义弹窗 | IVI 已导入 |
-| `nero_employment` | 区域就业量 nowcast（官方） | — | role | 基本面面板 | NERO |
-| `spl_shortage` | 全国短缺评级（官方） | — | role | 基本面面板 | SPL |
+| `nero_employment` | 区域就业量 nowcast（官方） | — | role | 基本面面板（后续） | NERO |
+| `spl_shortage` | 全国短缺评级（官方） | — | role | 基本面面板（后续） | SPL |
 
 注册表在 `src/lib/metrics/registry.ts` 定义，migration 里的 `metric_definitions` 由 `pnpm metrics:sync` 从同一文件生成（CI 校验两者一致）。`MetricSwitcher` 与 `MetricDefinitionPopover` 都只读 registry。
 
@@ -669,6 +684,8 @@ type FilterSpec = {
 | `fall` | `change_4w ≤ −25%` 且绝对减量 ≥ 10 | 同上；文案中性："fewer ads than 4 weeks ago" |
 | `entry_open` | `entry_level_share` 较 8 周前上升 ≥ 10 个百分点 | 对学生最有行动意义 |
 | `since_added` | watchlist 项相对 `baseline_value` 变化 ≥ 25% | 只在 watchlist 上显示，不发邮件 |
+
+**改进方向（接上真实数据后）**：职位发布是低频事件，可以看成泊松到达。用泊松检验替代固定的 25% / 10 条阈值，计算"这次上涨只是随机波动"的概率：小技能不会被随机波动误报，大技能的真实变化也不会漏掉。阈值形态不变，仍从 `feature_flags.signal_thresholds` 读取。
 
 信号一律同时携带绝对值（FR-D3），并只在 `sample_n` 足够时产生。信号 → 匹配的桥接：`chat_requests.signal_id` 可空，但 UI 的"找人聊"入口总是携带 `instrument + filter`，信号只是附加上下文。
 
@@ -684,15 +701,19 @@ type FilterSpec = {
 1. **第一天就开始**：M1 完成即在生产 Supabase 项目上开启每日采集，早于任何 UI 上线；上线时已有数周技能级数据。
 2. **先岗位后技能**：岗位页上线即有 IVI 多年月度历史；技能页显示"自 {tracking_since} 起追踪"与 `change_4w`，`growth_12m` 达标后自动出现（registry 的 `available_after_days`）。
 3. **冷启动**：首次运行拉到的是各雇主当前全部在招职位，作为起点；ATS 接口没有已下架职位的历史，技能级历史只能从开始采集那天累积。
-4. **请求量**：每家雇主每天一次请求，与技能数无关；遵守 robots.txt 和各家限速，带可识别的 User-Agent。`ingestion_runs.stats` 记录成功、失败与新增 / 关闭数。
+4. **采集节奏**：指标每天结算一次（`compute-metrics`）；采集分两层，节奏由雇主而不是技能决定（一次请求拿回这家雇主的全部职位，技能再热也不多请求）：
+   - **轻量检查**：`poll-ats` 每小时只拉职位列表（id、标题、更新时间），新 id 才去拉全文（`fetch-ats-details`）。Greenhouse 的列表接口可以不带全文；Lever、Ashby 有没有轻量模式在 M1 实现时核实，没有就整份拉取后只处理新 id。
+   - **按活跃度调频**：把每家雇主的发布看成泊松到达，用近 8 周数据估计速率 λ（`employers.post_rate`）。活跃雇主（如一周几十个职位）每小时查，安静雇主（一个月一个）每天查；新登记的雇主先按每小时查，满 2 周后按 λ 调整。变动集中在少数大雇主，这样能抓到大部分小时级变化，请求量远少于全部每小时。
+   - **礼貌**：请求错开发出，不在整点集中；遵守 robots.txt；遇到 429 退避重试；带可识别的 User-Agent（`ATS_USER_AGENT`，形如 `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <联系邮箱>)`），`/bot` 页面说明我们采集什么、怎么联系、怎么退出。
+   - **盘中这一层**只服务"今天发生了什么"：行情条滚动真实职位事件（"Atlassian 新发 3 个 Data Engineer · 2 小时前"）与各标的的"今日新增"计数；正式指标不在盘中重算。每个数据面标出更新时间（`DESIGN.md` §8）。
 5. **存储预算**：每条广告长期保留约 300 B 的派生字段；首发类目每年约 10–20 万条 → < 60 MB，远低于 500 MB。
-6. **可替换**：`AdsSource` 接口不含任何 ATS 厂商特有字段；以后谈成的授权来源（Adzuna、Employment Hero 等）只需实现接口并注册 `data_sources`。
+6. **可替换**：`AdsSource` 接口不含任何 ATS 厂商特有字段；以后谈成的授权来源只需实现接口并注册 `data_sources`。付费的整包数据（Adzuna、Indeed 等聚合商，或 ATS 厂商的合作数据）等有客户后由用户去谈；Employment Hero 是补中小企业缺口的首选。
 
 ### 6.8 覆盖率与重新加权（政府口径校准）
 
 ATS 只覆盖用招聘系统的中大雇主，会系统性低估中小企业密集的行业（建筑、零售、护理等）。第一版用 JSA IVI 当总量标尺：
 
-- **雇主登记表** `employers(name, abn?, ats, board_token, anzsic, size_band, verified_at)`：种子从 ASX 200、四大、银行、大学、各级政府、澳洲科技公司人工整理，每家记录它用的 ATS 和公开接口地址。
+- **雇主登记表** `employers(name, abn?, ats, board_token, anzsic, size_band, post_rate, next_poll_at, verified_at)`：种子从 ASX 200、四大、银行、大学、各级政府、澳洲科技公司人工整理，每家记录它用的 ATS 和公开接口地址。
 - **去重**：同一职位可能在多个 ATS 或渠道出现，按 `(employer, normalized_title, location, 描述 hash)` 去重。
 - **`coverage_ratio(anzsco4, state, month)`** = 我们在该格子里去重后的新增广告数 ÷ IVI 在该格子的新增广告数。IVI 本身只统计三个招聘平台，所以这是近似的相对覆盖率，不是抽样率。skill 的覆盖率取其主要职业覆盖率的加权值。
 - **重新加权**：skill 的 `share_of_ads` 按职业 × 州用 IVI 占比做事后分层加权，纠正大企业和科技行业过度代表。同一职业内部中小企业与大企业的技能差异（如 Xero 对 SAP）观察不到，在定义弹窗里说明。
@@ -915,7 +936,7 @@ sequenceDiagram
 | Resend | 3,000 封/月、100 封/日、1 个域名 | 每日 100 封 | 每完成一次咖啡聊约 7 封 → 每日约 14 次请求闭环，或约 300 位活跃用户 | Pro USD 20/月（50K）；outbox 已按日配额排队，不会丢信 |
 | GitHub Actions | 私有仓库 2,000 分钟/月 | CI 时长（含 Supabase 容器启动约 3 分钟） | 每月约 150 次 CI 运行 | 合并 e2e 到 nightly；或仓库转公开（无限分钟） |
 | Google OAuth | Testing 模式 100 个测试用户 | 用户数 | 上线前 | 有域名 + 隐私政策后切 Production，免费 |
-| ATS 公开职位 API | 无统一额度；各家限速与条款不同 | 雇主登记表规模 | 每家每天一次请求，数千家以内无压力 | 分片 tick（已设计）；遵守各家限速 |
+| ATS 公开职位接口 | 官方未公布读取限速 | 雇主登记表规模 × 频率 | 2,000 家全部每小时一次约 4.8 万次 / 天（平均每秒不到 1 次）；按活跃度调频后远少于此 | 轻量检查 + 按活跃度调频（§6.7）；遇 429 退避 |
 | Sentry（若采用） | 5K 错误/月 | 错误事件 | 一次前端错误风暴即可打满 | 采样率 + 忽略规则；Team USD 26/月 |
 | pg_cron / pg_net | 随 Supabase 免费 | 无 | — | — |
 | UptimeRobot 类拨测 | 50 个监控、5 分钟间隔 | 无 | — | — |
@@ -930,12 +951,12 @@ sequenceDiagram
 
 | # | 类型 | 问题 | 本文采用的默认 | 阻塞 |
 |---|---|---|---|---|
-| 1 | D | 产品名（PRD Q1） | `APP_NAME` 常量，默认 `skill-market`；域名购买前必须定 | M8 |
+| 1 | D | 产品名（PRD Q1） | `APP_NAME` 常量，默认 `skill-market`；域名已买 `brewdex.app`（2026-10-23），产品名是否就叫 Brewdex 待用户确认 | M8 |
 | 2 | A | 会议链接（PRD Q2） | 从业者自带；系统只存链接并在确认邮件中发送 | — |
 | 3 | A | 界面语言（PRD Q3） | 英文；`next-intl` 单 locale | — |
 | 4 | A | 首发范围（PRD Q4） | 悉尼大学 工程与 IT 学院 × 软件 / 数据（ATS 覆盖最好的领域）；技能约 150、岗位约 25 | — |
 | 5 | A | 从业者验证（PRD Q5） | 工作邮箱验证码 + 免费邮箱域名黑名单；失败进 admin 审核队列 | — |
-| 6 | A | 数据来源（PRD Q6） | 2026-10-23 用户决定：第一版 = ATS 公开职位 API（技能级）+ JSA IVI（岗位级与覆盖率校准）；Adzuna 不接。按"可存派生字段、原文 30 天"实现，某家条款更严则该来源 0 天；各家条款上线前人工核实（`docs/SETUP.md`） | M8 前核实条款 |
+| 6 | A | 数据来源（PRD Q6） | 2026-10-23 用户决定：第一版 = Greenhouse / Lever / Ashby 公开职位接口（技能级）+ JSA IVI（岗位级与覆盖率校准）；Adzuna、Workday 不接。按"可存派生字段、原文 30 天"实现，某家条款更严则该来源 0 天；各家条款上线前人工核实（`docs/SETUP.md`） | M8 前核实条款 |
 | 7 | A | 无隐喻模式（PRD Q7） | 做成 `ui_mode` 设置项 | — |
 | 8 | A | 超时时长（PRD Q8） | 72 小时，`feature_flags.request_timeout_hours` 可配 | — |
 | 9 | A | 技能级 `growth_12m` 上线时不可用 | 以 `change_4w` 为 MVP 信号指标；`growth_12m` 自动开放 | — |
@@ -995,7 +1016,7 @@ docs/                      本目录
 | `NEXT_PUBLIC_APP_NAME` | 产品名（`APP_NAME` 常量来源；缺省 `skill-market`） | 全部 |
 | `NEXT_PUBLIC_APP_URL` | 绝对链接（邮件、ics） | 全部 |
 | `JOBS_SECRET` | `/api/jobs/*` 鉴权；同一值写入 Supabase Vault | server |
-| `ATS_USER_AGENT` | 采集请求的可识别 User-Agent（含联系方式） | server |
+| `ATS_USER_AGENT` | 采集请求的可识别 User-Agent，形如 `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <联系邮箱>)` | server |
 | `MIN_SAMPLE_N` | 样本阈值默认（默认 30；也可在 registry 覆盖） | server |
 | `SENTRY_DSN`（待拍板） | 错误监控 | server + client |
 | `E2E_*`（仅 CI） | 测试账号 | CI |

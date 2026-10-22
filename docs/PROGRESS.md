@@ -7,7 +7,9 @@
 
 - M0 本地完成（云端接入未完成，见 `docs/SETUP.md`）。之后一直在做前端原型迭代：FE-R1 到 FE-R7 已全部合并 `dev` 并 push，`main` 未更新。
 - 前端是完整可交互原型：市场数字来自合成引擎，用户数据存浏览器 localStorage，**没有接 Supabase**。
-- **数据来源已定（2026-10-23）**：第一版技能级用 ATS 公开职位 API，岗位级与覆盖率校准用 JSA IVI；不接 Adzuna。PRD §11、架构 §6.2 / §6.8、M1、`docs/SETUP.md` §6 已同步。
+- **数据来源已定（2026-10-23）**：第一版技能级只用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与覆盖率校准用 JSA IVI；不接 Adzuna、Workday。三家接口和 IVI 都**没有明文许可**，商业化前要拿到书面答复并请律师看（`docs/SETUP.md` §6）。
+- 采集节奏：指标每天结算；每小时轻量检查新职位，按雇主活跃度（泊松速率 λ）调频；盘中喂行情条与"今日新增"；每个数据面标出 "Updated today, 2:14 am"（架构 §6.7、`DESIGN.md` §8）。
+- 域名已买：`brewdex.app`。
 - 本机限制：Mac 跑不动全量数据库，数据库与 pgTAP 测试走 Windows 桥接（见 CLAUDE.md "本机开发环境"）。
 - 下一步：继续前端反馈轮次，或开始 M1 接真实数据，由用户决定。
 
@@ -24,12 +26,12 @@
 
 | # | 问题 | 建议 / 现状 | 何时需要 |
 |---|---|---|---|
-| 1 | 产品名（PRD Q1） | 先用 `APP_NAME=skill-market` | M8 买域名前 |
+| 1 | 产品名（PRD Q1）：域名已是 `brewdex.app`，产品名是否就叫 Brewdex | 先用 `APP_NAME=skill-market` | M8 前 |
 | 2 | 错误监控接不接 Sentry（EU，PII scrub） | 接 | M8 前 |
 | 3 | 备份强度：每日 schema + 公共数据 artifact，每周全量加密 dump | 接受 | M8 前 |
 | 4 | Vercel Hobby 禁止商用：升 Pro（USD 20/月）还是迁 Cloudflare Workers | 开发期留在 Hobby，上线时再选 | M8 |
 | 5 | 非 tech 行业（建筑、零售、护理）ATS 覆盖率低：带覆盖说明上线，还是等中小企业来源谈成再开放 | 带说明上线 | M2 上线前 |
-| 6 | 新增环境变量：`NEXT_PUBLIC_APP_URL`、`ATS_USER_AGENT`、`MIN_SAMPLE_N`、`SENTRY_DSN`（若接）；`JOBS_SECRET` 已有 | 由用户 / Codex 写入 `.env.example` | M1 前 |
+| 6 | 新增环境变量：`NEXT_PUBLIC_APP_URL`（`https://brewdex.app`）、`ATS_USER_AGENT`（需要一个联系邮箱）、`MIN_SAMPLE_N`、`SENTRY_DSN`（若接）；`JOBS_SECRET` 已有 | 由用户 / Codex 写入 `.env.example` | M1 前 |
 | 7 | skill 的 Median salary 默认不按 Experience 拆开，可能被读成"学了就能拿" | 单独给 salary 默认拆分，或加提示 | 前端下一轮 |
 | 8 | Watching 是否包含 held（I have this / Worked in this role） | 目前包含 | 前端下一轮 |
 | 9 | onboarding 里是否让学生设默认口径（entry-level / No PR），作用于行情表 | — | 前端下一轮 |
@@ -38,7 +40,7 @@
 | 12 | 细分行业颗粒度：ANZSIC Subdivision 还是 Group | — | 前端下一轮 |
 | 13 | 未排期的产品想法：首页标语与开场动画；LinkedIn 证书导入；Twitter 书签式交互；对比页超过 2 个标的 | — | 用户提出时 |
 
-已决定、不再列出：Adzuna 与数据来源（→ ATS + IVI）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
+已决定、不再列出：数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
 
 ## 上 main 前必须做
 
@@ -64,6 +66,8 @@
 每轮的细节见 `docs/reviews/FE-R*.md` 与 git log。
 
 ## 日志（新的在上）
+
+- 2026-10-23：核实 ATS 与 JSA 条款（三家 ATS 官方文档无明文许可也无禁止；Workday 无公开接口；IVI 许可未注明），第一版来源收窄；写入采集节奏、轻量检查、按活跃度调频、泊松信号、行情条盘中层、"Updated" 时间格式、`/bot` 页；记录域名 `brewdex.app`。
 
 - 2026-10-23：文档整理。删除 `product-working-doc-original.md`、`FRONTEND_V2_BRIEF.md` 和本地 `coda-feedback/`；`SETUP_CHECKLIST.md` + `SETUP_STATUS.md` 合并为 `docs/SETUP.md`；去掉预算跟踪；数据来源定为 ATS 公开 API + JSA IVI 并同步 PRD / 架构 / 里程碑 / 术语表；架构 §4 路由表同步到 FE-R7；`FRONTEND_API_REPORT.md` 标为 FE-R2 快照；Windows 桥接写进 CLAUDE.md，桥接脚本与说明只留本机。
 - 2026-10-22：FE-R5、R6、R7 合并 dev 并 push。lint / typecheck / 单测（280 → 282）/ build 通过；按用户偏好未跑 e2e。Windows 开发数据库就绪（13 项 pgTAP 通过）。

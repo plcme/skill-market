@@ -50,25 +50,28 @@
 
 ## §6 数据来源许可核实
 
-第一版数据来源（2026-10-23 已定）：**技能级用招聘系统（ATS）公开职位 API，岗位级与覆盖率校准用 JSA IVI 等政府数据**。ATS 接口公开、无需注册或 key。不接 Adzuna；不抓 LinkedIn、SEEK、Indeed。依据见 `docs/research/data-sources.md`。
+第一版数据来源（2026-10-23 已定）：**技能级只用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与覆盖率校准用 JSA IVI**。这三家接口公开、无需注册或 key，但官方文档里**没有明文许可**（核实结果见架构 §6.2）。不接 Adzuna、Workday；不抓 LinkedIn、SEEK、Indeed。依据见 `docs/research/data-sources.md`。
 
 M1 前：
 
 - [ ] JSA Internet Vacancy Index：下载地址、更新频率、数据集许可（预期 CC BY 4.0）、署名文本
-- [ ] JSA NERO、Skills Priority List、Australian Skills Classification：同上
+- [ ] Australian Skills Classification：同上（NERO、Skills Priority List 第一版不接）
 - [ ] ABS（ANZSCO）：许可与署名
 
-上线前（M8）：
+商业化前（由用户本人发出，主会话可代拟草稿）：
 
-- [ ] 逐家核实服务条款中关于商用、存储与聚合统计的条款：Greenhouse、Lever、Ashby、Workable、SmartRecruiters、Recruitee、Workday
-- [ ] PageUp、SuccessFactors 是否有公开职位接口
-- [ ] APSJobs 与各州政府职位板的条款
+- [ ] 邮件给 Greenhouse、Lever、Ashby 的合作或法务邮箱：说明用途是面向学生的聚合统计、不转载原文、链接回雇主，请求书面同意
+- [ ] 邮件给 JSA：确认 IVI 数据集能否商用、署名怎么写
+- [ ] 请澳洲律师审查数据来源、版权与隐私
+
+以后再加的来源：Workable、SmartRecruiters、Recruitee（先核条款）；PageUp、SuccessFactors 是否有公开接口；APSJobs 与各州政府职位板；付费数据合作（Adzuna、Indeed、Employment Hero 等），有客户后由用户去谈。
 
 每项记录：频率限制、署名要求、**能否商用**；拿不准的标"待人工确认"。
 
 ## §7 上线前（M8）
 
-- [ ] 域名（唯一付费项；产品名未定）
+- [x] 域名：`brewdex.app`（2026-10-23 已买；产品名是否就叫 Brewdex 待定）
+- [ ] 联系邮箱（如 `data@brewdex.app`），写进 `ATS_USER_AGENT` 与 `/bot` 页面
 - [ ] Resend 域名 DNS（SPF / DKIM），Supabase Auth SMTP 改用 Resend
 - [ ] Google consent screen 从 Testing 切到 Production（需要自有域名上的首页与隐私政策）
 - [ ] Vercel Hobby 不允许商用：升 Pro 或迁 Cloudflare
