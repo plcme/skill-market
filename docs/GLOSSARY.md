@@ -42,6 +42,7 @@
 | Entry-level share | `entry_level_share` | 文本抽取，需标注方法与误差 |
 | No PR required | `no_pr_required_share` | 文本抽取，需标注方法与误差 |
 | Median salary | `salary_median` | role 和 skill（2026-10-17 用户决定 skill 也显示）。只统计写明薪资的广告。为避免把"岗位偏资深"误读成"学了就能拿"，可在 Split by 选 Experience（FE-R6 起图表默认不拆分） |
+| Coverage（只在 ⓘ 和覆盖说明里出现，不进度量下拉） | `coverage_ratio` | 我们看到的新增广告 ÷ JSA IVI 同职业同州新增广告；近似的相对覆盖率。覆盖不足时数字旁加说明或不显示信号（架构 §6.8） |
 | Skill premium | `skill_premium` | 仅 skill，进阶指标；同一 role 内有无该技能的受控对比 |
 
 ## 4. 其他产品用词

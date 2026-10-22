@@ -109,7 +109,7 @@
 
 ## 5. 组件
 
-可用组件以 `src/components/ui/*` 和 `src/components/market/*` 为准，清单见 `docs/FRONTEND_V2_BRIEF.md`。这里只写使用规则。
+可用组件以 `src/components/ui/*`、`src/components/market/*` 和 `src/features/*` 的代码为准。这里只写使用规则。
 
 - **按钮层级**：
   - 每个视图最多一个 `primary`（墨色实心）。
