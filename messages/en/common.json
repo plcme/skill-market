@@ -61,9 +61,7 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "tape": "Market signals",
-    "tapePause": "Pause ticker",
-    "tapePlay": "Play ticker"
+    "tape": "Market signals"
   },
   "Search": {
     "title": "Search",
