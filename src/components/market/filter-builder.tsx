@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox, ChipRadioGroup, ChipToggleGroup, Input, RadioCards, Segmented, Switch } from '@/components/ui/form';
 import { PICKABLE_LOCATIONS, ancestorsOf, getLocation, narrowedPlaces, placesOrAllAustralia } from '@/lib/filters/locations';
 import {
-  activeConditionCount, cloneFilter, DEFAULT_FILTER, describeFilter, encodeFilter, fromSimpleFilter, isDefaultFilter, MAX_RULES, normaliseFilter,
+  cloneFilter, DEFAULT_FILTER, describeFilter, encodeFilter, fromSimpleFilter, isDefaultFilter, MAX_RULES, normaliseFilter,
   remoteAnywhereRedundant, toSimpleFilter, type SimpleFilter,
 } from '@/lib/filters/spec';
 import type { BreakdownDimension, FilterRule, FilterSpec, LocationLevel, MetricKey, Seniority, WorkMode, WorkRights } from '@/lib/market/types';
@@ -358,17 +358,14 @@ export function FilterEditor({ value, onChange, extra, readbackSuffix }: {
 
 /**
  * Readback + edit sheet. Without `onChange` it reads and writes the `?f=` param.
- * `variant="button"` renders only a compact Filter button (with a badge counting
- * active conditions); the caller keeps the readback visible elsewhere (PRD §10.1).
  * `trigger` replaces the built-in trigger with the caller's own element (e.g. the
  * detail-page title), opening the same sheet.
  */
-export function FilterBar({ value, onChange, className, compact = false, variant = 'bar', trigger, chartControls }: {
+export function FilterBar({ value, onChange, className, compact = false, trigger, chartControls }: {
   value?: FilterSpec;
   onChange?: (f: FilterSpec) => void;
   className?: string;
   compact?: boolean;
-  variant?: 'bar' | 'button';
   /** Custom trigger; must render a single focusable element (it is wrapped in `DialogTrigger asChild`). */
   trigger?: (state: { current: FilterSpec; pending: boolean }) => React.ReactElement;
   /** Detail page: adds Y axis and Split by sections; Apply writes them with the filter in one URL change. */
@@ -399,24 +396,10 @@ export function FilterBar({ value, onChange, className, compact = false, variant
     } else (onChange ?? setUrlFilter)(f);
   };
   const valid = draft.rules.every(r => r.work_modes.length && r.location_ids.length);
-  const count = activeConditionCount(current);
   return (
     <Dialog open={open} onOpenChange={o => { setOpen(o); if (o) { setDraft(cloneFilter(current)); setChartDraft(chartInit()); } }}>
       {trigger ? (
         <DialogTrigger asChild>{trigger({ current, pending })}</DialogTrigger>
-      ) : variant === 'button' ? (
-        <DialogTrigger asChild>
-          <Button
-            variant={count ? 'primary' : 'subtle'}
-            size="sm"
-            className={cn(pending && 'opacity-70', className)}
-            aria-label={count ? t('buttonLabelActive', { n: count }) : t('buttonLabel')}
-          >
-            <SlidersHorizontal aria-hidden />
-            {t('button')}
-            {count ? <span className="num -mr-1 grid h-5 min-w-5 place-items-center rounded-full bg-paper px-1 text-[11.5px] font-semibold text-ink" aria-hidden>{count}</span> : null}
-          </Button>
-        </DialogTrigger>
       ) : (
       <div className={cn('flex items-center gap-3 rounded-md border border-rule bg-surface px-3 py-2.5 sm:px-4', pending && 'opacity-70', className)}>
         <SlidersHorizontal className="hidden size-4 shrink-0 text-muted sm:block" aria-hidden />

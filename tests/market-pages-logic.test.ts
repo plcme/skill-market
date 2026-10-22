@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  barPercent, boardForTab, boardTypeParam, chartMetricFor, COMPARE_MAX, compareBlocker, compareHref, compareState, correlationBand, firstParam, hrefWith,
+  barPercent, boardForTab, boardTypeParam, canonicalMarketQuery, chartMetricFor, COMPARE_MAX, compareBlocker, compareHref, compareState, correlationBand, firstParam, hrefWith,
   keyMetrics, parseBoardType, parseSort, parseView, salaryAxis, SUGGESTED_PAIRS, toggleCompare, toQueryString, togetherness, watchedRows, watchedSlugs,
 } from '@/features/market/logic';
 import { getInstrument } from '@/lib/market/catalog';
@@ -119,10 +119,22 @@ describe('compare selection from the board', () => {
     expect(compareBlocker([py], java)).toBeNull();
     expect(compareBlocker([], analyst)).toBeNull();
   });
-  it('links to /compare with a and b and keeps the filter', () => {
+  it('links to /compare with a and b only', () => {
     expect(compareHref([py, java])).toBe('/compare?a=python&b=java');
-    expect(compareHref([py, java], 'r.au_all_all')).toBe('/compare?a=python&b=java&f=r.au_all_all');
     expect(compareHref([py])).toBe('/compare?a=python');
+  });
+});
+
+describe('Market board query', () => {
+  it('drops an old ?f= and keeps the rest', () => {
+    expect(canonicalMarketQuery({ type: 'roles', f: 'r.au_all_all', sort: 'change' })).toBe('type=roles&sort=change');
+    expect(canonicalMarketQuery({ f: 'r.au_all_all' })).toBe('');
+    expect(canonicalMarketQuery({ f: ['r.au_all_all', 'x'] })).toBe('');
+  });
+  it('leaves a board URL without a filter alone', () => {
+    expect(canonicalMarketQuery({ type: 'roles', q: 'data' })).toBeNull();
+    expect(canonicalMarketQuery({})).toBeNull();
+    expect(canonicalMarketQuery({ f: '' })).toBeNull();
   });
 });
 

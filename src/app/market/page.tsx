@@ -1,19 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { ArrowRight, Bookmark, SearchX, SlidersHorizontal } from 'lucide-react';
-import { decodeFilter, encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
+import { ArrowRight, Bookmark, SearchX } from 'lucide-react';
+import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
 import { Container, EmptyState } from '@/components/ui/primitives';
-import { FilterBar } from '@/components/market/filter-builder';
-import { FilterReadback } from '@/components/market/filter-readback';
 import { MetricSwitcher } from '@/components/market/metric-switcher';
 import { BoardCards, BoardColumnHeader, BoardRows } from '@/features/market/board';
 import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitch } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
-import { BOARD_TYPES, boardForTab, boardTypeParam, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
+import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
 import { WatchingBoard, WatchingTabCount } from '@/features/market/watching-board';
 import { cn } from '@/lib/utils';
 
@@ -26,8 +25,10 @@ export async function generateMetadata({ searchParams }: PageProps<'/market'>): 
 
 export default async function MarketPage({ searchParams }: PageProps<'/market'>) {
   const t = await getTranslations('MarketPage');
-  const tf = await getTranslations('Filter');
   const sp = await searchParams;
+  // The board always covers all of Australia; filters live on detail pages.
+  const canonical = canonicalMarketQuery(sp);
+  if (canonical !== null) redirect(`/market${canonical ? `?${canonical}` : ''}`);
   const tab = parseBoardType(sp.type);
   const type = boardForTab(tab);
   const sort = parseSort(sp.sort);
@@ -35,14 +36,12 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
   const layer = type === 'skill' ? parseLayer(sp.layer) : null;
   const q = firstParam(sp.q) ?? '';
   const metricParam = firstParam(sp.metric);
-  const filter = decodeFilter(firstParam(sp.f));
-  const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
+  const filter = DEFAULT_FILTER;
 
   const board = getBoard({ type, metric: metricParam, filter, sort, q, layer });
-  const keep = { f, sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
+  const keep = { sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
   const typeHref = (next: MarketTab) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
   const resetHref = hrefWith('/market', { type: boardTypeParam(tab), metric: metricParam, layer: layerParam(layer), ...keep });
-  const resetFilterHref = hrefWith('/market', { type: boardTypeParam(tab), metric: metricParam, q: q || undefined, layer: layerParam(layer), ...keep, f: undefined });
   const firstOk = board.rows.find(r => r.metric.status === 'ok') ?? board.rows[0];
   const firstChangeOk = board.rows.find(r => r.change.status === 'ok') ?? board.rows[0];
 
@@ -51,10 +50,10 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
       <h1 className="sr-only">{t('title')}</h1>
 
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
-      <CompareSelectionProvider key={tab} f={f}>
+      <CompareSelectionProvider key={tab}>
       <section aria-labelledby="board-h" className="pt-8 sm:pt-12">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
-        <div className="flex items-end justify-between gap-4 border-b border-rule">
+        <div className="border-b border-rule">
           {/* Scrolls sideways at narrow widths; the nav (not the tabs) overlaps the rule so nothing overflows vertically. */}
           <nav aria-label={t('typeTabsLabel')} className="-mb-px flex min-w-0 items-end gap-x-3 overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:gap-x-6 [&::-webkit-scrollbar]:hidden">
             <Link
@@ -84,21 +83,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
               </Link>
             ))}
           </nav>
-          <div className="shrink-0 pb-2">
-            <Suspense fallback={<div className="h-8 w-[88px] rounded-[5px] border border-rule bg-surface" />}>
-              <FilterBar variant="button" />
-            </Suspense>
-          </div>
         </div>
-
-        {f ? (
-          <p className="mt-2.5 flex min-w-0 items-start gap-2 text-[13px] leading-snug text-ink-2 sm:items-center">
-            <SlidersHorizontal className="mt-0.5 size-3.5 shrink-0 text-muted sm:mt-0" aria-hidden />
-            <span className="sr-only">{t('filterScopeLabel')}: </span>
-            <FilterReadback filter={filter} className="min-w-0 sm:truncate" />
-            <Link href={resetFilterHref} className="link shrink-0">{tf('scopeReset')}</Link>
-          </p>
-        ) : null}
 
         {type === 'skill' ? (
           <Suspense fallback={<div className="mt-3 h-8" />}>
