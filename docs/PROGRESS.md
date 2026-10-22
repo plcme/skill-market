@@ -73,7 +73,22 @@
 | 详情页单图（Y axis + Split by + 标题地点） | `fe-r3-chart` | 已合并 dev（审查 2 轮，Round 1 退回 2 阻断：/compare 缺文案 key、键盘焦点丢失；reviewer 改用 Opus） |
 | 配色方案、单色 logo、首页短标语 | `fe-r3-colours`（另一会话） | 已合并 dev（仓库内无审查记录，用户要求直接合并；合并后全量检查通过） |
 
+## 前端反馈第 4 轮（2026-10-21）
+
+用户反馈后直接实施，预览截图确认后合并。
+
+| 项 | 分支 | 状态 |
+|---|---|---|
+| /market 去掉页头与 Signals now；首页去掉 edition 行、What we won't do，信号卡整卡可点、去暂停键；/people 去 How it works；首页底部换成 "Twenty minutes a month…" 共享卡；Fundamentals 整格可点并回到 #now；详情页 Watch 为唯一主按钮 | `fe-r4-cleanup` | 已合并 dev（审查 2 轮，Round 1 退回 2 阻断：触屏无法停止轮播（WCAG 2.2.2）、e2e 断言已删按钮） |
+| Filter 面板：Currently showing 置顶吸附；顺序 Work rights → Level → Places → Advanced；Australia 为固定底（"All Australia"），删除 NZ | 同上 | 已合并 dev |
+| 详情页"标题即 filter"：标题句子打开同一个 Filter 面板；删 ScopeChips；Split by 被 filter 固定的维度置灰 | 同上 | 已合并 dev |
+| PRD：只做澳大利亚（用户授权直接改 PRD） | 同上 | 已合并 dev |
+
+待拍板：筛选 No PR stated 时是否禁用 Work rights 拆分（演示数据 sponsorship_ok 约 6%，主会话建议禁用）；顶部行情条暂停键是否删除（WCAG 风险同轮播）。非阻断遗留：标题句子可能自相矛盾（"Sydney + remote · On-site or hybrid"）；被固定的 `by` 参数在 URL 中清不掉；e2e 文件已改未跑。
+
 ## 日志
+
+- 2026-10-22：FE-R4 合并 dev 并 push。lint/typecheck/251 单测/build 通过（reviewer 复核）；按用户偏好未跑 e2e。子 agent 约 0.6M tokens。
 
 - 2026-10-21：FE-R3 两个分支合并 dev 并 push。合并冲突仅 `filter-builder.tsx`。lint/typecheck/243 单测/build 通过；全量 e2e `--workers=1` 134 过 2 跳过。注意：`.claude/worktrees/` 在仓库内，`eslint .` 会扫进去，需加入忽略。待拍板：skill 薪资是否在 board / Right now / Fundamentals 不拆分显示（A 只在图里 / B 加提醒 / C 维持）；PRD.md:185 "技能无薪资"需用户改。Fable 已不可用，子 agent 全部用 Opus。本轮子 agent 约 0.95M tokens。
 
