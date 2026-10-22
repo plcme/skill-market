@@ -1,24 +1,19 @@
 {
   "Home": {
-    "edition": "Australian job ads · week ending {date}",
     "headline": "A stock market for skills.",
     "lede": "Built from Australian job ads, updated every week.",
     "ctaMarket": "Explore the market",
     "ctaStart": "Personalise",
-    "leadOpen": "Open {name}",
     "signalsTitle": "Today’s signals",
     "heatKicker": "Industries this month",
     "heatAll": "All industries",
     "heatLabel": "Industries by job ads (tile size) and 4-week change (tile colour)",
     "moversRule": "Chosen by one rule: the biggest 4-week changes, up or down, among skills, roles and industries with at least {min} job ads in the earlier 4 weeks. Nothing is hand-picked.",
     "moverLine": "Ads {type, select, skill {mentioning {name}} role {for {name}} other {in {name}}} {dir, select, up {rose} down {fell} other {held at}} {from} → {to} in 4 weeks.",
-    "moverTalk": "Talk to someone",
     "moversEmpty": "No instrument has enough ads to show a move right now.",
     "moversLabel": "Biggest 4-week moves",
     "moversPrev": "Previous move",
     "moversNext": "Next move",
-    "moversPause": "Pause rotation",
-    "moversPlay": "Resume rotation",
     "carouselRole": "carousel",
     "slideRole": "slide",
     "slideLabel": "{i} of {n}: {name}",
@@ -37,18 +32,6 @@
     "step2Body": "Each figure carries its definition, denominator, source and date one click away. Small samples are flagged, not charted.",
     "step3Title": "Ask someone who’s there",
     "step3Body": "When a signal is worth digging into, we match you with up to three verified practitioners and suggest what to ask.",
-    "principlesKicker": "What we won’t do",
-    "principlesTitle": "No rankings. No readiness scores. Just direction.",
-    "principles": {
-      "p1": "We never rank you against other students or give you a score.",
-      "p2": "Anything we guess about you is labelled as a suggestion, and one tap to change.",
-      "p3": "Demand is one input. Every recommendation also shows effort and how transferable a skill is.",
-      "p4": "Practitioners opt in and verify their work email. Silence and declines are handled privately — you always get a next step."
-    },
-    "practitionerKicker": "For practitioners",
-    "practitionerTitle": "Started in the last few years? Give 20 minutes a month.",
-    "practitionerBody": "You’ll always see why a student picked you, what they want to decide, and you can say no in one click — no reason needed.",
-    "practitionerCta": "Join as a practitioner",
     "sampleNote": "Numbers on this preview are illustrative."
   }
 }

@@ -55,8 +55,8 @@ describe('simple filter controls (places × modes + remote anywhere)', () => {
   it('returns null for specs the simple controls cannot express', () => {
     const twoPlaces: FilterSpec = { rules: [{ work_modes: ['onsite'], location_ids: ['au-nsw-sydney'] }, { work_modes: ['hybrid'], location_ids: ['au-vic'] }], ...base };
     expect(toSimpleFilter(twoPlaces)).toBeNull();
-    const remoteNz: FilterSpec = { rules: [{ work_modes: ['onsite'], location_ids: ['au-nsw'] }, { work_modes: ['remote'], location_ids: ['nz'] }], ...base };
-    expect(toSimpleFilter(remoteNz)).toBeNull();
+    const remoteVic: FilterSpec = { rules: [{ work_modes: ['onsite'], location_ids: ['au-nsw'] }, { work_modes: ['remote'], location_ids: ['au-vic'] }], ...base };
+    expect(toSimpleFilter(remoteVic)).toBeNull();
     const three = decodeFilter('o.au-nsw*h.au-vic*r.au_all_all');
     expect(toSimpleFilter(three)).toBeNull();
   });

@@ -78,7 +78,7 @@
 
 **范围内**
 - Migrations：`instruments`（enum 五类）、`instrument_aliases`、`instrument_relations`、`locations`、`metric_cells`、`metric_definitions`、`metric_points`、`data_sources`、`ingestion_runs`、`job_ads`、`job_ad_skills`、`job_runs`、`signals`（全局部分）、`feature_flags`；全部 RLS
-- 种子：`skills.yaml`（约 150）、`roles.yaml`（约 25 ANZSCO）、`locations.yaml`（AU 国 / 州 / 首府与主要城市；NZ 国级）、`data_sources`；`pnpm seed`
+- 种子：`skills.yaml`（约 150）、`roles.yaml`（约 25 ANZSCO）、`locations.yaml`（AU 国 / 州 / 首府与主要城市；只做澳洲）、`data_sources`；`pnpm seed`
 - `src/lib/metrics/registry.ts` + `pnpm metrics:sync` + CI 一致性检查
 - 数据源适配层接口 + `FixtureSource` + `AdzunaAdsSource`（universe + per-skill，含调用预算与轮转游标）+ `JsaIviSeries`（CSV/XLSX 下载解析）+ `AscTaxonomy`（岗位成分初始权重）；NERO / SPL 只做导入骨架（基本面面板在 M2 用）
 - 抽取规则（seniority / work_mode / work_rights / 字典技能）带 version；`fixtures/ads/*.json` 约 500 条 + 人工标注集 200 条与回归测试
@@ -405,7 +405,7 @@
 | M9 | 周 / 月 digest 与 watchlist 提醒 | S | FR-W4 | outbox 已有；加 digest 模板与偏好 |
 | M10 | 复盘 L1 填空 + 情绪面聚合 | M | FR-R3、R4 | 聚合 N < 阈值不展示；标的页 "analyst view" 面板 |
 | M11 | 季节性视图与申请季默认视图 | M | `seasonality`（需 ≥ 2 年 IVI 可先做岗位级） | 岗位级用 IVI 可立即做 |
-| M12 | NZ 与国际市场（浅层） | M | PRD §5.2 | 第二个 `AdsSource` 或 Adzuna NZ；可比性标注 |
+| M12 | ~~NZ 与国际市场（浅层）~~ 暂不做 | — | PRD §5.2 | 2026-10-21 用户决定只做澳洲 |
 | M13 | 简历导入 Tier 2 + 渐进补全 Tier 3 | M | FR-O7 | 解析结果人工确认；PII 剥离 |
 | M14 | 行业 / 雇主 / 证书三类标的 | L | PRD §5.2 | 数据模型已支持；需要新数据源与页面变体 |
 | M15 | 异步问答降级（C）与 L3 半公开摘要 | M | FR-C6(C)、R5 | 双方同意机制 |

@@ -1,7 +1,8 @@
 import type { Location } from '@/lib/market/types';
 
-// Location tree: country → state → city → region (FR-F4). Any level is selectable;
-// leaves are the atoms that ads are assigned to (ARCHITECTURE §6.3).
+// Location tree: country → state → city → region (FR-F4). Australia only: `au`
+// is the single country and the root every filter starts from. Leaves are the
+// atoms that ads are assigned to (ARCHITECTURE §6.3).
 export const LOCATIONS: readonly Location[] = [
   { id: 'au', name: 'Australia', short: 'AU', level: 'country', parent_id: null },
   { id: 'au-nsw', name: 'New South Wales', short: 'NSW', level: 'state', parent_id: 'au' },
@@ -30,9 +31,6 @@ export const LOCATIONS: readonly Location[] = [
   { id: 'au-tas-hobart', name: 'Hobart', short: 'Hobart', level: 'city', parent_id: 'au-tas' },
   { id: 'au-nt', name: 'Northern Territory', short: 'NT', level: 'state', parent_id: 'au' },
   { id: 'au-nt-darwin', name: 'Darwin', short: 'Darwin', level: 'city', parent_id: 'au-nt' },
-  { id: 'nz', name: 'New Zealand', short: 'NZ', level: 'country', parent_id: null },
-  { id: 'nz-auckland', name: 'Auckland', short: 'Auckland', level: 'city', parent_id: 'nz' },
-  { id: 'nz-wellington', name: 'Wellington', short: 'Wellington', level: 'city', parent_id: 'nz' },
 ];
 
 const byId = new Map(LOCATIONS.map(l => [l.id, l]));
@@ -94,4 +92,23 @@ export function stateOf(id: string): string | null {
   if (loc.level === 'state' || loc.level === 'country') return loc.id;
   const chain = ancestorsOf(id);
   return chain.find(a => a.level === 'state')?.id ?? chain[0]?.id ?? null;
+}
+
+/** All of Australia: the fixed base of every place selection, never a pickable place. */
+export const ALL_AUSTRALIA_ID = 'au';
+
+/** What the place picker offers: Australian states, cities and regions (no country level). */
+export const PICKABLE_LOCATIONS: readonly Location[] = LOCATIONS.filter(
+  l => l.level !== 'country' && ancestorsOf(l.id)[0]?.id === ALL_AUSTRALIA_ID,
+);
+
+/** The narrower places in a selection; empty means all of Australia. */
+export function narrowedPlaces(ids: readonly string[]): string[] {
+  return ids.filter(id => id !== ALL_AUSTRALIA_ID);
+}
+
+/** A selection with nothing narrower chosen means all of Australia (`['au']`, as in DEFAULT_FILTER). */
+export function placesOrAllAustralia(ids: readonly string[]): string[] {
+  const narrow = narrowedPlaces(ids);
+  return narrow.length ? narrow : [ALL_AUSTRALIA_ID];
 }

@@ -52,14 +52,13 @@ function isoDaysBefore(days: number): string {
 
 const STATE_BASE: Record<string, number> = {
   'au-nsw': 0.37, 'au-vic': 0.29, 'au-qld': 0.12, 'au-wa': 0.07, 'au-sa': 0.04,
-  'au-act': 0.055, 'au-tas': 0.01, 'au-nt': 0.005, nz: 0.04,
+  'au-act': 0.055, 'au-tas': 0.01, 'au-nt': 0.005,
 };
 const WITHIN_STATE: Record<string, number> = {
   'au-nsw-sydney-cbd': 0.5, 'au-nsw-sydney-north': 0.2, 'au-nsw-sydney-west': 0.16, 'au-nsw-newcastle': 0.08, 'au-nsw-wollongong': 0.06,
   'au-vic-melbourne-cbd': 0.52, 'au-vic-melbourne-south': 0.22, 'au-vic-melbourne-east': 0.18, 'au-vic-geelong': 0.08,
   'au-qld-brisbane': 0.86, 'au-qld-goldcoast': 0.14,
   'au-wa-perth': 1, 'au-sa-adelaide': 1, 'au-act-canberra': 1, 'au-tas-hobart': 1, 'au-nt-darwin': 1,
-  'nz-auckland': 0.62, 'nz-wellington': 0.38,
 };
 const MODE_BASE: Record<WorkMode, number> = { onsite: 0.5, hybrid: 0.36, remote: 0.14 };
 
@@ -272,7 +271,7 @@ function employerStats(count: number, slug: string): { distinct: number; top5: n
   return { distinct, top5 };
 }
 
-const STATE_SALARY: Record<string, number> = { 'au-nsw': 1.06, 'au-vic': 1.0, 'au-qld': 0.94, 'au-wa': 0.98, 'au-sa': 0.9, 'au-act': 1.04, 'au-tas': 0.86, 'au-nt': 0.92, nz: 0.82 };
+const STATE_SALARY: Record<string, number> = { 'au-nsw': 1.06, 'au-vic': 1.0, 'au-qld': 0.94, 'au-wa': 0.98, 'au-sa': 0.9, 'au-act': 1.04, 'au-tas': 0.86, 'au-nt': 0.92 };
 
 /** Share of ads that state a salary (fixture). One constant so every salary sample on a page agrees. */
 export const SALARY_STATED_SHARE = 0.44;

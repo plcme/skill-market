@@ -18,7 +18,7 @@ import { SampleWarning } from '@/components/market/sample-warning';
 import { SourceBadge } from '@/components/market/source-badge';
 import { useSetParams } from '@/components/market/use-url-state';
 import { cn } from '@/lib/utils';
-import { breakdownParam, chartYParam } from './logic';
+import { breakdownParam, chartYParam, fixedSplitDimensions } from './logic';
 
 /** Method note for dimensions read from ad text (experience, work rights). */
 function MethodInfo({ by }: { by: Exclude<BreakdownDimension, 'mode'> }) {
@@ -73,8 +73,8 @@ export function InstrumentChart({ breakdown, y, measures, type, filter, subject,
   // The clear button unmounts once the URL updates: hand focus to the (stable) Split by trigger first.
   const clearSplit = () => { splitTrigger.current?.focus(); chooseBy(null); };
   const latest = breakdown.buckets[0]?.latest;
-  // Experience filtered to graduate ads: name what is actually inside, not the 0–2 yrs band.
-  const graduateOnly = by === 'experience' && filter.seniority === 'graduate';
+  // Splits the filter has fixed to one bucket are offered but disabled (the route already draws them as no split).
+  const fixed = fixedSplitDimensions(filter);
   const caption = by
     ? t(breakdown.kind === 'stack' ? 'captionStack' : 'captionLines', { dimension: t(`dimsLower.${by}`) })
     : t(breakdown.kind === 'stack' ? 'captionSingleStack' : 'captionSingleLines');
@@ -87,7 +87,8 @@ export function InstrumentChart({ breakdown, y, measures, type, filter, subject,
           key={d}
           selected={by === d}
           title={t(`dims.${d}`)}
-          subtitle={BREAKDOWN_BUCKETS[d].map(k => t(`short.${k}`)).join(' · ')}
+          subtitle={fixed.includes(d) ? t('fixedByFilter') : BREAKDOWN_BUCKETS[d].map(k => t(`short.${k}`)).join(' · ')}
+          disabled={fixed.includes(d)}
           onSelect={() => chooseBy(d)}
         />
       ))}
@@ -166,7 +167,7 @@ export function InstrumentChart({ breakdown, y, measures, type, filter, subject,
 
       <div className="mt-3 flex flex-col gap-1 text-[12.5px]" aria-live="polite">
         {breakdown.filtered_to ? (
-          <p className="text-ink-2">{graduateOnly ? t('filteredToGraduate') : t('filteredTo', { buckets: breakdown.filtered_to.map(k => t(`short.${k}`)).join(', ') })}</p>
+          <p className="text-ink-2">{t('filteredTo', { buckets: breakdown.filtered_to.map(k => t(`short.${k}`)).join(', ') })}</p>
         ) : null}
         {!unsplitThin && breakdown.insufficient.length ? (
           <p className="text-warn">{t(breakdown.kind === 'stack' ? 'thin' : 'gaps', { buckets: breakdown.insufficient.map(k => t(`short.${k}`)).join(', ') })}</p>
@@ -181,7 +182,6 @@ export function InstrumentChart({ breakdown, y, measures, type, filter, subject,
             key={`${by ?? 'none'}-${breakdown.kind}`}
             breakdown={breakdown}
             caption={caption}
-            graduateOnly={graduateOnly}
             footer={latest ? (
               <>
                 <SourceBadge kind={latest.source} />

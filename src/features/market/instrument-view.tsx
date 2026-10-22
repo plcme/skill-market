@@ -22,7 +22,7 @@ import { competencyLevels } from '@/lib/market/competencies';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
 import { hrefWith } from './logic';
 import { InstrumentChart } from './instrument-chart';
-import { PlacesInTitle, PlacesInTitleStatic, ScopeChips } from './instrument-places';
+import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
 
@@ -70,13 +70,10 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
           </div>
           <h1 className="display mt-6 break-words text-[48px] sm:text-[72px] lg:text-[88px]">
             {inst.name}{' '}
-            <Suspense fallback={<PlacesInTitleStatic filter={filter} />}>
-              <PlacesInTitle />
+            <Suspense fallback={<TitleFilterStatic filter={filter} />}>
+              <TitleFilter />
             </Suspense>
           </h1>
-          <Suspense fallback={null}>
-            <ScopeChips className="mt-4" />
-          </Suspense>
           <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{inst.blurb}</p>
           {inst.aliases.length ? (
             <p className="mt-3 text-[13px] text-muted">
@@ -85,26 +82,26 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
             </p>
           ) : null}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:max-w-[340px] lg:flex-col lg:items-stretch">
-          <Button asChild variant="accent" size="lg">
-            <Link href={talk}><MessageCircle aria-hidden />{t(`talk.${type}`, { name: inst.name })}</Link>
-          </Button>
-          <div className="flex gap-2">
-            <Suspense fallback={<Button variant="subtle" disabled className="flex-1" aria-hidden />}>
-              <WatchButton slug={inst.slug} filter={filter} metric={detail.metric} size="md" className="flex-1 [&>button:first-child]:flex-1" />
-            </Suspense>
-            <Button asChild variant="outline" className="flex-1">
-              <Link href={compare}><ArrowLeftRight aria-hidden />{t('compareWith')}</Link>
-            </Button>
+        <div className="flex w-full flex-col gap-3 sm:w-[340px]">
+          <Suspense fallback={<Button variant="accent" size="lg" disabled className="w-full" aria-hidden />}>
+            <WatchButton slug={inst.slug} filter={filter} metric={detail.metric} prominent />
+          </Suspense>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
+            <Link href={compare} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
+              <ArrowLeftRight className="size-3.5" aria-hidden />{t('compareWith')}
+            </Link>
+            <span aria-hidden className="text-faint">·</span>
+            <Link href={talk} aria-label={t(`talk.${type}`, { name: inst.name })} className="inline-flex items-center gap-1.5 py-1 underline-offset-4 hover:text-ink hover:underline">
+              <MessageCircle className="size-3.5" aria-hidden />{t('talkShort')}
+            </Link>
           </div>
-          <p className="text-[12.5px] text-muted">{t('talkNote')}</p>
         </div>
       </header>
 
       <section id="now" aria-labelledby="now-h" className="mt-8 grid scroll-mt-24 gap-8 border-t-2 border-rule-strong pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="now-h" className="kicker text-ink">{t('now')}</h2>
+            <h2 id="now-h" tabIndex={-1} className="kicker text-ink">{t('now')}</h2>
             <Suspense fallback={<div className="h-8 w-40" />}>
               <MetricSwitcher type={type} value={detail.metric} />
             </Suspense>

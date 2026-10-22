@@ -35,11 +35,9 @@ test('unknown instrument is a 404', async ({ page }) => {
   expect((await page.goto('/s/not-a-skill'))?.status()).toBe(404);
 });
 
-test('filter is part of the URL and read back in the title and chips', async ({ page }) => {
+test('filter is part of the URL and read back in the title', async ({ page }) => {
   await page.goto('/s/rust?f=r.au-nt-darwin_graduate_npr');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Rust\s+in Darwin/);
-  const chips = page.getByRole('list', { name: 'Also filtered by' });
-  await expect(chips.getByRole('listitem')).toHaveText(['Graduate only', 'No PR or citizenship stated', 'Work mode: Remote']);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Rust\s+in Darwin · Graduate · Remote only · No PR stated/);
   await expect(page.getByText('Not enough ads for a reliable trend')).toBeVisible();
 });
 
@@ -211,13 +209,13 @@ test.describe('industries', () => {
     await expect(page.getByText('ANZSIC Division B')).toBeVisible();
   });
 
-  test('movers carousel states its rule, advances and can pause', async ({ page }) => {
+  test('movers carousel states its rule, advances and links to the instrument', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await expect(page.getByText(/biggest 4-week changes, up or down/)).toBeVisible();
     const carousel = page.getByRole('region', { name: 'Biggest 4-week moves' });
-    await expect(carousel.getByRole('button', { name: 'Resume rotation' })).toBeVisible();
     const first = await carousel.getByRole('heading', { level: 3 }).textContent();
+    await expect(carousel.getByRole('heading', { level: 3 }).getByRole('link')).toHaveAttribute('href', /^\/(s|r|i)\/[a-z0-9-]+$/);
     await carousel.getByRole('button', { name: 'Next move' }).click();
     await expect(carousel.getByRole('heading', { level: 3 })).not.toHaveText(first ?? '');
     await expect(carousel.getByText(/^Ads (mentioning|for|in) .+ (rose|fell) [\d,]+ → [\d,]+ in 4 weeks\.$/).first()).toBeVisible();

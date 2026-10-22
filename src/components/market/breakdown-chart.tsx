@@ -60,12 +60,10 @@ function spread(ys: Array<{ key: BreakdownBucketKey; y: number }>, gap: number, 
  * series. Direct labels at the right edge where they fit, a legend with latest
  * values below, an optional footer line, and a data-table view.
  */
-export function BreakdownChart({ breakdown, caption, graduateOnly = false, height = 280, footer, className }: {
+export function BreakdownChart({ breakdown, caption, height = 280, footer, className }: {
   breakdown: Breakdown;
   /** Accessible name of the figure and the table (not shown). */
   caption: string;
-  /** Filter is "Graduate roles only": the Entry band holds graduate ads, so say so. */
-  graduateOnly?: boolean;
   height?: number;
   /** Source / window line, shown next to the table toggle. */
   footer?: React.ReactNode;
@@ -87,9 +85,8 @@ export function BreakdownChart({ breakdown, caption, graduateOnly = false, heigh
   const thin = new Set(stack ? breakdown.insufficient : []);
   const minSample = breakdown.buckets[0]?.latest.min_sample ?? 30;
   const cellText = (v: number | null) => (v == null ? '—' : stack && v < minSample ? t('notEnough') : fmt(v));
-  const relabel = graduateOnly && breakdown.by === 'experience';
-  const label = (k: BreakdownBucketKey) => (relabel && k === 'entry' ? t('graduateBucket') : t(`buckets.${k}`));
-  const short = (k: BreakdownBucketKey) => (relabel && k === 'entry' ? t('graduateShort') : t(`short.${k}`));
+  const label = (k: BreakdownBucketKey) => t(`buckets.${k}`);
+  const short = (k: BreakdownBucketKey) => t(`short.${k}`);
 
   useEffect(() => {
     const el = wrap.current;

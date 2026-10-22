@@ -4,19 +4,16 @@ import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { ArrowRight, SearchX, SlidersHorizontal } from 'lucide-react';
 import { decodeFilter, encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
-import { getBoard, getSignalsNow, type BoardType } from '@/lib/queries/market';
-import { formatDate } from '@/lib/time';
+import { getBoard, type BoardType } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
-import { Container, EmptyState, PageHeader } from '@/components/ui/primitives';
+import { Container, EmptyState } from '@/components/ui/primitives';
 import { FilterBar } from '@/components/market/filter-builder';
 import { FilterReadback } from '@/components/market/filter-readback';
 import { MetricSwitcher } from '@/components/market/metric-switcher';
-import { SourceBadge } from '@/components/market/source-badge';
 import { BoardCards, BoardColumnHeader, BoardRows } from '@/features/market/board';
 import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitch } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
 import { BOARD_TYPES, boardTypeParam, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView } from '@/features/market/logic';
-import { SignalsStrip } from '@/features/market/signals-strip';
 import { cn } from '@/lib/utils';
 
 export async function generateMetadata({ searchParams }: PageProps<'/market'>): Promise<Metadata> {
@@ -40,7 +37,6 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
 
   const board = getBoard({ type, metric: metricParam, filter, sort, q, layer });
-  const signalsNow = getSignalsNow(filter);
   const keep = { f, sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
   const typeHref = (next: BoardType) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
   const resetHref = hrefWith('/market', { type: boardTypeParam(type), metric: metricParam, layer: layerParam(layer), ...keep });
@@ -50,22 +46,11 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
 
   return (
     <Container className="pb-20">
-      <PageHeader
-        kicker={(
-          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{t('kicker', { date: formatDate(board.as_of) })}</span>
-            <SourceBadge kind="ads" />
-          </span>
-        )}
-        title={t('title')}
-        lede={t('lede')}
-      />
-
-      <SignalsStrip rows={signalsNow} filter={filter} />
+      <h1 className="sr-only">{t('title')}</h1>
 
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
       <CompareSelectionProvider key={type} f={f}>
-      <section aria-labelledby="board-h" className="mt-8">
+      <section aria-labelledby="board-h" className="pt-8 sm:pt-12">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
         <div className="flex items-end justify-between gap-4 border-b border-rule">
           <nav aria-label={t('typeTabsLabel')} className="flex min-w-0 flex-wrap items-end gap-x-4 sm:gap-x-6">

@@ -11,7 +11,7 @@ const copy = messages.Filter.readback as FilterCopy;
 const compound: FilterSpec = {
   rules: [
     { work_modes: ['onsite'], location_ids: ['au-nsw-sydney', 'au-vic-melbourne'] },
-    { work_modes: ['remote'], location_ids: ['au', 'nz'] },
+    { work_modes: ['remote'], location_ids: ['au-qld', 'au-wa'] },
   ],
   seniority: 'entry',
   work_rights: 'no_pr_required',
@@ -45,7 +45,7 @@ describe('filter spec', () => {
 
   it('reads every filter back in plain English (FR-F3)', () => {
     expect(describeFilter(compound, copy)).toBe(
-      'Showing on-site roles in Sydney or Melbourne, plus remote roles in Australia or New Zealand · Entry-level only · No PR or citizenship requirement stated',
+      'Showing on-site roles in Sydney or Melbourne, plus remote roles in Queensland or Western Australia · Entry-level only · No PR or citizenship requirement stated',
     );
     expect(describeFilter(DEFAULT_FILTER, copy)).toBe('Showing all roles in Australia · All levels');
   });

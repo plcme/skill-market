@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { computeBreakdown, computeMetric, WEEKS } from '@/lib/market/engine';
 import { DEFAULT_SKILL_SALARY, deriveSkillSalary, ROLE_COMPONENTS, rolesForSkill, salaryOf } from '@/lib/market/catalog';
 import {
-  clearScopeCondition, DEFAULT_FILTER, decodeFilter, encodeFilter, fromSimpleFilter, isAllAustralia, isDefaultFilter, placesLabel, resetPlaces, scopeConditions,
-  toSimpleFilter, type PlacesCopy,
+  DEFAULT_FILTER, decodeFilter, encodeFilter, fromSimpleFilter, isDefaultFilter, placesLabel, scopeConditions,
+  titleFilterLabel, type PlacesCopy, type TitleFilterCopy,
 } from '@/lib/filters/spec';
 import { CHART_MEASURE_METRIC, chartMeasuresFor, isValidMetric, metricsFor } from '@/lib/metrics/registry';
-import { breakdownParam, chartYParam, parseBreakdownBy, parseChartY } from '@/features/market/logic';
+import { breakdownParam, chartYParam, effectiveSplit, fixedSplitDimensions, parseBreakdownBy, parseChartY } from '@/features/market/logic';
 import { getInstrumentDetail, resolveChartMeasure } from '@/lib/queries/market';
 import pages from '../messages/en/market-pages.json';
 
@@ -34,6 +34,27 @@ describe('?y= and ?by= parsing', () => {
     expect(breakdownParam(null)).toBe('none');
     expect(breakdownParam('mode')).toBe('mode');
     for (const by of ['experience', 'rights', 'mode', null] as const) expect(parseBreakdownBy(breakdownParam(by) ?? undefined)).toBe(by);
+  });
+
+  it('disables splits the filter has fixed to one bucket', () => {
+    expect(fixedSplitDimensions(DEFAULT_FILTER)).toEqual([]);
+    expect(fixedSplitDimensions(decodeFilter('ohr.au_entry_all'))).toEqual(['experience']);
+    expect(fixedSplitDimensions(decodeFilter('ohr.au_graduate_all'))).toEqual(['experience']);
+    expect(fixedSplitDimensions(decodeFilter('r.au-nsw_all_all'))).toEqual(['mode']);
+    // Two modes, or one mode plus remote-anywhere, are not fixed.
+    expect(fixedSplitDimensions(decodeFilter('oh.au-nsw_all_all'))).toEqual([]);
+    expect(fixedSplitDimensions(decodeFilter('o.au-nsw*r.au_all_all'))).toEqual([]);
+    // "No PR stated" keeps two rights buckets, so rights stays splittable.
+    expect(fixedSplitDimensions(decodeFilter('ohr.au_all_npr'))).toEqual([]);
+  });
+
+  it('draws a conflicting split as no split, and leaves others alone', () => {
+    const grad = decodeFilter('ohr.au_graduate_all');
+    expect(effectiveSplit('experience', grad)).toBeNull();
+    expect(effectiveSplit('mode', grad)).toBe('mode');
+    expect(effectiveSplit(null, grad)).toBeNull();
+    expect(effectiveSplit('mode', decodeFilter('r.au_all_all'))).toBeNull();
+    expect(effectiveSplit('experience', DEFAULT_FILTER)).toBe('experience');
   });
 
   it('only offers Median salary where it applies (industries: Job ads only)', () => {
@@ -157,29 +178,35 @@ describe('places in the title', () => {
     expect(label('o.au-nsw*h.au-vic_all_all')).toBe('custom places');
   });
 
-  it('All Australia reset keeps the other conditions', () => {
-    const f = decodeFilter('o.au-nsw-sydney*r.au_entry_npr');
-    expect(isAllAustralia(f)).toBe(false);
-    const reset = resetPlaces(f);
-    expect(isAllAustralia(reset)).toBe(true);
-    expect(encodeFilter(reset)).toBe('o.au_entry_npr');
-    const custom = resetPlaces(decodeFilter('o.au-nsw*h.au-vic_graduate_all'));
-    expect(encodeFilter(custom)).toBe('ohr.au_graduate_all');
-    expect(isDefaultFilter(resetPlaces(decodeFilter('ohr.au-vic_all_all')))).toBe(true);
+  it('lists the non-place conditions that narrow', () => {
+    expect(scopeConditions(DEFAULT_FILTER)).toEqual([]);
+    expect(scopeConditions(decodeFilter('r.au-nt-darwin_graduate_npr'))).toEqual(['seniority', 'work_rights', 'work_modes']);
+    // A multi-rule spec has no single set of modes to name.
+    expect(scopeConditions(decodeFilter('o.au-nsw*h.au-vic_entry_all'))).toEqual(['seniority']);
+  });
+});
+
+describe('filter sentence in the title', () => {
+  const copy: TitleFilterCopy = { places: pages.InstrumentPage.places.label as PlacesCopy, ...pages.InstrumentPage.titleFilter };
+  const sentence = (raw: string | null) => titleFilterLabel(decodeFilter(raw), copy);
+
+  it('is just the places when nothing else narrows', () => {
+    expect(sentence(null)).toBe('All Australia');
+    expect(sentence('ohr.au-nsw-sydney_all_all')).toBe('Sydney');
   });
 
-  it('lists non-place conditions as chips and removes them one at a time', () => {
-    expect(scopeConditions(DEFAULT_FILTER)).toEqual([]);
-    const f = decodeFilter('r.au-nt-darwin_graduate_npr');
-    expect(scopeConditions(f)).toEqual(['seniority', 'work_rights', 'work_modes']);
-    const noModes = clearScopeCondition(f, 'work_modes');
-    expect(toSimpleFilter(noModes)).toEqual({ places: ['au-nt-darwin'], modes: ['onsite', 'hybrid', 'remote'], includeRemoteAnywhere: false });
-    expect(clearScopeCondition(f, 'seniority').seniority).toBe('all');
-    expect(clearScopeCondition(f, 'work_rights').work_rights).toBe('all');
-    // Clearing modes in all of Australia makes remote-anywhere redundant: back to the default.
-    const remoteOnly = fromSimpleFilter({ places: ['au'], modes: ['onsite'], includeRemoteAnywhere: true }, DEFAULT_FILTER);
-    expect(isDefaultFilter(clearScopeCondition(remoteOnly, 'work_modes'))).toBe(true);
-    // A multi-rule spec has no single set of modes to show as a chip.
-    expect(scopeConditions(decodeFilter('o.au-nsw*h.au-vic_entry_all'))).toEqual(['seniority']);
+  it('appends only narrowing conditions, in a fixed order', () => {
+    expect(sentence('oh.au-nsw-sydney*r.au_entry_npr')).toBe('Sydney + remote · Entry-level · On-site or hybrid · No PR stated');
+    expect(sentence('r.au_graduate_all')).toBe('All Australia · Graduate · Remote only');
+    expect(sentence('ohr.au_all_npr')).toBe('All Australia · No PR stated');
+  });
+
+  it('uses the custom-places wording for multi-rule filters', () => {
+    expect(sentence('o.au-nsw*h.au-vic_entry_all')).toBe('custom places · Entry-level');
+  });
+
+  it('keeps the URL stable: encoding the default stays the default', () => {
+    expect(isDefaultFilter(fromSimpleFilter({ places: ['au'], modes: ['onsite', 'hybrid', 'remote'], includeRemoteAnywhere: false }, DEFAULT_FILTER))).toBe(true);
+    expect(encodeFilter(DEFAULT_FILTER)).toBe('ohr.au_all_all');
   });
 });

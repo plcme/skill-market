@@ -1,6 +1,7 @@
+import { expandFilterToCells } from '@/lib/filters/spec';
 import { getInstrument } from '@/lib/market/catalog';
 import { METRICS } from '@/lib/metrics/registry';
-import type { ActiveInstrumentType, BreakdownDimension, ChartMeasure, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
+import type { ActiveInstrumentType, BreakdownDimension, ChartMeasure, FilterSpec, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
 import type { BoardSort, BoardType } from '@/lib/queries/market';
 
 // Pure helpers for the public market pages: URL parsing, href building and the
@@ -55,6 +56,27 @@ export function parseBreakdownBy(v: string | string[] | undefined): BreakdownDim
 /** `by` value for a link: omitted for the default (experience), `none` for no split. */
 export function breakdownParam(by: BreakdownDimension | null): string | null {
   return by === null ? 'none' : by === 'experience' ? null : by;
+}
+
+/**
+ * Split by dimensions the filter has fixed to a single bucket, so splitting by
+ * them would show one band: experience when the level is entry-level or
+ * graduate (both sit inside the 0–2 yrs band), work mode when the rules cover
+ * exactly one mode. Work rights "No PR stated" still leaves two buckets
+ * (not stated, sponsorship OK), so it stays splittable.
+ */
+export function fixedSplitDimensions(filter: FilterSpec): BreakdownDimension[] {
+  const cells = expandFilterToCells(filter);
+  const out: BreakdownDimension[] = [];
+  if (!cells.seniority.includes('other')) out.push('experience');
+  if (cells.rights.length === 1) out.push('rights');
+  if (new Set(cells.pairs.map(p => p.mode)).size === 1) out.push('mode');
+  return out;
+}
+
+/** The split to actually draw: a dimension fixed by the filter renders as no split. */
+export function effectiveSplit(by: BreakdownDimension | null, filter: FilterSpec): BreakdownDimension | null {
+  return by && fixedSplitDimensions(filter).includes(by) ? null : by;
 }
 
 /** Detail-chart Y axis: `?y=ads|salary`, default (and fallback) ads. Validity per type is checked by the query. */
