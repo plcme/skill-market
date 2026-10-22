@@ -38,6 +38,10 @@ function data<T>(r: { ok: true; data: T } | { ok: false; error: unknown }): T {
 }
 
 const F = DEFAULT_FILTER;
+
+/** The demo pipeline still seeds the pre-ATS job names. */
+const DEMO_JOBS: Record<string, string> = { ingest_ads: 'poll_ats', ingest_official: 'ingest_jsa' };
+const renameJob = <T extends { job: string }>(r: T): Omit<T, 'job'> & { job: string } => ({ ...r, job: DEMO_JOBS[r.job] ?? r.job });
 const QUESTION = 'COMP3221 or INFO3333 next semester — is Rust worth it?';
 
 beforeEach(() => resetPreview());
@@ -162,7 +166,10 @@ describe('admin', () => {
     setPersona('admin');
     conforms(CONTRACT.getReports.output, selectReports(getDB()), 'reports');
     conforms(CONTRACT.getReviewQueue.output, selectReviewQueue(getDB()), 'review queue');
-    conforms(CONTRACT.getPipeline.output, selectPipeline(getDB()), 'pipeline');
+    const pipeline = selectPipeline(getDB()).map(row => ({
+      ...renameJob(row), last: row.last && renameJob(row.last), lastSuccess: row.lastSuccess && renameJob(row.lastSuccess), runs: row.runs.map(renameJob),
+    }));
+    conforms(CONTRACT.getPipeline.output, pipeline, 'pipeline');
     conforms(CONTRACT.getFunnel.output, selectFunnel(getDB(), clockNow()), 'funnel');
     conforms(CONTRACT.getAliases.output, selectAliases(getDB()), 'aliases');
     conforms(CONTRACT.rerunJob.output, data(await rerunJob('compute_metrics')), 'rerun');
@@ -174,6 +181,7 @@ describe('known gaps the demo closes when pages move to the contract', () => {
   it.todo('getBoard, getIndustryHeatmap, getMovers and getMetricExamples drop the filter argument (national scope only)');
   it.todo('as_of is the compute-metrics finish timestamp, not a date');
   it.todo('snapshots, heat tiles and movers carry coverage; snapshots and tape changes carry new_today; board and detail carry polled_at');
+  it.todo('the pipeline uses the production job names (poll_ats … compute_coverage), not ingest_ads / ingest_official');
   it.todo('getTape returns { changes, events, as_of, polled_at } with intraday posting events');
   it.todo('practitioner views carry the frozen shared snapshot (practitionerRequestSchema.student), not the live student profile');
   it.todo('findCandidates returns open_request_id and waitlist_entry');

@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { AREAS, CONTRACT, IMPLICIT_ERRORS, API_ERROR_CODES } from '@/lib/contract';
-import { METRIC_KEYS } from '@/lib/contract/market';
+import { describe, expect, expectTypeOf, it } from 'vitest';
+import { AREAS, CONTRACT, IMPLICIT_ERRORS, API_ERROR_CODES, type OutputOf } from '@/lib/contract';
+import { JOB_NAMES } from '@/lib/contract/entities';
+import { jobOps } from '@/lib/contract/jobs';
+import { COVERAGE_THRESHOLDS, coverageBand, METRIC_KEYS, type Coverage } from '@/lib/contract/market';
 import { METRIC_KEYS as REGISTRY_METRIC_KEYS } from '@/lib/metrics/registry';
 import * as admin from '@/lib/api/admin';
 import * as auth from '@/lib/api/auth';
@@ -43,6 +45,23 @@ describe('contract registry', () => {
     expect([...METRIC_KEYS].sort()).toEqual([...REGISTRY_METRIC_KEYS].sort());
   });
 
+  it('lists only pipeline jobs that exist as job ops', () => {
+    const camel = (name: string) => name.replace(/_(\w)/g, (_, c: string) => c.toUpperCase());
+    for (const job of JOB_NAMES) expect(Object.keys(jobOps), job).toContain(camel(job));
+    expect(Object.keys(CONTRACT)).not.toContain('ingestAds');
+  });
+
+  it('keeps coverage out of the measures', () => {
+    expect(METRIC_KEYS as readonly string[]).not.toContain('coverage_ratio');
+  });
+
+  it('requires the fields the demo still defaults', () => {
+    type Row = OutputOf<'getBoard'>['rows'][number];
+    expectTypeOf<Row['coverage']>().toEqualTypeOf<Coverage | null>();
+    expectTypeOf<Row['new_today']>().toEqualTypeOf<number | null>();
+    expectTypeOf<OutputOf<'getBoard'>['polled_at']>().toEqualTypeOf<string | null>();
+  });
+
   it('covers every action the demo backend exposes', () => {
     const modules = { admin, auth, chat, onboarding, practitioner, privacy, safety, skills, watchlist };
     const missing: string[] = [];
@@ -52,5 +71,21 @@ describe('contract registry', () => {
       }
     }
     expect(missing).toEqual([]);
+  });
+});
+
+describe('coverage bands', () => {
+  it('splits at 40% and 15%', () => {
+    expect(coverageBand(0.62)).toBe('normal');
+    expect(coverageBand(COVERAGE_THRESHOLDS.normal)).toBe('normal');
+    expect(coverageBand(0.39)).toBe('low');
+    expect(coverageBand(COVERAGE_THRESHOLDS.low)).toBe('low');
+    expect(coverageBand(0.149)).toBe('insufficient');
+    expect(coverageBand(0)).toBe('insufficient');
+  });
+
+  it('treats a missing or broken ratio as insufficient', () => {
+    expect(coverageBand(null)).toBe('insufficient');
+    expect(coverageBand(Number.NaN)).toBe('insufficient');
   });
 });

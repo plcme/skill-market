@@ -5,6 +5,7 @@ import { EMAIL_TEMPLATES } from './entities';
 // Scheduled work. Production: pg_cron → POST /api/jobs/[job] with JOBS_SECRET
 // (or a SQL function), each run logged to job_runs. The demo runs the chat and
 // slot jobs before every write instead (src/lib/api/jobs.ts, chat-jobs.ts).
+// Pipeline jobs in JOB_NAMES (entities.ts) are the snake_case of these keys.
 
 const jobInput = z.object({
   /** Override "now" for tests and replays (pgTAP: set_config('app.now')). */
@@ -38,24 +39,48 @@ export const jobOps = {
     does: 'Send queued emails through Resend with retry and backoff; above the daily free quota, the rest stay queued.',
     ui: '', tables: ['notifications_outbox'], fr: ['FR-C9'],
   }),
-  ingestAds: op({
+  // Data pipeline (ARCHITECTURE §5.4, §6.7, §6.8). Skill-level ads come only
+  // from Greenhouse, Lever and Ashby public job-board APIs, via the `employers`
+  // register; role-level counts and calibration from JSA IVI. Metrics settle
+  // once a day; the hourly polls only feed the intraday layer (new_today, tape).
+  pollAts: op({
     kind: 'job', access: 'system', input: jobInput, output: jobOutput,
-    does: 'Pull job ads from licensed sources (fixture until the source decision), dedupe, store.',
-    ui: '', tables: ['data_sources', 'ingestion_runs', 'job_ads'], fr: ['FR-D1'],
+    does: 'Hourly, staggered: for each employer with next_poll_at due, fetch the light job list (id, title, updated time) from its ATS; queue new ids, set closed_at on ids gone; re-estimate post_rate (Poisson λ, last 8 weeks) and set next_poll_at (busy → hourly, quiet → daily, new employers hourly for 2 weeks). Polite: ATS_USER_AGENT, robots.txt, back off on 429.',
+    ui: '', tables: ['employers', 'job_ads', 'data_sources', 'ingestion_runs'], fr: ['FR-D1'],
   }),
-  ingestOfficial: op({
+  fetchAtsDetails: op({
     kind: 'job', access: 'system', input: jobInput, output: jobOutput,
-    does: 'Import official series (JSA Internet Vacancy Index, ASC).',
-    ui: '', tables: ['data_sources', 'ingestion_runs', 'metric_points'], fr: ['FR-D1'],
+    does: 'After poll-ats: fetch full text only for queued new ids; strip recruiter names, emails and phone numbers; dedupe on (employer, normalised title, location, description hash); upsert job_ads (raw_snippet kept 30 days).',
+    ui: '', tables: ['employers', 'job_ads', 'ingestion_runs'], fr: ['FR-D1'],
+  }),
+  extractFeatures: op({
+    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    does: 'For each newly fetched ad: seniority, work mode and work rights rules, dictionary skill matching over title + full text, occupation (ANZSCO) from the title; stamp extraction_version.',
+    ui: '', tables: ['job_ads', 'job_ad_skills', 'instrument_aliases'], fr: ['FR-D1', 'FR-D6'],
   }),
   computeMetrics: op({
     kind: 'job', access: 'system', input: jobInput, output: jobOutput,
-    does: 'Extract features (seniority, work mode, work rights, skills), assign cells, compute metric_points, then revalidateTag("market").',
-    ui: '', tables: ['job_ads', 'job_ad_skills', 'metric_cells', 'metric_points', 'instrument_relations'], fr: ['FR-D4', 'FR-D5'],
+    does: 'Daily 04:00: assign each ad its metric_cell, write day metric_points per cell × instrument × metric (share_of_ads reweighted by the latest compute-coverage factors), then revalidateTag("market"). Its finish time is every read\'s as_of.',
+    ui: '', tables: ['job_ads', 'job_ad_skills', 'metric_cells', 'metric_points'], fr: ['FR-D1', 'FR-D4', 'FR-D5'],
+  }),
+  computeRelations: op({
+    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    does: 'Weekly (Sunday): recompute skill co-occurrence and role component weights.',
+    ui: '', tables: ['job_ad_skills', 'instrument_relations'], fr: ['FR-M3'],
+  }),
+  ingestJsa: op({
+    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    does: 'Monthly (1st) or by hand: download the JSA Internet Vacancy Index and write month metric_points per ANZSCO4 × state (role ad_count and growth_12m history). NERO and SPL come later.',
+    ui: '', tables: ['data_sources', 'ingestion_runs', 'metric_points'], fr: ['FR-D1', 'FR-D5'],
+  }),
+  computeCoverage: op({
+    kind: 'job', access: 'system', input: jobInput, output: jobOutput,
+    does: 'After ingest-jsa: coverage_ratio = our deduped new ads ÷ IVI new ads per ANZSCO4 × state × month (skills weight their main occupations), its band (COVERAGE_THRESHOLDS), and the occupation × state reweighting factors for share_of_ads.',
+    ui: '', tables: ['job_ads', 'metric_points'], fr: ['FR-D1', 'FR-D2'],
   }),
   detectSignals: op({
     kind: 'job', access: 'system', input: jobInput, output: jobOutput,
-    does: 'rise/fall = |change_4w| ≥ 25% and ≥ 10 ads; entry_open = entry share +10pp in 8 weeks; plus since-added on watchlists; emails signal_alert to opted-in students.',
+    does: 'Daily 04:30, after compute-metrics: rise/fall = |change_4w| ≥ 25% and ≥ 10 ads; entry_open = entry share +10pp in 8 weeks; plus since-added on watchlists; none where coverage is insufficient; emails signal_alert to opted-in students.',
     ui: '', tables: ['signals', 'watchlist_items', 'notifications_outbox'], fr: ['FR-M6', 'FR-W3', 'FR-W4'],
   }),
   purgeDeleted: op({

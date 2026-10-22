@@ -91,6 +91,7 @@ export const adminOps = {
     does: 'Latest run per job, failures first.',
     ui: '/admin/pipeline',
     tables: ['job_runs', 'ingestion_runs'], fr: ['FR-X3'],
+    delta: 'Demo seeds runs under the old names ingest_ads / ingest_official and none for the other data jobs.',
   }),
   rerunJob: op({
     kind: 'action', access: 'admin', input: z.object({ job: z.enum(JOB_NAMES) }), output: pipelineRunSchema,

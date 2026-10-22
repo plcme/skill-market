@@ -249,7 +249,11 @@ export const outboxEmailSchema = z.object({
   request_id: z.string().nullable(),
 });
 
-export const JOB_NAMES = ['ingest_ads', 'ingest_official', 'compute_metrics', 'detect_signals', 'expire_requests', 'send_outbox', 'purge_deleted'] as const;
+/** Jobs on /admin/pipeline (re-runnable); snake_case of the job op keys in jobs.ts. */
+export const JOB_NAMES = [
+  'poll_ats', 'fetch_ats_details', 'extract_features', 'compute_metrics', 'compute_relations', 'detect_signals', 'ingest_jsa', 'compute_coverage',
+  'expire_requests', 'send_outbox', 'purge_deleted',
+] as const;
 
 /** job_runs / ingestion_runs. */
 export const pipelineRunSchema = z.object({
