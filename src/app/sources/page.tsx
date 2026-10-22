@@ -64,6 +64,7 @@ export default async function SourcesPage() {
                 );
               })}
             </ul>
+            <p className="mt-4 max-w-3xl text-[13px] text-muted">{t('logos')}</p>
           </section>
 
           <section id="kinds" aria-labelledby="kinds-h" className="scroll-mt-24">
