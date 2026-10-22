@@ -73,6 +73,14 @@
 | 详情页单图（Y axis + Split by + 标题地点） | `fe-r3-chart` | 已合并 dev（审查 2 轮，Round 1 退回 2 阻断：/compare 缺文案 key、键盘焦点丢失；reviewer 改用 Opus） |
 | 配色方案、单色 logo、首页短标语 | `fe-r3-colours`（另一会话） | 已合并 dev（仓库内无审查记录，用户要求直接合并；合并后全量检查通过） |
 
+## 前端反馈第 7 轮（2026-10-22）
+
+| 项 | 分支 | 状态 |
+|---|---|---|
+| /market 去掉 Filter（按钮、回读、Reset）；盘面固定 `DEFAULT_FILTER`，旧 `?f=` 重定向去掉；所有指向 /market 的链接不带 `f`（`marketHref`）；去掉下拉旁的 "MEASURE" 字样 | `fe-r7` | 已合并 dev（审查 2 轮，R1 退回 2 阻断：面包屑与搜索页链接仍带 `f`） |
+
+说明：筛选只在详情页标题里。待拍板：是否在 onboarding 里让学生设一个默认口径（entry-level / No PR）作用于盘面。上 main 前需修的 e2e 增加：`frontend.spec.ts:90,103-121,196`、`round2.spec.ts:35-58`。
+
 ## 前端反馈第 6 轮（2026-10-22）
 
 | 项 | 分支 | 状态 |
@@ -105,6 +113,8 @@
 待拍板：筛选 No PR stated 时是否禁用 Work rights 拆分（演示数据 sponsorship_ok 约 6%，主会话建议禁用）；顶部行情条暂停键是否删除（WCAG 风险同轮播）。非阻断遗留：标题句子可能自相矛盾（"Sydney + remote · On-site or hybrid"）；被固定的 `by` 参数在 URL 中清不掉；e2e 文件已改未跑。
 
 ## 日志
+
+- 2026-10-22：FE-R7 合并 dev 并 push。lint/typecheck/282 单测/build 通过；未跑 e2e。子 agent 约 0.3M tokens。
 
 - 2026-10-22：FE-R6 合并 dev 并 push。lint/typecheck/281 单测/build 通过；未跑 e2e。子 agent 约 0.3M tokens。
 
