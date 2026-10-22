@@ -121,7 +121,8 @@
 - **标的符号框**：统一用 `InstrumentMark`（`src/components/market/instrument-mark.tsx`）。Skills and tools with a recognisable logo show it, monochrome in ink, in the symbol box; everything else keeps letters. Logos identify the technology only (nominative use), never brand colours; drop a logo if its owner objects. 标志来自 Simple Icons（CC0），映射表在 `src/lib/market/logos.ts`，只收录图标集里确实存在的那一项技术；role、industry 永远用字母。符号框是装饰（`aria-hidden`），名称总在旁边。
 - **数字**：一律通过 `MetricValue` 和 `MetricInfo` 渲染，不要裸写数字。
 - **涨跌**：用 `ChangeBadge`，它永远显示原始计数 from → to。
-- **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。
+- **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level · by experience ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → （仅详情页）Y axis + Split by → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Y axis 与图表的度量下拉同步；Split by 只能在这里改，被筛选或度量固定的维度置灰并写明原因；两者和筛选一起随 Apply 生效。标题与复述在拆分时加 "· by experience"，不写 Y axis。打开了 "remote anywhere" 又只选了部分 work mode 时，模式写在地点后的括号里（"Sydney (on-site or hybrid) + remote"），避免和 "+ remote" 自相矛盾。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。
+- **详情页度量**：只有一个参数 `?metric=`，"Right now" 大数字和图表一起变。"Right now" 区块不再有度量下拉；切换度量用图表左上的下拉或点 Fundamentals 格子。
 - **空、加载、错误三种状态**都必须设计：
   - 加载：用 `Skeleton`，形状和最终内容相同；
   - 空：用 `EmptyState`，并给出下一步；
@@ -147,14 +148,15 @@
 
 1. **计数和面积图的 y 轴从 0 开始。** 折线展示占比或中位数时可以不从 0 开始，但要明确标出刻度。
 2. **不用双 y 轴。** 两个量纲不同的指标，就分成两张图。
-3. **一次只按一个维度拆分**。详情页图表上方：左边 Y axis（`?y=`），右边 Split by（`?by=`，可选 none）。详情页只有一张图。
-4. **直接标注优先于图例**：空间够时，标签写在线尾或面积带右端；空间不够时，在图下方列出图例，并附最新数值和占比。
-5. **样本不足 = 断开**：不连线、不插值，旁边注明原因（`SampleWarning`）。
-6. **估算必须标注**：从广告文本里抽取的维度（经验、工作权利）标 "estimated"，并在定义弹层里写明方法和误差。
-7. **筛选优先**：筛选已经限定的维度，在 breakdown 里只显示筛选范围内的桶，并注明 "Filtered to …"。
-8. **每张图都能换成表格**（无障碍要求），表格和图使用同一份数据。
-9. **来源在图上**：每张图附 `SourceMark`，以及数据窗口和更新时间。
-10. 线宽：主序列 1.75–2px，sparkline 1.5px，线端和拐角用圆角；堆叠带之间用 1px 的 `surface` 色描边。
+3. **一次只按一个维度拆分**。详情页只有一张图。图表头部：左边是度量下拉（纯文字 "Job ads ▾"，中等字重、墨色，不加 "Y axis" 标签也不做胶囊），右边只有范围胶囊 3M / 6M / 1Y / 2Y；375px 下两者同一行，下拉文字过长时截断。Split by（`?by=`）只在标题打开的 Filter 面板里改。
+4. **变化量要画出比较的两个窗口**：4-week change 画 Job ads、默认 3M，最近 4 周和之前 4 周两段加浅色阴影并标出 from → to 两个值；12-month change 画 Job ads、默认 2Y，两个 12 个月窗口加阴影。
+5. **直接标注优先于图例**：空间够时，标签写在线尾或面积带右端；空间不够时，在图下方列出图例，并附最新数值和占比。
+6. **样本不足 = 断开**：不连线、不插值，旁边注明原因（`SampleWarning`）。
+7. **估算必须标注**：从广告文本里抽取的维度（经验、工作权利）标 "estimated"，并在定义弹层里写明方法和误差。
+8. **筛选优先**：筛选已经限定的维度，在 breakdown 里只显示筛选范围内的桶，并注明 "Filtered to …"。
+9. **每张图都能换成表格**（无障碍要求），表格和图使用同一份数据。
+10. **来源在图上**：每张图附 `SourceMark`，以及数据窗口和更新时间。
+11. 线宽：主序列 1.75–2px，sparkline 1.5px，线端和拐角用圆角；堆叠带之间用 1px 的 `surface` 色描边。
 
 ### 6.3 Breakdown 维度（v1 原型）
 

@@ -21,8 +21,8 @@
 | 中文 | 界面用词 | 代码 | 定义 |
 |---|---|---|---|
 | 筛选 | Filter | `FilterSpec`（`rules[]`、`seniority`、`work_rights`） | **作用于整张表**的范围：地区、工作方式、资历、工作权利。改筛选 = 改分母 |
-| 纵轴变量 / 度量 | Measure；详情页图表上叫 **Y axis** | `MetricKey`（注册表 `src/lib/metrics/registry.ts`）；详情页图表 `?y=ads\|salary` | 每个标的显示的那个数字，也是图表的 y 轴。详情页图表的 Y axis 只有 Job ads 和 Median salary 两个选项（2026-10-17） |
-| 拆分 / 分布 | Breakdown；界面叫 **Split by** | `?by=experience\|rights\|mode\|none`，注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开，可切换。维度：Experience · Work rights · Work mode（地点不是维度）。筛选已把某维度固定成一个桶时（Entry-level/Graduate → Experience；只选一种 work mode → Work mode），该选项置灰并注明 "Fixed by your filter"，URL 里冲突的 `by` 按不拆分画。**可相加的量用堆叠面积，不可相加的量（中位数、占比）用多条线**。详见 `docs/DESIGN.md` §6.3 |
+| 纵轴变量 / 度量 | Measure；详情页图表左上角的下拉（"Job ads ▾"），Filter 面板里叫 **Y axis** | `MetricKey`（注册表 `src/lib/metrics/registry.ts`）；详情页只有一个参数 `?metric=`（旧链接 `?y=ads\|salary` 自动改写成 `metric=ad_count\|salary_median`）；度量 → 图表的映射是 `chartPlanFor`（`src/features/market/logic.ts`） | 每个标的显示的那个数字。详情页上 "Right now" 大数字和图表永远显示同一个度量（2026-10-22）。Y axis 选项 = 有周序列的水平量（`CHART_SERIES`）：Job ads、Median salary（无 industry）、Entry-level share、No PR stated、Employers hiring、Remote or hybrid、Contract share。变化量不是选项，但选中后图表要对：4-week change → Job ads、3M，前后两个 4 周窗口加阴影并标出 from → to；12-month change → Job ads、2Y，两个 12 个月窗口加阴影；Volatility → Job ads、1Y；Salary range、Skill premium → Median salary |
+| 拆分 / 分布 | Breakdown；界面叫 **Split by** | `?by=experience\|rights\|mode\|none`（缺省 = Experience），注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开。**只能在标题打开的 Filter 面板里改**（2026-10-22），图表上没有拆分控件。维度：Experience · Work rights · Work mode（地点不是维度）。筛选已把某维度固定成一个桶时（Entry-level/Graduate → Experience；只选一种 work mode → Work mode），该选项置灰并注明 "Fixed by your filter"；占比按它自己的维度拆没有意义（Entry-level share × Experience 等），置灰并注明 "Not for this measure"。被固定的 `by` 不留在 URL 里（改成 `none`；缺省的 Experience 不写参数）。标题句子在拆分时加 "· by experience"。**可相加的量用堆叠面积，不可相加的量（中位数、占比、雇主数）用多条线**。详见 `docs/DESIGN.md` §6.3 |
 | 经验段 | Entry / Mid / Senior / Expert | `experience`：0–2 / 3–5 / 6–9 / 10+ 年 | Expert = 用户说的 "master level"（10 年以上）；界面不用 Master 以免和硕士学位混淆 |
 | 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}`。只有澳大利亚：All Australia（`au`）是固定底，不能选也不能删；只能缩小到州、城市或区域，删掉最后一个就回到 All Australia（2026-10-21）。详情页标题里的 "in …" 是整条筛选的一句话，比如 "SQL in [Sydney + remote · Entry-level ▾]"：地点总在前，其他条件只列缩小范围的那些，用 " · " 分隔，多规则时写 "custom places"。点它打开和行情表 Filter 按钮同一个面板；"in …" 字号小于标的名（2026-10-21，取代 10-17 的地点弹层和可删除条件标签） |
 | 排序 | Sort | `sort`：`value` / `change` | 只有"按度量""按变化"两种；不提供 A–Z |
@@ -56,5 +56,5 @@
 ## 5. 未定概念（不得擅自落地）
 
 - **什么算 skill**：按 ASC 三层做原型（见 §1），看过效果后定稿。
-- **Breakdown**：v2（2026-10-17）：详情页只有一张图，上方 Y axis + Split by，不再有单独的 breakdown 区块和筛选按钮。原型 https://claude.ai/artifact/72Ka23B5tHtKwUWCQfyE1V ，实现后定稿。
+- **Breakdown**：v3（2026-10-22）：详情页只有一张图；图表左上是度量下拉，右上只有 3M / 6M / 1Y / 2Y；Y axis 和 Split by 都在标题打开的 Filter 面板里（在 "Currently showing" 之后、Work rights 之前），随 Apply 一起生效。v2 原型 https://claude.ai/artifact/72Ka23B5tHtKwUWCQfyE1V 。
 - **细分行业颗粒度**：ANZSIC Subdivision 还是 Group。
