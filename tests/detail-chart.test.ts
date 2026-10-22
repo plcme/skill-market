@@ -48,15 +48,15 @@ describe('measure → chart', () => {
 });
 
 describe('?by= parsing and fixed splits', () => {
-  it('reads the split: experience by default, none = not split, invalid = default', () => {
-    expect(parseBreakdownBy(undefined)).toBe('experience');
+  it('reads the split: none by default, old none / invalid = not split', () => {
+    expect(parseBreakdownBy(undefined)).toBeNull();
     expect(parseBreakdownBy('none')).toBeNull();
+    expect(parseBreakdownBy('experience')).toBe('experience');
     expect(parseBreakdownBy('mode')).toBe('mode');
     expect(parseBreakdownBy('rights')).toBe('rights');
-    expect(parseBreakdownBy('location')).toBe('experience');
-    expect(parseBreakdownBy('NONE')).toBe('experience');
-    expect(breakdownParam('experience')).toBeNull();
-    expect(breakdownParam(null)).toBe('none');
+    expect(parseBreakdownBy('location')).toBeNull();
+    expect(breakdownParam('experience')).toBe('experience');
+    expect(breakdownParam(null)).toBeNull();
     expect(breakdownParam('mode')).toBe('mode');
     for (const by of ['experience', 'rights', 'mode', null] as const) expect(parseBreakdownBy(breakdownParam(by) ?? undefined)).toBe(by);
   });
@@ -69,8 +69,11 @@ describe('?by= parsing and fixed splits', () => {
     // Two modes, or one mode plus remote-anywhere, are not fixed.
     expect(fixedSplitDimensions(decodeFilter('oh.au-nsw_all_all'))).toEqual([]);
     expect(fixedSplitDimensions(decodeFilter('o.au-nsw*r.au_all_all'))).toEqual([]);
-    // "No PR stated" keeps two rights buckets, so rights stays splittable.
-    expect(fixedSplitDimensions(decodeFilter('ohr.au_all_npr'))).toEqual([]);
+    // "No PR stated" fixes Work rights: splitting would only restate the filter.
+    expect(fixedSplitDimensions(decodeFilter('ohr.au_all_npr'))).toEqual(['rights']);
+    expect(fixedSplitDimensions(decodeFilter('r.au_graduate_npr'))).toEqual(['experience', 'rights', 'mode']);
+    expect(splitBlockers(decodeFilter('ohr.au_all_npr'), 'ad_count')).toEqual({ rights: 'filter' });
+    expect(effectiveSplit('rights', decodeFilter('ohr.au_all_npr'))).toBeNull();
   });
 
   it('draws a conflicting split as no split, and leaves others alone', () => {
@@ -90,19 +93,22 @@ describe('?by= parsing and fixed splits', () => {
   });
 
   it('never keeps a fixed split in the URL', () => {
-    // Explicit split now fixed by the filter or the measure → none.
-    expect(nextByParam('mode', decodeFilter('r.au_all_all'), 'ad_count')).toBe('none');
-    expect(nextByParam('mode', DEFAULT_FILTER, 'remote_share')).toBe('none');
+    // A split now fixed by the filter or the measure is dropped (no by = no split).
+    expect(nextByParam('mode', decodeFilter('r.au_all_all'), 'ad_count')).toBeNull();
+    expect(nextByParam('mode', DEFAULT_FILTER, 'remote_share')).toBeNull();
+    expect(nextByParam('rights', decodeFilter('ohr.au_all_npr'), 'ad_count')).toBeNull();
     expect(nextByParam('rights', DEFAULT_FILTER, 'ad_count')).toBe('rights');
-    expect(nextByParam('none', DEFAULT_FILTER, 'ad_count')).toBe('none');
-    // Absent or experience: the default, no param (drawn unsplit while fixed).
-    expect(nextByParam(null, decodeFilter('ohr.au_entry_all'), 'ad_count')).toBeNull();
+    expect(nextByParam('experience', DEFAULT_FILTER, 'ad_count')).toBe('experience');
     expect(nextByParam('experience', decodeFilter('ohr.au_entry_all'), 'ad_count')).toBeNull();
+    // Absent, or an old `none`: no split, no param.
+    expect(nextByParam(null, decodeFilter('ohr.au_entry_all'), 'ad_count')).toBeNull();
+    expect(nextByParam('none', DEFAULT_FILTER, 'ad_count')).toBeNull();
     // Chosen in the Filter panel.
-    expect(chosenByParam(null, DEFAULT_FILTER, 'ad_count')).toBe('none');
-    expect(chosenByParam('experience', DEFAULT_FILTER, 'ad_count')).toBeNull();
-    expect(chosenByParam('mode', decodeFilter('o.au_all_all'), 'ad_count')).toBe('none');
+    expect(chosenByParam(null, DEFAULT_FILTER, 'ad_count')).toBeNull();
+    expect(chosenByParam('experience', DEFAULT_FILTER, 'ad_count')).toBe('experience');
+    expect(chosenByParam('mode', decodeFilter('o.au_all_all'), 'ad_count')).toBeNull();
     expect(chosenByParam('mode', DEFAULT_FILTER, 'ad_count')).toBe('mode');
+    expect(chosenByParam('rights', decodeFilter('ohr.au_all_npr'), 'ad_count')).toBeNull();
   });
 
   it('rewrites old or conflicting detail URLs once, and leaves canonical ones alone', () => {
@@ -113,9 +119,14 @@ describe('?by= parsing and fixed splits', () => {
     expect(q({ y: 'ads' })).toBe('');
     expect(q({ y: 'salary', metric: 'change_4w' }, 'change_4w')).toBe('metric=change_4w');
     expect(q({ y: 'salary' }, 'ad_count', 'industry')).toBe('');
-    expect(q({ f: 'r.au_all_all', by: 'mode' })).toBe('f=r.au_all_all&by=none');
-    expect(q({ metric: 'remote_share', by: 'mode' }, 'remote_share')).toBe('metric=remote_share&by=none');
-    expect(q({ by: 'experience' })).toBe('');
+    expect(q({ f: 'r.au_all_all', by: 'mode' })).toBe('f=r.au_all_all');
+    expect(q({ metric: 'remote_share', by: 'mode' }, 'remote_share')).toBe('metric=remote_share');
+    expect(q({ f: 'ohr.au_all_npr', by: 'rights' })).toBe('f=ohr.au_all_npr');
+    // Old `by=none` links lose the param once; the result is canonical (no loop).
+    expect(q({ by: 'none' })).toBe('');
+    expect(q({ metric: 'salary_median', by: 'none' }, 'salary_median')).toBe('metric=salary_median');
+    expect(q({ metric: 'salary_median' }, 'salary_median')).toBeNull();
+    expect(q({ by: 'experience' })).toBeNull();
   });
 
   it('one measure drives the headline and the chart', () => {
@@ -134,6 +145,8 @@ describe('?by= parsing and fixed splits', () => {
     const entry = getInstrumentDetail('sql', DEFAULT_FILTER, 'entry_level_share', 'experience');
     expect(entry?.breakdown.by).toBeNull();
     expect(entry?.chart.by).toBe('experience');
+    // No split unless one is asked for.
+    expect(getInstrumentDetail('sql', DEFAULT_FILTER)?.breakdown.by).toBeNull();
   });
 });
 

@@ -46,32 +46,31 @@ export function layerParam(layer: SkillLayer | null): string | undefined {
 }
 
 /**
- * Detail-chart split: `?by=experience|rights|mode|none`. Absent or invalid =
- * experience (the default); `none` = not split (null).
+ * Detail-chart split: `?by=experience|rights|mode`. Absent or anything else
+ * (including old `by=none` links) = no split (null), the default.
  */
 export function parseBreakdownBy(v: string | string[] | undefined): BreakdownDimension | null {
   const s = firstParam(v);
-  if (s === 'none') return null;
-  return s === 'rights' || s === 'mode' ? s : 'experience';
+  return s === 'experience' || s === 'rights' || s === 'mode' ? s : null;
 }
 
-/** `by` value for a link: omitted for the default (experience), `none` for no split. */
+/** `by` value for a link: omitted for no split (the default). */
 export function breakdownParam(by: BreakdownDimension | null): string | null {
-  return by === null ? 'none' : by === 'experience' ? null : by;
+  return by;
 }
 
 /**
- * Split by dimensions the filter has fixed to a single bucket, so splitting by
- * them would show one band: experience when the level is entry-level or
- * graduate (both sit inside the 0–2 yrs band), work mode when the rules cover
- * exactly one mode. Work rights "No PR stated" still leaves two buckets
- * (not stated, sponsorship OK), so it stays splittable.
+ * Split by dimensions the filter has fixed, so splitting by them would show
+ * one band: experience when the level is entry-level or graduate (both sit
+ * inside the 0–2 yrs band), work rights when the filter is "No PR stated"
+ * (the split would only restate the filter) or the rules leave one bucket,
+ * work mode when the rules cover exactly one mode.
  */
 export function fixedSplitDimensions(filter: FilterSpec): BreakdownDimension[] {
   const cells = expandFilterToCells(filter);
   const out: BreakdownDimension[] = [];
   if (!cells.seniority.includes('other')) out.push('experience');
-  if (cells.rights.length === 1) out.push('rights');
+  if (filter.work_rights === 'no_pr_required' || cells.rights.length === 1) out.push('rights');
   if (new Set(cells.pairs.map(p => p.mode)).size === 1) out.push('mode');
   return out;
 }
@@ -91,21 +90,17 @@ export function effectiveSplit(by: BreakdownDimension | null, filter: FilterSpec
 }
 
 /**
- * `by` to write after a change of filter or measure: an explicit split that
- * is now fixed never stays in the URL; it becomes `none` (absent `by` already
- * means the default, Experience, which the route draws unsplit when fixed).
+ * `by` to write after a change of filter or measure: a split that is now
+ * fixed (or an old `none` / unknown value) is dropped, since no `by` means no split.
  */
 export function nextByParam(byParam: string | null | undefined, filter: FilterSpec, series: MetricKey): string | null {
   if (!byParam) return null;
-  const by = parseBreakdownBy(byParam);
-  // Experience is the default: no param needed, and the route draws it unsplit while it is fixed.
-  if (by === 'experience') return null;
-  return breakdownParam(effectiveSplit(by, filter, series));
+  return breakdownParam(effectiveSplit(parseBreakdownBy(byParam), filter, series));
 }
 
 /** `by` to write for a split chosen in the Filter panel, given what the (new) filter and measure fix. */
 export function chosenByParam(by: BreakdownDimension | null, filter: FilterSpec, series: MetricKey): string | null {
-  return nextByParam(breakdownParam(by) ?? 'experience', filter, series);
+  return nextByParam(breakdownParam(by), filter, series);
 }
 
 /** Old `?y=ads|salary` chart links map onto the one measure param, `?metric=`. */
@@ -172,8 +167,8 @@ export function chartPlanFor(metric: MetricKey, type: ActiveInstrumentType): Cha
 
 /**
  * The detail page's query string after cleaning, or null when it is already
- * canonical: `?y=` folds into `?metric=` (an explicit `metric` wins), and an
- * explicit `by` that the filter or the measure fixes becomes `none`.
+ * canonical: `?y=` folds into `?metric=` (an explicit `metric` wins), and a
+ * `by` that the filter or the measure fixes, or an old `by=none`, is dropped.
  * `metric` is the measure the page resolves without the legacy `y`.
  */
 export function canonicalDetailQuery(sp: SearchParamsRecord, filter: FilterSpec, metric: MetricKey, type: ActiveInstrumentType): string | null {

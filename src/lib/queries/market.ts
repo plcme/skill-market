@@ -110,7 +110,7 @@ export interface InstrumentDetail {
   /** Skill → often asked together. */
   related: CompositionEntry[];
   locations: Array<{ location_id: string; name: string; count: number }>;
-  /** The page's one chart: the selected measure's series (`chart.series`) split by one dimension (`?by=`, default experience; null = not split). */
+  /** The page's one chart: the selected measure's series (`chart.series`) split by one dimension (`?by=`; null = not split, the default). */
   breakdown: Breakdown;
   /** How the selected measure is charted (series, opening range, compared windows), the Y axis options for this type, and the requested split (`breakdown.by` is the one drawn). */
   chart: ChartPlan & { options: MetricKey[]; by: BreakdownDimension | null };
@@ -123,7 +123,7 @@ export interface InstrumentDetail {
  * chart (`chartPlanFor`); `by` is the split (null = no split). A split fixed
  * by the filter or by the measure is drawn unsplit.
  */
-export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension | null = 'experience'): InstrumentDetail | null {
+export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension | null = null): InstrumentDetail | null {
   const inst = getInstrument(slug);
   if (!inst) return null;
   // Same rule as boards: legacy non-selectable metrics fall back to the default.
