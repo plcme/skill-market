@@ -164,8 +164,8 @@ describe('computeBreakdown — measures', () => {
 
   it('is attached to the detail read model with the ?by= dimension and the page measure', () => {
     expect(parseBreakdownBy('rights')).toBe('rights');
-    expect(parseBreakdownBy('location')).toBe('experience');
-    expect(parseBreakdownBy(undefined)).toBe('experience');
+    expect(parseBreakdownBy('location')).toBeNull();
+    expect(parseBreakdownBy(undefined)).toBeNull();
     const d = getInstrumentDetail('data-analyst', DEFAULT_FILTER, 'salary_median', 'mode');
     expect(d?.breakdown.by).toBe('mode');
     expect(d?.breakdown.kind).toBe('lines');

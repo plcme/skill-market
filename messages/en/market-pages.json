@@ -4,17 +4,25 @@
       "skill": "Skills market",
       "role": "Roles market",
       "industry": "Industries market",
-      "all": "Market"
+      "all": "Market",
+      "watching": "Watching"
     },
     "metaDescription": "Every skill and role we track in Australian job ads, with the measure you choose, its change and a 12-month trend.",
     "title": "The market",
     "boardHeading": "Board",
     "typeTabsLabel": "Instrument type",
     "types": {
+      "watching": "Watching",
       "skill": "Skills",
       "role": "Roles",
       "industry": "Industries",
       "all": "All"
+    },
+    "watching": {
+      "signedOut": "Sign in to see what you watch.",
+      "signIn": "Sign in",
+      "empty": "Nothing watched yet.",
+      "browseAll": "Browse all"
     },
     "sortLabel": "Order",
     "sort": {

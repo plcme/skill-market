@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  barPercent, boardTypeParam, chartMetricFor, COMPARE_MAX, compareBlocker, compareHref, compareState, correlationBand, firstParam, hrefWith,
-  keyMetrics, parseBoardType, parseSort, parseView, salaryAxis, SUGGESTED_PAIRS, toggleCompare, toQueryString, togetherness,
+  barPercent, boardForTab, boardTypeParam, chartMetricFor, COMPARE_MAX, compareBlocker, compareHref, compareState, correlationBand, firstParam, hrefWith,
+  keyMetrics, parseBoardType, parseSort, parseView, salaryAxis, SUGGESTED_PAIRS, toggleCompare, toQueryString, togetherness, watchedRows, watchedSlugs,
 } from '@/features/market/logic';
 import { getInstrument } from '@/lib/market/catalog';
 import { DEFAULT_FILTER, decodeFilter } from '@/lib/filters/spec';
@@ -30,6 +30,21 @@ describe('URL parsing', () => {
     expect(boardTypeParam('all')).toBeUndefined();
     expect(boardTypeParam('skill')).toBe('skill');
     expect(boardTypeParam('role')).toBe('role');
+  });
+  it('has a Watching tab that reads the All board, keeping watched rows only', () => {
+    expect(parseBoardType('watching')).toBe('watching');
+    expect(boardTypeParam('watching')).toBe('watching');
+    expect(boardForTab('watching')).toBe('all');
+    expect(boardForTab('role')).toBe('role');
+    // Held and watching both count; the same instrument under two filters counts once; dropped instruments are skipped.
+    const watched = watchedSlugs([{ instrument_slug: 'sql' }, { instrument_slug: 'data-analyst' }, { instrument_slug: 'sql' }, { instrument_slug: 'gone' }, { instrument_slug: 'mining' }]);
+    expect([...watched]).toEqual(['sql', 'data-analyst', 'mining']);
+    const board = getBoard({ type: 'all', filter: DEFAULT_FILTER });
+    const rows = watchedRows(board.rows, watched);
+    // The tab's count matches the list, which keeps the board's order.
+    expect(rows).toHaveLength(watched.size);
+    expect(rows.map(r => r.instrument.slug)).toEqual(board.rows.map(r => r.instrument.slug).filter(s => watched.has(s)));
+    expect(watchedRows(board.rows, new Set())).toEqual([]);
   });
   it('has no A–Z sort; old links fall back to the measure order', () => {
     expect(parseSort(undefined)).toBe('value');
