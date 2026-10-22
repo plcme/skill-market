@@ -5,6 +5,10 @@ const env: GateEnv = { INVITE_CODE: 'test-invite-code-only', INVITE_SESSION_SECR
 const get = (path: string, cookie?: string) => new Request(`https://brewdex.app${path}`, { headers: cookie ? { cookie } : {} });
 const post = (code: string, origin = 'https://brewdex.app', next = '/') => new Request('https://brewdex.app/invite', { method: 'POST', headers: { origin, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code, next }) });
 describe('invite boundary', () => {
+  it('preserves same-origin form verification in browsers', async () => {
+    const res = await inviteGate(get('/invite'), env);
+    expect(res?.headers.get('Referrer-Policy')).toBe('same-origin');
+  });
   it('fails closed before configuration', async () => { expect((await inviteGate(get('/'), { ...env, INVITE_SESSION_SECRET: '' }))?.status).toBe(503); });
   it('protects pages, static assets and Next data requests', async () => {
     for (const path of ['/', '/me', '/_next/static/chunk.js', '/skills?_rsc=1']) expect((await inviteGate(get(path), env))?.status).toBe(303);

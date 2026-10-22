@@ -7,7 +7,7 @@ export interface GateEnv {
 const COOKIE = '__Host-brewdex_invite';
 const TTL = 172800;
 const encoder = new TextEncoder();
-const headers = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' };
+const headers = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin' };
 const cookie = (value: string, age = TTL) => `${COOKIE}=${value}; Path=/; Max-Age=${age}; HttpOnly; Secure; SameSite=Lax`;
 export function safeNext(value: string | null): string {
   if (!value || !value.startsWith('/') || /[\\\r\n]/.test(value)) return '/';
