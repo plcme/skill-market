@@ -22,8 +22,8 @@ export function deskFor(session: Session | null): NavLink | null {
 }
 
 /**
- * Extra links in the account menu. The desk itself is not repeated here: the
- * header already has a desk button (and the mobile menu adds it once).
+ * Account links that follow the desk in the account menu. The desk is the
+ * menu's first item (see `accountMenuLinks`), so it is not repeated here.
  */
 export function accountLinks(session: Session | null): NavLink[] {
   if (!session) return [];
@@ -37,11 +37,18 @@ export function accountLinks(session: Session | null): NavLink[] {
   return [];
 }
 
-/** Mobile menu: primary nav, then the desk once, then account links. */
-export function mobileMenuLinks(session: Session | null): NavLink[] {
+/** The account menu behind the header's single "avatar · My desk ▾" trigger: the desk first, then account links. */
+export function accountMenuLinks(session: Session | null): NavLink[] {
   const desk = deskFor(session);
-  const seen = new Set<string>();
-  return [...PRIMARY_NAV, ...(desk ? [desk] : []), ...accountLinks(session)].filter(l => (seen.has(l.href) ? false : (seen.add(l.href), true)));
+  return desk ? [desk, ...accountLinks(session)] : [];
+}
+
+/**
+ * Mobile menu sheet: primary nav only. The desk and account links live in the
+ * account menu, which the header shows at every width (avatar only on phones).
+ */
+export function mobileMenuLinks(_session: Session | null): NavLink[] {
+  return [...PRIMARY_NAV];
 }
 
 export function isActive(pathname: string, href: string): boolean {
