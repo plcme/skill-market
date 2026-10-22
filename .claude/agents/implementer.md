@@ -21,6 +21,7 @@ model: opus
 5. 小步提交，commit message 用英文 conventional commits
 6. 不修改 `docs/PRD.md`、`docs/ARCHITECTURE.md`、`docs/MILESTONES.md`、`docs/SETUP_*.md`、`.env.example`
 7. 不提交任何密钥；缺少环境变量或账号时，停止并在回报中说明需要什么
+8. 写前端时：**Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.**
 
 完成后回报（简洁，主会话会据此调度）：
 - 完成了哪些任务，对应哪些 FR

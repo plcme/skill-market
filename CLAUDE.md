@@ -91,3 +91,4 @@
 - Supabase 所有表启用 RLS，并有对应测试
 - 每个里程碑的验收命令必须能在本地一条命令跑通
 - UX 必须遵守 `docs/PRD.md` §10 的原则（每个数字有定义与来源、不排名、推断即建议等）
+- 前端：**Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.**（定义与来源放进 ⓘ 等一键可达处，不在界面上铺说明文字）

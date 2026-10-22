@@ -24,6 +24,7 @@ tools: Read, Glob, Grep, Bash, Write
    - 安全与隐私：RLS、权限、密钥泄露、输入校验、敏感字段是否被记录
    - 是否偏离架构，偏离是否有合理理由
    - UX 原则：数字是否有定义与来源、是否出现排名或赤字表达、推断是否标为建议
+   - 前端是否有多余的次级标签与说明文字（"Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining."）
    - 测试是否覆盖核心逻辑
 4. 只报告真实问题，不报告风格偏好
 
