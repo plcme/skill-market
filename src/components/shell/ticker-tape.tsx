@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Pause, Play } from 'lucide-react';
-import { formatChange, formatCount } from '@/lib/market/format';
+import { direction, formatChange, formatCount } from '@/lib/market/format';
 import { cn } from '@/lib/utils';
-import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
+import { DirectionGlyph } from '@/components/market/direction-glyph';
 import { useUiMode } from '@/lib/demo/ui-mode';
+import { AUTO_ADVANCE_QUERY, useMediaQuery } from '@/lib/hooks/use-media-query';
 
 export interface TapeItem {
   slug: string;
@@ -20,16 +20,25 @@ export interface TapeItem {
   signal: boolean;
 }
 
-/** Scrolling market strip. Pausable (WCAG 2.2.2) and static under reduced motion. */
+/**
+ * Scrolling market strip. No pause button, so to meet WCAG 2.2.2 it follows
+ * the home carousel's rule: it only moves where hover-to-pause works (fine
+ * pointer with hover, no reduced-motion preference), pauses on hover or focus,
+ * and stops for the session on any pointer or key interaction. Everywhere else
+ * it is a static, horizontally scrollable strip.
+ */
 export function TickerTape({ items }: { items: TapeItem[] }) {
   const t = useTranslations('Nav');
-  const [paused, setPaused] = useState(false);
+  const [hold, setHold] = useState(false);
+  const [stopped, setStopped] = useState(false);
+  const canAnimate = useMediaQuery(AUTO_ADVANCE_QUERY);
+  const animated = canAnimate && !stopped;
   const mode = useUiMode();
   if (!items.length || mode === 'plain') return null;
   const row = (hidden: boolean) => (
     <ul className="flex shrink-0 items-center" aria-hidden={hidden || undefined}>
       {items.map(it => {
-        const dir = signDirection(it.change);
+        const dir = direction(it.change);
         return (
           <li key={`${hidden}-${it.slug}`} className="flex items-center">
             <Link href={it.href} tabIndex={hidden ? -1 : undefined} className="flex items-center gap-2 px-4 font-mono text-[11.5px] tracking-wide hover:bg-night-ink/10">
@@ -47,20 +56,24 @@ export function TickerTape({ items }: { items: TapeItem[] }) {
     </ul>
   );
   return (
-    <div className="no-print relative flex h-8 items-center overflow-hidden bg-night text-night-ink">
+    <div
+      className={cn('no-print relative flex h-8 items-center bg-night text-night-ink', animated ? 'overflow-hidden' : 'overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden')}
+      onPointerDown={() => setStopped(true)}
+      onKeyDown={() => setStopped(true)}
+      onMouseEnter={() => setHold(true)}
+      onMouseLeave={() => setHold(false)}
+      onFocus={() => setHold(true)}
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHold(false); }}
+    >
       <p className="sr-only">{t('tape')}</p>
-      <div className={cn('flex w-max animate-tape motion-reduce:animate-none', paused && '[animation-play-state:paused]')}>
-        {row(false)}
-        {row(true)}
-      </div>
-      <button
-        type="button"
-        onClick={() => setPaused(p => !p)}
-        aria-label={paused ? t('tapePlay') : t('tapePause')}
-        className="absolute inset-y-0 right-0 grid w-9 place-items-center bg-gradient-to-l from-night via-night to-transparent pl-2 text-night-ink/70 hover:text-night-ink motion-reduce:hidden"
-      >
-        {paused ? <Play className="size-3.5" aria-hidden /> : <Pause className="size-3.5" aria-hidden />}
-      </button>
+      {animated ? (
+        <div className={cn('flex w-max animate-tape motion-reduce:animate-none', hold && '[animation-play-state:paused]')}>
+          {row(false)}
+          {row(true)}
+        </div>
+      ) : (
+        <div className="flex w-max">{row(false)}</div>
+      )}
     </div>
   );
 }

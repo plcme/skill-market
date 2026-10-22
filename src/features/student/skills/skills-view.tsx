@@ -9,10 +9,11 @@ import { confirmSkill, removeSkill, restoreSkill, selectSkillBoard, type BoardSk
 import { useAction } from '@/lib/api/client';
 import { instrumentPath } from '@/lib/links';
 import { Button } from '@/components/ui/button';
-import { Badge, Container, Monogram, Notice, PageHeader } from '@/components/ui/primitives';
+import { Badge, Container, Notice, PageHeader } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { EffortText, ReasonText, SuggestionMeta, TransferText, sourceLabelKey, useErrorText } from '../shared';
 import { AddSkill } from './add-skill';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 function useRemove() {
   const t = useTranslations('SkillsPage');
@@ -54,7 +55,7 @@ function ConfirmedRow({ b }: { b: BoardSkill }) {
   return (
     <li className="flex items-center justify-between gap-3 py-3">
       <div className="flex min-w-0 items-center gap-3">
-        <Monogram size="sm" tone="ink">{b.skill.symbol}</Monogram>
+        <InstrumentMark size="sm" tone="ink" slug={b.skill.slug} symbol={b.skill.symbol} />
         <div className="min-w-0">
           <Link href={instrumentPath('skill', b.skill.slug)} className="block truncate font-medium hover:underline">{b.skill.name}</Link>
           <p className="truncate text-[12.5px] text-muted">
@@ -79,7 +80,7 @@ function SuggestionRow({ b }: { b: BoardSkill }) {
   return (
     <li className="py-3.5">
       <div className="flex items-start gap-3">
-        <Monogram size="sm">{b.skill.symbol}</Monogram>
+        <InstrumentMark size="sm" slug={b.skill.slug} symbol={b.skill.symbol} />
         <div className="min-w-0 flex-1">
           <Link href={instrumentPath('skill', b.skill.slug)} className="font-medium hover:underline">{b.skill.name}</Link>
           <SuggestionMeta confidence={b.row.confidence} reason={b.row.reason} className="mt-1" />

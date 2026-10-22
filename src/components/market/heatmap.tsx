@@ -1,14 +1,13 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { formatChange, formatCount } from '@/lib/market/format';
-import { heatStep, HEAT_BANDS, tileArea, type HeatStep, type HeatTile, type Heatmap } from '@/lib/market/heatmap';
+import { direction, formatChange, formatCount } from '@/lib/market/format';
+import { heatStep, tileArea, type HeatTile, type Heatmap } from '@/lib/market/heatmap';
 import { squarify } from '@/lib/market/treemap';
 import { instrumentPath } from '@/lib/links';
-import { MIN_SAMPLE_DEFAULT } from '@/lib/metrics/registry';
 import { formatDate } from '@/lib/time';
 import type { FilterSpec } from '@/lib/market/types';
 import { cn } from '@/lib/utils';
-import { DirectionGlyph, GLYPH_SLOT, signDirection, WithGlyph } from './direction-glyph';
+import { DirectionGlyph, GLYPH_SLOT, WithGlyph } from './direction-glyph';
 import { MetricInfo } from './metric-info';
 import { SourceBadge } from './source-badge';
 
@@ -16,12 +15,9 @@ import { SourceBadge } from './source-badge';
 // Desktop draws a squarified treemap; phones get a stacked grid in the same
 // colours. Every tile is a link with a spoken summary, and the same numbers
 // are available to screen readers as a table (PRD §10.1: every number has a
-// definition and source, one click away in the legend).
+// definition and source, one click away under the tiles).
 
 const STEP_CLASS: Record<string, string> = { '-2': 'heat-dn2', '-1': 'heat-dn1', '0': 'heat-0', '1': 'heat-up1', '2': 'heat-up2', na: 'heat-na' };
-const LEGEND_STEPS: HeatStep[] = [-2, -1, 0, 1, 2];
-const STEP_KEY = { '-2': 'dn2', '-1': 'dn1', '0': 'flat', '1': 'up1', '2': 'up2' } as const;
-const STEP_DIR = { '-2': 'down', '-1': 'down', '0': 'flat', '1': 'up', '2': 'up' } as const;
 
 /** Treemap canvas in abstract units; the element keeps the same aspect ratio. */
 const W = 100;
@@ -36,7 +32,7 @@ function useTileCopy() {
     return t('tileLabel', {
       name: tile.name,
       ads,
-      dir: c.value > 0 ? 'up' : c.value < 0 ? 'down' : 'flat',
+      dir: direction(c.value),
       change: formatChange(Math.abs(c.value)).replace(/^\+/, ''),
       from: formatCount(c.from ?? 0),
       to: formatCount(c.to ?? 0),
@@ -52,43 +48,22 @@ function changeText(tile: HeatTile): string | null {
 function TileChange({ tile, fallback }: { tile: HeatTile; fallback: string }) {
   const text = changeText(tile);
   if (text === null || tile.change.value === null) return <>{fallback}</>;
-  return <span className="whitespace-nowrap"><DirectionGlyph dir={signDirection(tile.change.value)} spoken={false} className="mr-[0.2em] text-[0.6em]" />{text}</span>;
+  return <span className="whitespace-nowrap"><DirectionGlyph dir={direction(tile.change.value)} spoken={false} className="mr-[0.2em] text-[0.6em]" />{text}</span>;
 }
 
-export function HeatmapLegend({ heatmap, filter, parentName, className }: { heatmap: Heatmap; filter: FilterSpec; parentName?: string; className?: string }) {
+/** Where the tiles come from and which window they cover. Colour is explained on each tile (glyph + %). */
+export function HeatmapSource({ heatmap, filter, className }: { heatmap: Heatmap; filter: FilterSpec; className?: string }) {
   const t = useTranslations('Heatmap');
   const sample = heatmap.tiles.find(x => x.ads.status === 'ok') ?? heatmap.tiles[0];
-  const flat = Math.round(HEAT_BANDS.flat * 100);
-  const strong = Math.round(HEAT_BANDS.strong * 100);
   const window = sample?.ads.window;
-  const minSample = sample?.change.min_sample ?? MIN_SAMPLE_DEFAULT;
   const type = heatmap.kind === 'industries' ? 'industry' : 'skill';
   return (
-    <div className={cn('text-[12px] leading-snug text-muted', className)}>
-      {/* The long definitions stay for screen readers; sighted readers get them from the info buttons. */}
-      <p className="sr-only">
-        {t('sizeLabel')} {heatmap.kind === 'industries' ? t('sizeIndustries') : t('sizeSkills', { industry: parentName ?? '' })}{' '}
-        {t('colourLabel')} {t('colourBody')} {t('thinNote', { min: minSample })}
-      </p>
-      {/* Inline flow, not flex: the chips wrap word by word and the info buttons stay beside them. */}
-      <div className="leading-[24px] [&>*]:align-middle">
-        <MetricInfo metric="change_4w" type={type} reading={sample?.change} filter={filter} className="mr-1.5" />
-        <ul className="inline" aria-label={t('legendLabel')}>
-          {LEGEND_STEPS.map(step => (
-            <li key={String(step)} className={cn('mr-1 inline-flex items-center gap-1 rounded-[3px] px-2 py-0.5 align-middle font-mono text-[11px] leading-snug', STEP_CLASS[String(step)])}>
-              <DirectionGlyph dir={STEP_DIR[String(step) as keyof typeof STEP_DIR]} />
-              {t(`band.${STEP_KEY[String(step) as keyof typeof STEP_KEY]}`, { flat, strong })}
-            </li>
-          ))}
-          <li className="heat-na mr-2 inline-flex rounded-[3px] px-2 py-0.5 align-middle font-mono text-[11px] leading-snug ring-1 ring-inset ring-rule">{t('band.na', { min: minSample })}</li>
-        </ul>
-        <span className="inline-flex flex-wrap items-center gap-x-2">
-          <SourceBadge kind="ads" />
-          {window ? <span>{t('window', { start: formatDate(window.start), end: formatDate(window.end) })}</span> : null}
-          <MetricInfo metric="ad_count" type={type} reading={heatmap.kind === 'industries' ? sample?.ads : undefined} filter={filter} />
-        </span>
-      </div>
-    </div>
+    <p className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-snug text-muted', className)}>
+      <SourceBadge kind="ads" />
+      {window ? <span>{t('window', { start: formatDate(window.start), end: formatDate(window.end) })}</span> : null}
+      <MetricInfo metric="ad_count" type={type} reading={heatmap.kind === 'industries' ? sample?.ads : undefined} filter={filter} />
+      <MetricInfo metric="change_4w" type={type} reading={sample?.change} filter={filter} />
+    </p>
   );
 }
 
@@ -180,7 +155,7 @@ export function HeatmapTable({ heatmap, caption, nameHead }: { heatmap: Heatmap;
                 <td>{formatCount(tileArea(tile))}</td>
                 <td>
                   {text !== null && tile.change.value !== null
-                    ? <WithGlyph dir={signDirection(tile.change.value)} text={t('changeCell', { change: `${GLYPH_SLOT}${text}`, from: formatCount(tile.change.from ?? 0), to: formatCount(tile.change.to ?? 0) })} />
+                    ? <WithGlyph dir={direction(tile.change.value)} text={t('changeCell', { change: `${GLYPH_SLOT}${text}`, from: formatCount(tile.change.from ?? 0), to: formatCount(tile.change.to ?? 0) })} />
                     : t('thinCell', { min: tile.change.min_sample })}
                 </td>
               </tr>

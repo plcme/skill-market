@@ -37,7 +37,7 @@
 | `rule` / `rule-strong` | 细分隔线 / 区块顶部的粗线 | 用细线分隔，不用阴影分隔 |
 | `accent`（含 `-hover`、`-soft`、`-ink`） | 链接、可交互元素、选中态、对比时的第二条序列 | **整个界面唯一的强调色**，不拿来做装饰 |
 | `signal`（含 `-soft`、`-ink`） | 荧光笔：信号标记、`.hl` 高亮、文字选中 | **只用于信号**。一屏里出现超过 3 处，说明用得太多 |
-| `up` / `down`（含 `-soft`） | 上涨 / 下跌 | 必须配箭头和文字，例如 "▲ +38% (120 → 166)" |
+| `up` / `down`（含 `-soft`） | 上涨 / 下跌 | 必须配箭头和文字，例如 "▲ +38% (120 → 166)"。方向只看显示出来的数值的正负：显示为正就是 ▲ + up 色，为负就是 ▼ + down 色；只有四舍五入到 0.0% 才用灰色 ■。不设 "±2% 算持平" 的灰区（2026-10-22） |
 | `warn`（含 `-soft`） | 样本不足、数据延迟、需要注意 | 不用于错误；错误用 `down` |
 | `src-official` / `src-ads` / `src-practitioner` | 数据来源标记（`SourceMark`） | 三种来源颜色固定，不另作他用 |
 | `night` / `night-ink` | 反色区块（如行情滚动条） | 每页最多一处 |
@@ -58,7 +58,7 @@
 - 有序维度用单色渐变，无序维度用分类色，**不要混用**。
 - 一张图最多 4 个序列。超过 4 个时，合并成 "Other"，或者改用表格。
 - 单序列图一律用 `ink`；两个对象对比时，用 `ink` 对 `accent`。
-- 热力图使用独立的发散色带 `heat-dn2 … heat-up2`（蓝对橙，色盲安全）。每一档都自带文字色，以保证 AA 对比度；无数据的格子用 `heat-na` 斜纹。
+- 热力图使用独立的发散色带 `heat-dn2 … heat-up2`（蓝对橙，色盲安全）。每一档都自带文字色，以保证 AA 对比度；无数据的格子用 `heat-na` 斜纹。分档按正负：10% 以内用最浅的涨 / 跌档，10% 及以上用深档；`heat-0` 只给恰好 0.0% 的格子，图例里不再列"持平"档；灰色斜纹只表示样本不足。
 
 ### 2.3 深浅模式
 
@@ -83,6 +83,7 @@
 | 首页大标题 | 46 / 64 / 76 px（手机 / sm / lg） | `.display` |
 | 页面 h1 | 40 / 56 px | `PageHeader` |
 | 大数字（主卡） | 56 / 64 px | `.serif-num`，`leading-[0.9]` |
+| 主区块标题 h2（详情页 Statistics） | 32 / 40 px | `SectionHeader size="lg"` |
 | 区块标题 h2 | 26 px | `SectionHeader` |
 | 统计数字 | 28 px | `Stat` |
 | 卡片标题 | 22 px | `font-serif` |
@@ -117,10 +118,12 @@
   - 其余动作用 `subtle`、`outline` 或 `ghost`。
   - `signal` 按钮只出现在信号相关的入口。
   - 危险操作用 `danger`，并且必须二次确认。
-- **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接，或一个覆盖全卡、带 `aria-label` 的 absolute 链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。首页 movers 卡片、详情页 Fundamentals 格子都按此处理（点 Fundamentals 格子 = 把该度量切到顶部 "Right now" 并滚回去）。
+- **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接，或一个覆盖全卡、带 `aria-label` 的 absolute 链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。首页 movers 卡片、详情页 Statistics 格子都按此处理（点 Statistics 格子 = 把该度量切到顶部 "Right now" 并滚回去）。当前选中的格子整格用 `bg-picked` 着色并加 2px 墨色内边框，不只顶边一条线；`--picked` 上正文 ≥ 4.5:1、涨跌大数字 ≥ 3:1（`tests/theme-contrast.test.ts`）。其他格子 hover 只用浅 `bg-sunken/50`。
+- **标的符号框**：统一用 `InstrumentMark`（`src/components/market/instrument-mark.tsx`）。Skills and tools with a recognisable logo show it, monochrome in ink, in the symbol box; everything else keeps letters. Logos identify the technology only (nominative use), never brand colours; drop a logo if its owner objects. 标志来自 Simple Icons（CC0），映射表在 `src/lib/market/logos.ts`，只收录图标集里确实存在的那一项技术；role、industry 永远用字母。符号框是装饰（`aria-hidden`），名称总在旁边。
 - **数字**：一律通过 `MetricValue` 和 `MetricInfo` 渲染，不要裸写数字。
 - **涨跌**：用 `ChangeBadge`，它永远显示原始计数 from → to。
-- **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。
+- **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level · by experience ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → （仅详情页）Y axis + Split by → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Y axis 与图表的度量下拉同步；Split by 只能在这里改，被筛选或度量固定的维度置灰并写明原因；两者和筛选一起随 Apply 生效。标题与复述在拆分时加 "· by experience"，不写 Y axis。打开了 "remote anywhere" 又只选了部分 work mode 时，模式写在地点后的括号里（"Sydney (on-site or hybrid) + remote"），避免和 "+ remote" 自相矛盾。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。
+- **详情页度量**：只有一个参数 `?metric=`，"Right now" 大数字和图表一起变。"Right now" 区块不再有度量下拉；切换度量用图表左上的下拉或点 Statistics 格子。
 - **空、加载、错误三种状态**都必须设计：
   - 加载：用 `Skeleton`，形状和最终内容相同；
   - 空：用 `EmptyState`，并给出下一步；
@@ -146,14 +149,15 @@
 
 1. **计数和面积图的 y 轴从 0 开始。** 折线展示占比或中位数时可以不从 0 开始，但要明确标出刻度。
 2. **不用双 y 轴。** 两个量纲不同的指标，就分成两张图。
-3. **一次只按一个维度拆分**。详情页图表上方：左边 Y axis（`?y=`），右边 Split by（`?by=`，可选 none）。详情页只有一张图。
-4. **直接标注优先于图例**：空间够时，标签写在线尾或面积带右端；空间不够时，在图下方列出图例，并附最新数值和占比。
-5. **样本不足 = 断开**：不连线、不插值，旁边注明原因（`SampleWarning`）。
-6. **估算必须标注**：从广告文本里抽取的维度（经验、工作权利）标 "estimated"，并在定义弹层里写明方法和误差。
-7. **筛选优先**：筛选已经限定的维度，在 breakdown 里只显示筛选范围内的桶，并注明 "Filtered to …"。
-8. **每张图都能换成表格**（无障碍要求），表格和图使用同一份数据。
-9. **来源在图上**：每张图附 `SourceMark`，以及数据窗口和更新时间。
-10. 线宽：主序列 1.75–2px，sparkline 1.5px，线端和拐角用圆角；堆叠带之间用 1px 的 `surface` 色描边。
+3. **一次只按一个维度拆分**。详情页只有一张图。图表头部：左边是度量下拉（纯文字 "Job ads ▾"，中等字重、墨色，不加 "Y axis" 标签也不做胶囊），右边只有范围胶囊 3M / 6M / 1Y / 2Y；375px 下两者同一行，下拉文字过长时截断。Split by（`?by=`）只在标题打开的 Filter 面板里改。
+4. **变化量要画出比较的两个窗口**：4-week change 画 Job ads、默认 3M，最近 4 周和之前 4 周两段加浅色阴影并标出 from → to 两个值；12-month change 画 Job ads、默认 2Y，两个 12 个月窗口加阴影。
+5. **直接标注优先于图例**：空间够时，标签写在线尾或面积带右端；空间不够时，在图下方列出图例，并附最新数值和占比。
+6. **样本不足 = 断开**：不连线、不插值，旁边注明原因（`SampleWarning`）。
+7. **估算必须标注**：从广告文本里抽取的维度（经验、工作权利）标 "estimated"，并在定义弹层里写明方法和误差。
+8. **筛选优先**：筛选已经限定的维度，在 breakdown 里只显示筛选范围内的桶，并注明 "Filtered to …"。
+9. **每张图都能换成表格**（无障碍要求），表格和图使用同一份数据。
+10. **来源在图上**：每张图附 `SourceMark`，以及数据窗口和更新时间。
+11. 线宽：主序列 1.75–2px，sparkline 1.5px，线端和拐角用圆角；堆叠带之间用 1px 的 `surface` 色描边。
 
 ### 6.3 Breakdown 维度（v1 原型）
 

@@ -42,7 +42,6 @@
     "supplyKicker": "Who’s available",
     "supplyTitle": "People with time this fortnight",
     "supplyAvailable": "{n, plural, one {# practitioner} other {# practitioners}} with open times",
-    "supplyAvailableDetail": "Verified, not paused, with at least one open time 2+ days ahead. Out of {verified} verified.",
     "supplyByRole": "By current role",
     "supplyByState": "By state",
     "supplyNote": "We don’t publish a directory. You meet people through a signal, so every chat starts with context.",

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { LogOut, Menu as MenuIcon, Search } from 'lucide-react';
+import { ChevronDown, LogOut, Menu as MenuIcon, Search } from 'lucide-react';
 import { useDB, setPersona } from '@/lib/demo/store';
 import type { Persona } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Dialog, DialogTrigger, SheetContent, Menu, MenuContent, MenuItem, MenuL
 import { cn } from '@/lib/utils';
 import { useAppName } from './app-provider';
 import { openSearch } from './command-palette';
-import { accountLinks, deskFor, isActive, mobileMenuLinks, PRIMARY_NAV } from './nav-model';
+import { accountMenuLinks, deskFor, isActive, mobileMenuLinks, PRIMARY_NAV } from './nav-model';
 import { ThemeToggle } from './theme-toggle';
 import { Wordmark } from './wordmark';
 
@@ -28,7 +28,7 @@ export function SiteHeader() {
   const db = useDB();
   const session = db?.session ?? null;
   const desk = deskFor(session);
-  const links = accountLinks(session);
+  const links = accountMenuLinks(session);
   const otherPersonas = (session?.personas ?? []).filter(p => p !== session?.active);
 
   return (
@@ -67,32 +67,35 @@ export function SiteHeader() {
           {db === null ? (
             <span className="skeleton hidden h-9 w-28 sm:block" aria-hidden />
           ) : session ? (
-            <>
-              {desk ? (
-                <Button asChild variant={isActive(pathname, desk.href) ? 'primary' : 'subtle'} size="sm" className="hidden sm:inline-flex">
-                  <Link href={desk.href}>{t(desk.key)}</Link>
-                </Button>
-              ) : null}
-              <Menu>
-                <MenuTrigger className="hidden rounded-full sm:block" aria-label={t('account')}>
-                  <Avatar initials={initialsOf(session.display_name)} size="sm" className="border border-rule" />
-                </MenuTrigger>
-                <MenuContent>
-                  <MenuLabel>{t('signedInAs', { name: session.display_name })}</MenuLabel>
-                  <MenuLabel className="pt-0 font-sans text-[12px] normal-case tracking-normal">{t(`personas.${session.active}`)}</MenuLabel>
-                  {links.length ? <MenuSeparator /> : null}
-                  {links.map(l => (
-                    <MenuItem key={l.href} asChild><Link href={l.href}>{t(l.key)}</Link></MenuItem>
-                  ))}
-                  {otherPersonas.length ? <MenuSeparator /> : null}
-                  {otherPersonas.map((p: Persona) => (
-                    <MenuItem key={p} onSelect={() => setPersona(p)}>{t('switchTo', { persona: t(`personas.${p}`) })}</MenuItem>
-                  ))}
-                  <MenuSeparator />
-                  <MenuItem asChild><Link href="/auth/signout"><LogOut aria-hidden />{t('signOut')}</Link></MenuItem>
-                </MenuContent>
-              </Menu>
-            </>
+            <Menu>
+              {/* One trigger for the desk and the account: avatar + "My desk" + chevron; avatar only on phones. */}
+              <MenuTrigger
+                className={cn(
+                  'inline-flex h-9 items-center gap-2 rounded-full border border-rule bg-surface p-0.5 text-[13.5px] font-medium text-ink transition-colors hover:border-ink/40 sm:pr-3 data-[state=open]:border-ink/40',
+                  desk && isActive(pathname, desk.href) && 'border-ink/40',
+                )}
+              >
+                <Avatar initials={initialsOf(session.display_name)} size="sm" />
+                <span className="sr-only sm:not-sr-only">{desk ? t(desk.key) : t('account')}</span>
+                <ChevronDown aria-hidden className="hidden size-3.5 text-muted sm:block" />
+              </MenuTrigger>
+              <MenuContent>
+                <MenuLabel>{t('signedInAs', { name: session.display_name })}</MenuLabel>
+                <MenuLabel className="pt-0 font-sans text-[12px] normal-case tracking-normal">{t(`personas.${session.active}`)}</MenuLabel>
+                {links.length ? <MenuSeparator /> : null}
+                {links.map(l => (
+                  <MenuItem key={l.href} asChild className={cn(l.href === desk?.href && 'font-medium text-ink')}>
+                    <Link href={l.href} aria-current={isActive(pathname, l.href) ? 'page' : undefined}>{t(l.key)}</Link>
+                  </MenuItem>
+                ))}
+                {otherPersonas.length ? <MenuSeparator /> : null}
+                {otherPersonas.map((p: Persona) => (
+                  <MenuItem key={p} onSelect={() => setPersona(p)}>{t('switchTo', { persona: t(`personas.${p}`) })}</MenuItem>
+                ))}
+                <MenuSeparator />
+                <MenuItem asChild><Link href="/auth/signout"><LogOut aria-hidden />{t('signOut')}</Link></MenuItem>
+              </MenuContent>
+            </Menu>
           ) : (
             <>
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link href="/auth/login">{t('signIn')}</Link></Button>
@@ -112,9 +115,7 @@ export function SiteHeader() {
                 ))}
               </nav>
               <div className="mt-6 flex flex-wrap items-center gap-2">
-                {session ? (
-                  <Button asChild variant="outline"><Link href="/auth/signout">{t('signOut')}</Link></Button>
-                ) : (
+                {session ? null : (
                   <>
                     <Button asChild><Link href="/onboarding">{t('getStarted')}</Link></Button>
                     <Button asChild variant="outline"><Link href="/auth/login">{t('signIn')}</Link></Button>

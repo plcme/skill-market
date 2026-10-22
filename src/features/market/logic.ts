@@ -1,8 +1,10 @@
 import { expandFilterToCells } from '@/lib/filters/spec';
 import { getInstrument } from '@/lib/market/catalog';
-import { METRICS } from '@/lib/metrics/registry';
-import type { ActiveInstrumentType, BreakdownDimension, ChartMeasure, FilterSpec, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
+import { chartSeriesFor, defaultMetric, measureFixedSplit, METRICS, resolveDetailMetric } from '@/lib/metrics/registry';
+import type { ActiveInstrumentType, BreakdownDimension, FilterSpec, Instrument, MetricKey, SkillLayer } from '@/lib/market/types';
 import type { BoardSort, BoardType } from '@/lib/queries/market';
+
+export { measureFixedSplit };
 
 // Pure helpers for the public market pages: URL parsing, href building and the
 // plain-language bands used instead of raw statistics (PRD §10).
@@ -74,19 +76,134 @@ export function fixedSplitDimensions(filter: FilterSpec): BreakdownDimension[] {
   return out;
 }
 
-/** The split to actually draw: a dimension fixed by the filter renders as no split. */
-export function effectiveSplit(by: BreakdownDimension | null, filter: FilterSpec): BreakdownDimension | null {
-  return by && fixedSplitDimensions(filter).includes(by) ? null : by;
+/** Why each Split by option is unavailable right now, if it is: fixed by the filter, or not meaningful for the measure. */
+export function splitBlockers(filter: FilterSpec, series: MetricKey): Partial<Record<BreakdownDimension, 'filter' | 'measure'>> {
+  const out: Partial<Record<BreakdownDimension, 'filter' | 'measure'>> = {};
+  for (const d of fixedSplitDimensions(filter)) out[d] = 'filter';
+  const m = measureFixedSplit(series);
+  if (m) out[m] = 'measure';
+  return out;
 }
 
-/** Detail-chart Y axis: `?y=ads|salary`, default (and fallback) ads. Validity per type is checked by the query. */
-export function parseChartY(v: string | string[] | undefined): ChartMeasure {
-  return firstParam(v) === 'salary' ? 'salary' : 'ads';
+/** The split to actually draw: a dimension fixed by the filter (or by the measure) renders as no split. */
+export function effectiveSplit(by: BreakdownDimension | null, filter: FilterSpec, series: MetricKey = 'ad_count'): BreakdownDimension | null {
+  return by && splitBlockers(filter, series)[by] ? null : by;
 }
 
-/** `y` value for a link: omitted for the default. */
-export function chartYParam(y: ChartMeasure): string | null {
-  return y === 'ads' ? null : y;
+/**
+ * `by` to write after a change of filter or measure: an explicit split that
+ * is now fixed never stays in the URL; it becomes `none` (absent `by` already
+ * means the default, Experience, which the route draws unsplit when fixed).
+ */
+export function nextByParam(byParam: string | null | undefined, filter: FilterSpec, series: MetricKey): string | null {
+  if (!byParam) return null;
+  const by = parseBreakdownBy(byParam);
+  // Experience is the default: no param needed, and the route draws it unsplit while it is fixed.
+  if (by === 'experience') return null;
+  return breakdownParam(effectiveSplit(by, filter, series));
+}
+
+/** `by` to write for a split chosen in the Filter panel, given what the (new) filter and measure fix. */
+export function chosenByParam(by: BreakdownDimension | null, filter: FilterSpec, series: MetricKey): string | null {
+  return nextByParam(breakdownParam(by) ?? 'experience', filter, series);
+}
+
+/** Old `?y=ads|salary` chart links map onto the one measure param, `?metric=`. */
+export function legacyYMetric(y: string | string[] | undefined): MetricKey | undefined {
+  const s = firstParam(y);
+  return s === 'salary' ? 'salary_median' : s === 'ads' ? 'ad_count' : undefined;
+}
+
+export type ChartRange = '3m' | '6m' | '1y' | '2y';
+export const CHART_RANGES: readonly ChartRange[] = ['3m', '6m', '1y', '2y'];
+export const CHART_RANGE_WEEKS: Record<ChartRange, number> = { '3m': 13, '6m': 26, '1y': 52, '2y': 104 };
+
+/** How the detail chart shows the selected measure (`?metric=`). */
+/**
+ * The chart's range: the viewer's pick holds until `key` (measure, split,
+ * kind) changes, then the chart opens on the plan's range again. Kept outside
+ * the chart so the header controls never remount (WCAG 2.4.3).
+ */
+export interface ChartRangeState { key: string; range: ChartRange }
+
+export function syncChartRange(prev: ChartRangeState, key: string, initial: ChartRange): ChartRangeState {
+  return prev.key === key ? prev : { key, range: initial };
+}
+
+/** The rolling window a weekly series is read over, for the chart's caption. */
+export function rollingWindow(days: number): { unit: 'weeks' | 'months'; n: number } {
+  return days >= 360 ? { unit: 'months', n: Math.round(days / 30.4) } : { unit: 'weeks', n: Math.round(days / 7) };
+}
+
+export interface ChartPlan {
+  /** The weekly series drawn; always one of the type's Y axis options (`chartSeriesFor`). */
+  series: MetricKey;
+  /** Range the chart opens on. */
+  range: ChartRange;
+  /** Change measures: the two compared windows (shaded), in weeks; `marks` labels the from → to values. */
+  compare: { weeks: number; marks: boolean } | null;
+}
+
+/**
+ * Measure → chart (GLOSSARY §2, 2026-10-22). Level measures with a weekly
+ * series chart themselves. Change measures chart Job ads over a range that
+ * shows both compared windows: 4-week change over 3M with the windows shaded
+ * and from → to marked; 12-month change over 2Y with the years shaded;
+ * volatility over 1Y. Salary range and skill premium chart Median salary;
+ * anything else falls back to Job ads.
+ */
+export function chartPlanFor(metric: MetricKey, type: ActiveInstrumentType): ChartPlan {
+  const options = chartSeriesFor(type);
+  const level = (series: MetricKey): ChartPlan => ({ series: options.includes(series) ? series : 'ad_count', range: '1y', compare: null });
+  switch (metric) {
+    case 'change_4w':
+      return { series: 'ad_count', range: '3m', compare: { weeks: 4, marks: true } };
+    case 'growth_12m':
+      return { series: 'ad_count', range: '2y', compare: { weeks: 52, marks: false } };
+    case 'volatility':
+      return level('ad_count');
+    case 'salary_p10_p90':
+    case 'skill_premium':
+      return level('salary_median');
+    default:
+      return level(metric);
+  }
+}
+
+/**
+ * The detail page's query string after cleaning, or null when it is already
+ * canonical: `?y=` folds into `?metric=` (an explicit `metric` wins), and an
+ * explicit `by` that the filter or the measure fixes becomes `none`.
+ * `metric` is the measure the page resolves without the legacy `y`.
+ */
+export function canonicalDetailQuery(sp: SearchParamsRecord, filter: FilterSpec, metric: MetricKey, type: ActiveInstrumentType): string | null {
+  const q = new URLSearchParams(toQueryString(sp));
+  let changed = false;
+  let measure = metric;
+  if (q.has('y')) {
+    const fromY = legacyYMetric(q.get('y') ?? undefined);
+    if (!q.has('metric') && fromY && resolveDetailMetric(type, fromY) === fromY) {
+      if (fromY !== defaultMetric(type)) q.set('metric', fromY);
+      measure = fromY;
+    }
+    q.delete('y');
+    changed = true;
+  }
+  const by = q.get('by');
+  if (by) {
+    const next = nextByParam(by, filter, chartPlanFor(measure, type).series);
+    if (next !== by) {
+      if (next) q.set('by', next);
+      else q.delete('by');
+      changed = true;
+    }
+  }
+  return changed ? q.toString() : null;
+}
+
+/** `metric` value for a link: omitted for the type's default measure. */
+export function metricParam(metric: MetricKey, defaultMetric: MetricKey): string | null {
+  return metric === defaultMetric ? null : metric;
 }
 
 export type BoardView = 'list' | 'cards';

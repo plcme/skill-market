@@ -5,24 +5,49 @@ import {
   DEFAULT_FILTER, decodeFilter, encodeFilter, fromSimpleFilter, isDefaultFilter, placesLabel, scopeConditions,
   titleFilterLabel, type PlacesCopy, type TitleFilterCopy,
 } from '@/lib/filters/spec';
-import { CHART_MEASURE_METRIC, chartMeasuresFor, isValidMetric, metricsFor } from '@/lib/metrics/registry';
-import { breakdownParam, chartYParam, effectiveSplit, fixedSplitDimensions, parseBreakdownBy, parseChartY } from '@/features/market/logic';
-import { getInstrumentDetail, resolveChartMeasure } from '@/lib/queries/market';
+import { chartSeriesFor, isValidMetric, metricsFor } from '@/lib/metrics/registry';
+import {
+  breakdownParam, canonicalDetailQuery, chartPlanFor, chosenByParam, rollingWindow, syncChartRange, effectiveSplit, fixedSplitDimensions, legacyYMetric, nextByParam, parseBreakdownBy, splitBlockers,
+} from '@/features/market/logic';
+import { getInstrumentDetail } from '@/lib/queries/market';
 import pages from '../messages/en/market-pages.json';
 
-// Frontend round 3: one chart on detail pages (Y axis + Split by), places in the title.
+// Detail page: one measure (`?metric=`) drives the headline and the chart; the
+// split (`?by=`) lives in the title's Filter panel (FE-R5).
 
-describe('?y= and ?by= parsing', () => {
-  it('reads the Y axis, falling back to Job ads', () => {
-    expect(parseChartY('salary')).toBe('salary');
-    expect(parseChartY('ads')).toBe('ads');
-    expect(parseChartY(undefined)).toBe('ads');
-    expect(parseChartY('salary_median')).toBe('ads');
-    expect(parseChartY(['salary', 'ads'])).toBe('salary');
-    expect(chartYParam('ads')).toBeNull();
-    expect(chartYParam('salary')).toBe('salary');
+describe('measure → chart', () => {
+  it('maps old ?y= links onto ?metric=', () => {
+    expect(legacyYMetric('salary')).toBe('salary_median');
+    expect(legacyYMetric('ads')).toBe('ad_count');
+    expect(legacyYMetric(undefined)).toBeUndefined();
+    expect(legacyYMetric('salary_median')).toBeUndefined();
   });
 
+  it('charts level measures as themselves, where the type has the series', () => {
+    expect(chartPlanFor('ad_count', 'skill')).toEqual({ series: 'ad_count', range: '1y', compare: null });
+    expect(chartPlanFor('entry_level_share', 'role')).toEqual({ series: 'entry_level_share', range: '1y', compare: null });
+    expect(chartPlanFor('employer_concentration', 'industry').series).toBe('employer_concentration');
+    expect(chartPlanFor('salary_median', 'skill').series).toBe('salary_median');
+    expect(chartPlanFor('salary_p10_p90', 'role').series).toBe('salary_median');
+    expect(chartPlanFor('skill_premium', 'skill').series).toBe('salary_median');
+    expect(chartPlanFor('skills_per_ad', 'role').series).toBe('ad_count');
+    expect(chartPlanFor('salary_median', 'industry').series).toBe('ad_count');
+  });
+
+  it('charts change measures as Job ads over a range that shows both compared windows', () => {
+    expect(chartPlanFor('change_4w', 'skill')).toEqual({ series: 'ad_count', range: '3m', compare: { weeks: 4, marks: true } });
+    expect(chartPlanFor('growth_12m', 'role')).toEqual({ series: 'ad_count', range: '2y', compare: { weeks: 52, marks: false } });
+    expect(chartPlanFor('volatility', 'industry')).toEqual({ series: 'ad_count', range: '1y', compare: null });
+  });
+
+  it('offers the chartable level measures as Y axis options', () => {
+    expect(chartSeriesFor('skill')).toEqual(['ad_count', 'salary_median', 'entry_level_share', 'no_pr_required_share', 'employer_concentration', 'remote_share', 'contract_share']);
+    expect(chartSeriesFor('industry')).not.toContain('salary_median');
+    for (const type of ['skill', 'role', 'industry'] as const) for (const m of chartSeriesFor(type)) expect(chartPlanFor(m, type).series).toBe(m);
+  });
+});
+
+describe('?by= parsing and fixed splits', () => {
   it('reads the split: experience by default, none = not split, invalid = default', () => {
     expect(parseBreakdownBy(undefined)).toBe('experience');
     expect(parseBreakdownBy('none')).toBeNull();
@@ -57,20 +82,58 @@ describe('?y= and ?by= parsing', () => {
     expect(effectiveSplit('experience', DEFAULT_FILTER)).toBe('experience');
   });
 
-  it('only offers Median salary where it applies (industries: Job ads only)', () => {
-    expect(chartMeasuresFor('skill')).toEqual(['ads', 'salary']);
-    expect(chartMeasuresFor('role')).toEqual(['ads', 'salary']);
-    expect(chartMeasuresFor('industry')).toEqual(['ads']);
-    expect(resolveChartMeasure('industry', 'salary')).toBe('ads');
-    expect(resolveChartMeasure('skill', 'salary')).toBe('salary');
-    expect(resolveChartMeasure('skill', 'bogus')).toBe('ads');
-    const mining = getInstrumentDetail('mining', DEFAULT_FILTER, undefined, 'experience', 'salary');
-    expect(mining?.chart).toEqual({ y: 'ads', measures: ['ads'] });
+  it('a share is never split by its own dimension', () => {
+    expect(splitBlockers(DEFAULT_FILTER, 'entry_level_share')).toEqual({ experience: 'measure' });
+    expect(splitBlockers(decodeFilter('r.au_entry_all'), 'remote_share')).toEqual({ experience: 'filter', mode: 'measure' });
+    expect(effectiveSplit('rights', DEFAULT_FILTER, 'no_pr_required_share')).toBeNull();
+    expect(effectiveSplit('mode', DEFAULT_FILTER, 'no_pr_required_share')).toBe('mode');
+  });
+
+  it('never keeps a fixed split in the URL', () => {
+    // Explicit split now fixed by the filter or the measure → none.
+    expect(nextByParam('mode', decodeFilter('r.au_all_all'), 'ad_count')).toBe('none');
+    expect(nextByParam('mode', DEFAULT_FILTER, 'remote_share')).toBe('none');
+    expect(nextByParam('rights', DEFAULT_FILTER, 'ad_count')).toBe('rights');
+    expect(nextByParam('none', DEFAULT_FILTER, 'ad_count')).toBe('none');
+    // Absent or experience: the default, no param (drawn unsplit while fixed).
+    expect(nextByParam(null, decodeFilter('ohr.au_entry_all'), 'ad_count')).toBeNull();
+    expect(nextByParam('experience', decodeFilter('ohr.au_entry_all'), 'ad_count')).toBeNull();
+    // Chosen in the Filter panel.
+    expect(chosenByParam(null, DEFAULT_FILTER, 'ad_count')).toBe('none');
+    expect(chosenByParam('experience', DEFAULT_FILTER, 'ad_count')).toBeNull();
+    expect(chosenByParam('mode', decodeFilter('o.au_all_all'), 'ad_count')).toBe('none');
+    expect(chosenByParam('mode', DEFAULT_FILTER, 'ad_count')).toBe('mode');
+  });
+
+  it('rewrites old or conflicting detail URLs once, and leaves canonical ones alone', () => {
+    const q = (sp: Record<string, string>, metric: Parameters<typeof canonicalDetailQuery>[2] = 'ad_count', type: Parameters<typeof canonicalDetailQuery>[3] = 'skill') => canonicalDetailQuery(sp, decodeFilter(sp.f ?? null), metric, type);
+    expect(q({})).toBeNull();
+    expect(q({ metric: 'salary_median', by: 'rights' }, 'salary_median')).toBeNull();
+    expect(q({ y: 'salary' })).toBe('metric=salary_median');
+    expect(q({ y: 'ads' })).toBe('');
+    expect(q({ y: 'salary', metric: 'change_4w' }, 'change_4w')).toBe('metric=change_4w');
+    expect(q({ y: 'salary' }, 'ad_count', 'industry')).toBe('');
+    expect(q({ f: 'r.au_all_all', by: 'mode' })).toBe('f=r.au_all_all&by=none');
+    expect(q({ metric: 'remote_share', by: 'mode' }, 'remote_share')).toBe('metric=remote_share&by=none');
+    expect(q({ by: 'experience' })).toBe('');
+  });
+
+  it('one measure drives the headline and the chart', () => {
+    const mining = getInstrumentDetail('mining', DEFAULT_FILTER, 'salary_median', 'experience');
+    expect(mining?.metric).toBe('ad_count');
     expect(mining?.breakdown.measure).toBe('ad_count');
-    const sql = getInstrumentDetail('sql', DEFAULT_FILTER, undefined, null, 'salary');
-    expect(sql?.chart.y).toBe('salary');
+    const sql = getInstrumentDetail('sql', DEFAULT_FILTER, 'salary_median', null);
+    expect(sql?.chart.series).toBe('salary_median');
     expect(sql?.breakdown.by).toBeNull();
-    expect(sql?.breakdown.measure).toBe(CHART_MEASURE_METRIC.salary);
+    expect(sql?.breakdown.measure).toBe('salary_median');
+    // The bug this fixes: picking 4-week change used to leave the chart as it was.
+    const change = getInstrumentDetail('sql', DEFAULT_FILTER, 'change_4w', 'experience');
+    expect(change?.chart).toMatchObject({ series: 'ad_count', range: '3m', compare: { weeks: 4, marks: true }, by: 'experience' });
+    expect(change?.breakdown.measure).toBe('ad_count');
+    // A share split by its own dimension is drawn unsplit; the requested split is kept for links.
+    const entry = getInstrumentDetail('sql', DEFAULT_FILTER, 'entry_level_share', 'experience');
+    expect(entry?.breakdown.by).toBeNull();
+    expect(entry?.chart.by).toBe('experience');
   });
 });
 
@@ -196,7 +259,9 @@ describe('filter sentence in the title', () => {
   });
 
   it('appends only narrowing conditions, in a fixed order', () => {
-    expect(sentence('oh.au-nsw-sydney*r.au_entry_npr')).toBe('Sydney + remote · Entry-level · On-site or hybrid · No PR stated');
+    expect(sentence('oh.au-nsw-sydney*r.au_entry_npr')).toBe('Sydney (on-site or hybrid) + remote · Entry-level · No PR stated');
+    expect(sentence('ohr.au-nsw-sydney*r.au_all_all')).toBe('Sydney + remote');
+    expect(sentence('oh.au-nsw-sydney_all_all')).toBe('Sydney · On-site or hybrid');
     expect(sentence('r.au_graduate_all')).toBe('All Australia · Graduate · Remote only');
     expect(sentence('ohr.au_all_npr')).toBe('All Australia · No PR stated');
   });
@@ -208,5 +273,23 @@ describe('filter sentence in the title', () => {
   it('keeps the URL stable: encoding the default stays the default', () => {
     expect(isDefaultFilter(fromSimpleFilter({ places: ['au'], modes: ['onsite', 'hybrid', 'remote'], includeRemoteAnywhere: false }, DEFAULT_FILTER))).toBe(true);
     expect(encodeFilter(DEFAULT_FILTER)).toBe('ohr.au_all_all');
+  });
+
+  it('adds the chart split when one is drawn', () => {
+    expect(titleFilterLabel(DEFAULT_FILTER, copy, undefined, 'by experience')).toBe('All Australia · by experience');
+    expect(titleFilterLabel(decodeFilter('ohr.au_entry_all'), copy, undefined, 'by work mode')).toBe('All Australia · Entry-level · by work mode');
+  });
+});
+
+describe('chart range and caption window', () => {
+  it('keeps the picked range until the measure or split changes', () => {
+    const start = { key: 'ad_count-none-stack', range: '3m' as const };
+    expect(syncChartRange(start, 'ad_count-none-stack', '1y')).toBe(start);
+    expect(syncChartRange(start, 'salary_median-none-lines', '1y')).toEqual({ key: 'salary_median-none-lines', range: '1y' });
+    expect(syncChartRange(start, 'ad_count-experience-stack', '2y')).toEqual({ key: 'ad_count-experience-stack', range: '2y' });
+  });
+  it('names the rolling window of each chartable measure', () => {
+    expect(rollingWindow(28)).toEqual({ unit: 'weeks', n: 4 });
+    expect(rollingWindow(365)).toEqual({ unit: 'months', n: 12 });
   });
 });

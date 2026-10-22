@@ -3,10 +3,11 @@ import { cooccurrence, getInstrument, INDUSTRY_COMPONENTS, INSTRUMENTS, instrume
 import { searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import type { HeatTile, Heatmap } from '@/lib/market/heatmap';
 import { pickMovers } from '@/lib/market/movers';
-import { CHART_MEASURE_METRIC, METRICS, chartMeasuresFor, defaultMetric, isValidMetric, metricsFor, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
+import { METRICS, chartSeriesFor, defaultMetric, isValidMetric, metricsFor, resolveDetailMetric, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
+import { chartPlanFor, effectiveSplit, type ChartPlan } from '@/features/market/logic';
 import { sortValue } from '@/lib/market/format';
 import type {
-  ActiveInstrumentType, Breakdown, BreakdownDimension, ChartMeasure, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
+  ActiveInstrumentType, Breakdown, BreakdownDimension, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
 } from '@/lib/market/types';
 
 // Public read model (RSC). Today backed by the fixture engine; the production
@@ -109,35 +110,30 @@ export interface InstrumentDetail {
   /** Skill → often asked together. */
   related: CompositionEntry[];
   locations: Array<{ location_id: string; name: string; count: number }>;
-  /** The page's one chart: Y axis (`?y=`) split by one dimension (`?by=`, default experience; null = not split). */
+  /** The page's one chart: the selected measure's series (`chart.series`) split by one dimension (`?by=`, default experience; null = not split). */
   breakdown: Breakdown;
-  /** Chart Y axis in use and the options valid for this type (industries: Job ads only). */
-  chart: { y: ChartMeasure; measures: ChartMeasure[] };
+  /** How the selected measure is charted (series, opening range, compared windows), the Y axis options for this type, and the requested split (`breakdown.by` is the one drawn). */
+  chart: ChartPlan & { options: MetricKey[]; by: BreakdownDimension | null };
   signal: Signal | null;
   as_of: string;
 }
 
-/** `?y=` for a type: Median salary only where it applies; anything else is Job ads. */
-export function resolveChartMeasure(type: ActiveInstrumentType, y?: string | null): ChartMeasure {
-  const options = chartMeasuresFor(type);
-  return options.find(m => m === y) ?? 'ads';
-}
-
 /**
- * `metricParam` drives the "Right now" figure (`?metric=`); the chart has its
- * own Y axis (`?y=`) and split (`?by=`, null = no split).
+ * One measure param (`?metric=`) drives both the "Right now" figure and the
+ * chart (`chartPlanFor`); `by` is the split (null = no split). A split fixed
+ * by the filter or by the measure is drawn unsplit.
  */
-export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension | null = 'experience', yParam?: string): InstrumentDetail | null {
+export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension | null = 'experience'): InstrumentDetail | null {
   const inst = getInstrument(slug);
   if (!inst) return null;
   // Same rule as boards: legacy non-selectable metrics fall back to the default.
-  const metric = metricParam && isValidMetric(inst.type, metricParam) && METRICS[metricParam].selectable ? metricParam : defaultMetric(inst.type);
+  const metric = resolveDetailMetric(inst.type, metricParam);
   const groups = metricsFor(inst.type);
   const readings: Partial<Record<MetricKey, MetricReading>> = {};
   for (const k of [groups.default, ...groups.common, ...groups.advanced]) readings[k] = computeMetric(slug, k, filter);
   const series = computeSeries(slug, METRICS[metric].chartable ? metric : 'ad_count', filter);
   const snap = snapshot(slug, metric, filter);
-  const y = resolveChartMeasure(inst.type, yParam);
+  const plan = chartPlanFor(metric, inst.type);
   const components = inst.type === 'role' ? ROLE_COMPONENTS[slug] : inst.type === 'industry' ? INDUSTRY_COMPONENTS[slug] : undefined;
   const composition: CompositionEntry[] = components
     ? components.map(c => {
@@ -158,8 +154,8 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
     heatmap: inst.type === 'industry' ? getIndustrySkillHeatmap(slug, filter) : null,
     related,
     locations: locationBreakdown(slug, filter),
-    breakdown: computeBreakdown(slug, CHART_MEASURE_METRIC[y], filter, by),
-    chart: { y, measures: chartMeasuresFor(inst.type) },
+    breakdown: computeBreakdown(slug, plan.series, filter, effectiveSplit(by, filter, plan.series)),
+    chart: { ...plan, options: chartSeriesFor(inst.type), by },
     signal: snap.signal,
     as_of: DATA_AS_OF,
   };

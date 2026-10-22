@@ -25,11 +25,12 @@ import { useErrorText } from './shared';
 const STEPS: JoinStep[] = ['agree', 'email', 'profile', 'availability', 'done'];
 
 /** /practitioner/join — FR-P1–P3: agreement → work email → profile → availability. */
-export function PractitionerJoin() {
-  return <RequireSession>{db => <Flow db={db} />}</RequireSession>;
+export function PractitionerJoin({ role }: { role?: string }) {
+  return <RequireSession>{db => <Flow db={db} role={role} />}</RequireSession>;
 }
 
-function Flow({ db }: { db: DemoDB }) {
+/** `role` (from `?role=`) preselects the profile's role when the profile has none yet. */
+function Flow({ db, role }: { db: DemoDB; role?: string }) {
   const t = useTranslations('PractitionerJoin');
   const mine = selectMyPractitioner(db);
   const holds = db.session?.personas.includes('practitioner') ?? false;
@@ -65,7 +66,7 @@ function Flow({ db }: { db: DemoDB }) {
           <section>
             <h2 className="font-serif text-[28px] leading-tight">{t('profileTitle')}</h2>
             <p className="mb-6 mt-2 text-ink-2">{t('profileBody')}</p>
-            <ProfileForm practitioner={mine} now={clockNow(db)} submitLabel={t('profileSave')} onSaved={goNext} />
+            <ProfileForm practitioner={mine} now={clockNow(db)} submitLabel={t('profileSave')} onSaved={goNext} defaultRole={role} />
           </section>
         ) : null}
         {step === 'availability' && mine ? <AvailabilityStep db={db} /> : null}

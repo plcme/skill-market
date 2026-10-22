@@ -10,10 +10,11 @@ import type { Instrument } from '@/lib/market/types';
 import type { InferredSkill } from '@/lib/demo/education';
 import { suggestNextSteps } from '@/lib/api/skills';
 import { instrumentPath } from '@/lib/links';
-import { Monogram } from '@/components/ui/primitives';
+
 import { MetricValue } from '@/components/market/metric-value';
 import { MetricLabel } from '@/components/market/metric-info';
 import { EffortText, SuggestionMeta } from '../shared';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 /** Roles the suggested skills point to, strongest overlap first (not a fit score — just "where these lead"). */
 export function rolesFromSkills(skills: Array<{ skill_slug: string; confidence: number }>, limit = 3): Array<{ role: Instrument; via: Instrument[] }> {
@@ -56,7 +57,7 @@ export function MiniBoard({ suggestions, limit = 6 }: { suggestions: InferredSki
               const reading = computeMetric(inst.slug, 'ad_count', DEFAULT_FILTER);
               return (
                 <li key={s.skill_slug} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3">
-                  <Monogram size="sm">{inst.symbol}</Monogram>
+                  <InstrumentMark size="sm" slug={inst.slug} symbol={inst.symbol} />
                   <div className="min-w-0">
                     <Link href={instrumentPath('skill', inst.slug)} className="font-medium hover:underline">{inst.name}</Link>
                     <SuggestionMeta confidence={s.confidence} reason={s.reason} className="mt-0.5" />
