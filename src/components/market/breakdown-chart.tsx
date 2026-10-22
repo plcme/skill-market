@@ -6,8 +6,7 @@ import { formatAud, formatCount, formatShare } from '@/lib/market/format';
 import { METRICS } from '@/lib/metrics/registry';
 import { formatDayStable } from '@/lib/time';
 import type { Breakdown, BreakdownBucketKey } from '@/lib/market/types';
-import { CHART_RANGES, CHART_RANGE_WEEKS, type ChartRange } from '@/features/market/logic';
-import { Segmented } from '@/components/ui/form';
+import { CHART_RANGE_WEEKS, type ChartRange } from '@/features/market/logic';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -62,26 +61,23 @@ function spread(ys: Array<{ key: BreakdownBucketKey; y: number }>, gap: number, 
  * series. Direct labels at the right edge where they fit, a legend with latest
  * values below, an optional footer line, and a data-table view.
  */
-export function BreakdownChart({ breakdown, caption, height = 280, footer, headerStart, notes, initialRange = '1y', compare = null, className }: {
+export function BreakdownChart({ breakdown, caption, height = 280, footer, notes, range, compare = null, className }: {
   breakdown: Breakdown;
   /** Accessible name of the figure and the table (not shown). */
   caption: string;
   height?: number;
   /** Source / window line, shown next to the table toggle. */
   footer?: React.ReactNode;
-  /** Left side of the header row; the range pills sit on the right. */
-  headerStart?: React.ReactNode;
-  /** Short notes between the header row and the plot (filtered-to, thin samples). */
+  /** Short notes above the plot (filtered-to, thin samples). */
   notes?: React.ReactNode;
-  /** Range the chart opens on (key the chart to reset it). */
-  initialRange?: Range;
+  /** Weeks shown; the header that picks it lives with the caller, outside any keyed subtree. */
+  range: Range;
   /** Change measures: shade the last `weeks` and the `weeks` before; `marks` labels the total at the end of each. */
   compare?: { weeks: number; marks: boolean } | null;
   className?: string;
 }) {
   const t = useTranslations('Breakdown');
   const tc = useTranslations('Chart');
-  const [range, setRange] = useState<Range>(initialRange);
   const [showTable, setShowTable] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
   const [width, setWidth] = useState(720);
@@ -247,10 +243,6 @@ export function BreakdownChart({ breakdown, caption, height = 280, footer, heade
   return (
     <figure className={cn('flex flex-col gap-3', className)}>
       <figcaption className="sr-only">{caption}</figcaption>
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <div className="min-w-0">{headerStart}</div>
-        <Segmented size="sm" label={tc('rangeLabel')} value={range} onValueChange={setRange} options={CHART_RANGES.map(r => ({ value: r, label: tc(`range.${r}`) }))} className="shrink-0" />
-      </div>
       {notes}
       <div ref={wrap} className="relative w-full select-none">
         {hasData ? (

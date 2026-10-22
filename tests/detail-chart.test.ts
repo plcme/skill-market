@@ -7,7 +7,7 @@ import {
 } from '@/lib/filters/spec';
 import { chartSeriesFor, isValidMetric, metricsFor } from '@/lib/metrics/registry';
 import {
-  breakdownParam, canonicalDetailQuery, chartPlanFor, chosenByParam, effectiveSplit, fixedSplitDimensions, legacyYMetric, nextByParam, parseBreakdownBy, splitBlockers,
+  breakdownParam, canonicalDetailQuery, chartPlanFor, chosenByParam, rollingWindow, syncChartRange, effectiveSplit, fixedSplitDimensions, legacyYMetric, nextByParam, parseBreakdownBy, splitBlockers,
 } from '@/features/market/logic';
 import { getInstrumentDetail } from '@/lib/queries/market';
 import pages from '../messages/en/market-pages.json';
@@ -278,5 +278,18 @@ describe('filter sentence in the title', () => {
   it('adds the chart split when one is drawn', () => {
     expect(titleFilterLabel(DEFAULT_FILTER, copy, undefined, 'by experience')).toBe('All Australia · by experience');
     expect(titleFilterLabel(decodeFilter('ohr.au_entry_all'), copy, undefined, 'by work mode')).toBe('All Australia · Entry-level · by work mode');
+  });
+});
+
+describe('chart range and caption window', () => {
+  it('keeps the picked range until the measure or split changes', () => {
+    const start = { key: 'ad_count-none-stack', range: '3m' as const };
+    expect(syncChartRange(start, 'ad_count-none-stack', '1y')).toBe(start);
+    expect(syncChartRange(start, 'salary_median-none-lines', '1y')).toEqual({ key: 'salary_median-none-lines', range: '1y' });
+    expect(syncChartRange(start, 'ad_count-experience-stack', '2y')).toEqual({ key: 'ad_count-experience-stack', range: '2y' });
+  });
+  it('names the rolling window of each chartable measure', () => {
+    expect(rollingWindow(28)).toEqual({ unit: 'weeks', n: 4 });
+    expect(rollingWindow(365)).toEqual({ unit: 'months', n: 12 });
   });
 });

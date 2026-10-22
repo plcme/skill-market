@@ -119,6 +119,22 @@ export const CHART_RANGES: readonly ChartRange[] = ['3m', '6m', '1y', '2y'];
 export const CHART_RANGE_WEEKS: Record<ChartRange, number> = { '3m': 13, '6m': 26, '1y': 52, '2y': 104 };
 
 /** How the detail chart shows the selected measure (`?metric=`). */
+/**
+ * The chart's range: the viewer's pick holds until `key` (measure, split,
+ * kind) changes, then the chart opens on the plan's range again. Kept outside
+ * the chart so the header controls never remount (WCAG 2.4.3).
+ */
+export interface ChartRangeState { key: string; range: ChartRange }
+
+export function syncChartRange(prev: ChartRangeState, key: string, initial: ChartRange): ChartRangeState {
+  return prev.key === key ? prev : { key, range: initial };
+}
+
+/** The rolling window a weekly series is read over, for the chart's caption. */
+export function rollingWindow(days: number): { unit: 'weeks' | 'months'; n: number } {
+  return days >= 360 ? { unit: 'months', n: Math.round(days / 30.4) } : { unit: 'weeks', n: Math.round(days / 7) };
+}
+
 export interface ChartPlan {
   /** The weekly series drawn; always one of the type's Y axis options (`chartSeriesFor`). */
   series: MetricKey;

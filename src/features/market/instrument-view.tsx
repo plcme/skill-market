@@ -154,7 +154,6 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               options={detail.chart.options}
               metric={detail.metric}
               defaultMetric={detail.metrics.default}
-              type={type}
               filter={filter}
               reading={detail.readings[detail.chart.series]}
             />

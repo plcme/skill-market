@@ -407,7 +407,12 @@
     },
     "measureButton": "Chart: {measure}. Change measure",
     "measureMenu": "Measure",
-    "captionBy": "{measure} by {dimension}",
+    "captionBy": "{measure}, {window}, by {dimension}",
+    "captionAll": "{measure}, {window}",
+    "rolling": {
+      "weeks": "{n}-week rolling",
+      "months": "rolling {n} months"
+    },
     "gapsAds": "Too few ads for {buckets}.",
     "fixedByMeasure": "Not for this measure",
     "dims": {
