@@ -92,19 +92,6 @@ export default async function HomePage() {
       </Container>
 
       <Container className="mt-20">
-        <SectionHeader kicker={t('howKicker')} title={t('howTitle')} />
-        <ol className="grid gap-8 sm:grid-cols-3 sm:gap-10">
-          {([['1', '01'], ['2', '02'], ['3', '03']] as const).map(([n, label]) => (
-            <li key={n} className="flex flex-col gap-3">
-              <span aria-hidden data-n={label} className="serif-num text-[64px] leading-none text-ink/15 before:content-[attr(data-n)]" />
-              <h3 className="font-serif text-[22px] leading-snug">{t(`step${n}Title`)}</h3>
-              <p className="text-[15px] text-ink-2">{t(`step${n}Body`)}</p>
-            </li>
-          ))}
-        </ol>
-      </Container>
-
-      <Container className="mt-20">
         <PractitionerJoinCard />
       </Container>
     </>
