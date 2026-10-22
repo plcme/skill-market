@@ -55,7 +55,7 @@ function TileChange({ tile, fallback }: { tile: HeatTile; fallback: string }) {
   return <span className="whitespace-nowrap"><DirectionGlyph dir={signDirection(tile.change.value)} spoken={false} className="mr-[0.2em] text-[0.6em]" />{text}</span>;
 }
 
-export function HeatmapLegend({ heatmap, filter, parentName, className }: { heatmap: Heatmap; filter: FilterSpec; parentName?: string; className?: string }) {
+export function HeatmapLegend({ heatmap, filter, className }: { heatmap: Heatmap; filter: FilterSpec; className?: string }) {
   const t = useTranslations('Heatmap');
   const sample = heatmap.tiles.find(x => x.ads.status === 'ok') ?? heatmap.tiles[0];
   const flat = Math.round(HEAT_BANDS.flat * 100);
@@ -65,11 +65,6 @@ export function HeatmapLegend({ heatmap, filter, parentName, className }: { heat
   const type = heatmap.kind === 'industries' ? 'industry' : 'skill';
   return (
     <div className={cn('text-[12px] leading-snug text-muted', className)}>
-      {/* The long definitions stay for screen readers; sighted readers get them from the info buttons. */}
-      <p className="sr-only">
-        {t('sizeLabel')} {heatmap.kind === 'industries' ? t('sizeIndustries') : t('sizeSkills', { industry: parentName ?? '' })}{' '}
-        {t('colourLabel')} {t('colourBody')} {t('thinNote', { min: minSample })}
-      </p>
       {/* Inline flow, not flex: the chips wrap word by word and the info buttons stay beside them. */}
       <div className="leading-[24px] [&>*]:align-middle">
         <MetricInfo metric="change_4w" type={type} reading={sample?.change} filter={filter} className="mr-1.5" />

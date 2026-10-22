@@ -184,7 +184,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
               <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
                 <div className="min-w-0">
                   <HeatmapTiles heatmap={detail.heatmap} filter={filter} label={t('industryHeatmapLabel', { name: inst.name })} />
-                  <HeatmapLegend heatmap={detail.heatmap} filter={filter} parentName={inst.name} className="mt-4" />
+                  <HeatmapLegend heatmap={detail.heatmap} filter={filter} className="mt-4" />
                   <HeatmapTable heatmap={detail.heatmap} caption={t('industryHeatmapLabel', { name: inst.name })} nameHead={tt('skill')} />
                 </div>
                 <div className="min-w-0">
