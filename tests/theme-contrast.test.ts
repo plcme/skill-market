@@ -102,6 +102,13 @@ describe('market colour schemes', () => {
             expect(contrast(bg, ink), `heat-${band} ${bg} / ${ink}`).toBeGreaterThanOrEqual(4.5);
           }
         });
+        it('the picked Statistics cell keeps its text and large up/down figures readable', () => {
+          const bg = tk['--picked'];
+          expect(bg).toBeDefined();
+          for (const key of ['--ink', '--ink-2', '--muted']) expect(contrast(tk[key], bg), `${key} on picked`).toBeGreaterThanOrEqual(4.5);
+          for (const key of ['--up', '--down']) expect(contrast(tk[key], bg), `${key} on picked`).toBeGreaterThanOrEqual(3);
+          expect(contrast(tk['--ink'], tk['--surface']), 'ink border on surface').toBeGreaterThanOrEqual(3);
+        });
         it('the ticker tape colours are ≥ 4.5:1 on the night surface', () => {
           for (const key of ['--tape-up', '--tape-down']) expect(contrast(tk[key], tk['--night']), key).toBeGreaterThanOrEqual(4.5);
         });

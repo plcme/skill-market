@@ -15,7 +15,7 @@ export function scrollToNow(): void {
 }
 
 /**
- * Stretched link over a Fundamentals cell: selects that measure in the headline
+ * Stretched link over a Statistics cell: selects that measure in the headline
  * (`?metric=…`) without Next's own scroll handling, then scrolls up to `#now`
  * explicitly — same-page hash scrolling is unreliable on client navigation.
  */

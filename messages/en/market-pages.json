@@ -144,9 +144,8 @@
       "entry_open": "Entry-level share {from} → {to} in eight weeks ({pp} pts)"
     },
     "signalTalk": "Ask someone what’s behind it",
-    "fundKicker": "Fundamentals",
-    "fundTitle": "Every measure, under your filter",
-    "fundAction": "What each measure means",
+    "statsTitle": "Statistics",
+    "statsAction": "What each measure means",
     "showMeasureLabel": "Show {metric} at the top",
     "moreMeasures": "{n, plural, one {# more measure} other {# more measures}}",
     "fewerMeasures": "Fewer measures",

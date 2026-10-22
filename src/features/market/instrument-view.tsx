@@ -19,7 +19,7 @@ import { SourceBadge } from '@/components/market/source-badge';
 import { WatchButton } from '@/components/market/watch-button';
 import { HeatmapSource, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
-import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, Fundamentals, LocationBars, Provenance, RelatedSkills, SalaryBlock } from './instrument-sections';
+import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, LocationBars, Provenance, RelatedSkills, SalaryBlock, Statistics } from './instrument-sections';
 import { breakdownParam, chartPlanFor, hrefWith, metricParam, nextByParam } from './logic';
 import { InstrumentChart } from './instrument-chart';
 import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
@@ -38,7 +38,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
   const type = inst.type;
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
   const base = instrumentPath(type, inst.slug);
-  // A Fundamentals cell selects its measure for the headline and the chart; the split stays.
+  // A Statistics cell selects its measure for the headline and the chart; the split stays.
   const byParam = breakdownParam(detail.chart.by);
   const metricHref = (m: MetricKey) => `${hrefWith(base, { f, metric: metricParam(m, detail.metrics.default), by: nextByParam(byParam, filter, chartPlanFor(m, type).series) })}#now`;
   const talk = chatHref(inst.slug, filter, signal?.kind);
@@ -161,9 +161,9 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
 
       <MyNotes slug={inst.slug} name={inst.name} />
 
-      <section aria-labelledby="fund-h" className="mt-16">
-        <SectionHeader id="fund-h" kicker={t('fundKicker')} title={t('fundTitle')} action={<Link href="/metrics" className="link hidden text-sm sm:inline">{t('fundAction')}</Link>} />
-        <Fundamentals detail={detail} filter={filter} metricHref={metricHref} />
+      <section aria-labelledby="stats-h" className="mt-16">
+        <SectionHeader id="stats-h" size="lg" title={t('statsTitle')} action={<Link href="/metrics" className="link hidden text-sm sm:inline">{t('statsAction')}</Link>} />
+        <Statistics detail={detail} filter={filter} metricHref={metricHref} />
       </section>
 
       {type === 'role' ? (

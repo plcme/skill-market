@@ -83,6 +83,7 @@
 | 首页大标题 | 46 / 64 / 76 px（手机 / sm / lg） | `.display` |
 | 页面 h1 | 40 / 56 px | `PageHeader` |
 | 大数字（主卡） | 56 / 64 px | `.serif-num`，`leading-[0.9]` |
+| 主区块标题 h2（详情页 Statistics） | 32 / 40 px | `SectionHeader size="lg"` |
 | 区块标题 h2 | 26 px | `SectionHeader` |
 | 统计数字 | 28 px | `Stat` |
 | 卡片标题 | 22 px | `font-serif` |
@@ -117,12 +118,12 @@
   - 其余动作用 `subtle`、`outline` 或 `ghost`。
   - `signal` 按钮只出现在信号相关的入口。
   - 危险操作用 `danger`，并且必须二次确认。
-- **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接，或一个覆盖全卡、带 `aria-label` 的 absolute 链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。首页 movers 卡片、详情页 Fundamentals 格子都按此处理（点 Fundamentals 格子 = 把该度量切到顶部 "Right now" 并滚回去）。
+- **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接，或一个覆盖全卡、带 `aria-label` 的 absolute 链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。首页 movers 卡片、详情页 Statistics 格子都按此处理（点 Statistics 格子 = 把该度量切到顶部 "Right now" 并滚回去）。当前选中的格子整格用 `bg-picked` 着色并加 2px 墨色内边框，不只顶边一条线；`--picked` 上正文 ≥ 4.5:1、涨跌大数字 ≥ 3:1（`tests/theme-contrast.test.ts`）。其他格子 hover 只用浅 `bg-sunken/50`。
 - **标的符号框**：统一用 `InstrumentMark`（`src/components/market/instrument-mark.tsx`）。Skills and tools with a recognisable logo show it, monochrome in ink, in the symbol box; everything else keeps letters. Logos identify the technology only (nominative use), never brand colours; drop a logo if its owner objects. 标志来自 Simple Icons（CC0），映射表在 `src/lib/market/logos.ts`，只收录图标集里确实存在的那一项技术；role、industry 永远用字母。符号框是装饰（`aria-hidden`），名称总在旁边。
 - **数字**：一律通过 `MetricValue` 和 `MetricInfo` 渲染，不要裸写数字。
 - **涨跌**：用 `ChangeBadge`，它永远显示原始计数 from → to。
 - **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level · by experience ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → （仅详情页）Y axis + Split by → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Y axis 与图表的度量下拉同步；Split by 只能在这里改，被筛选或度量固定的维度置灰并写明原因；两者和筛选一起随 Apply 生效。标题与复述在拆分时加 "· by experience"，不写 Y axis。打开了 "remote anywhere" 又只选了部分 work mode 时，模式写在地点后的括号里（"Sydney (on-site or hybrid) + remote"），避免和 "+ remote" 自相矛盾。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。
-- **详情页度量**：只有一个参数 `?metric=`，"Right now" 大数字和图表一起变。"Right now" 区块不再有度量下拉；切换度量用图表左上的下拉或点 Fundamentals 格子。
+- **详情页度量**：只有一个参数 `?metric=`，"Right now" 大数字和图表一起变。"Right now" 区块不再有度量下拉；切换度量用图表左上的下拉或点 Statistics 格子。
 - **空、加载、错误三种状态**都必须设计：
   - 加载：用 `Skeleton`，形状和最终内容相同；
   - 空：用 `EmptyState`，并给出下一步；
