@@ -4,3 +4,4 @@ onlyBuiltDependencies:
   - supabase
 overrides:
   source-map-js: ^1.2.2
+  "glob@>=10.2.0 <10.5.0": 10.5.0
