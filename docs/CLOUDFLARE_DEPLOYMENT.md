@@ -4,9 +4,9 @@ The existing Next.js application uses OpenNext on Workers. This configuration ne
 
 ## Releases
 
-Pushing a `v*` tag runs lint, type checking, unit tests, the OpenNext build and a Wrangler dry run, then deploys that exact revision. Manual workflow runs perform build validation without deploying; production deployment requires a v* tag. Automatic tag creation is not configured.
+Updates to `main` run lint, type checking, unit tests, the OpenNext build and a Wrangler dry run. After success, the publish job creates the next patch tag (for example v0.1.4 → v0.1.5) and deploys that exact build. Development on `dev` does not deploy. Existing v* tag pushes also deploy their exact revision. Manual workflow runs validate only. A failed deployment can be retried from Actions without creating another tag. GitHub-generated tags do not start a duplicate workflow; the current publish job performs deployment.
 
-Deployment requires the GitHub Actions repository secret `CLOUDFLARE_API_TOKEN`, scoped for Workers deployment and the brewdex.app domain. The account ID in wrangler.jsonc is public configuration. Never commit tokens. Existing Supabase migration workflows remain unchanged.
+Deployment requires the GitHub Actions repository secret `CLOUDFLARE_API_TOKEN`, scoped to Individual Workers Editor for the `brewdex` Worker. The direct-upload adapter uses the official Cloudflare asset and script upload APIs, preserves runtime secrets, and does not list other Workers or alter domains. The existing custom domain is configured once in the dashboard. Wrangler produces the multipart bundle offline; this avoids its dashboard-config comparison requesting account-wide route metadata. Domain changes require a separate reviewed operation. The account ID in wrangler.jsonc is public configuration. Never commit tokens. Existing Supabase migration workflows remain unchanged.
 
 ## Invite gate
 
