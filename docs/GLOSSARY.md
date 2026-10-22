@@ -28,6 +28,7 @@
 | 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}`。只有澳大利亚：All Australia（`au`）是固定底，不能选也不能删；只能缩小到州、城市或区域，删掉最后一个就回到 All Australia（2026-10-21）。详情页标题里的 "in …" 是整条筛选的一句话，比如 "SQL in [Sydney + remote · Entry-level ▾]"：地点总在前，其他条件只列缩小范围的那些，用 " · " 分隔，多规则时写 "custom places"。点它打开和行情表 Filter 按钮同一个面板；"in …" 字号小于标的名（2026-10-21，取代 10-17 的地点弹层和可删除条件标签） |
 | 排序 | Sort | `sort`：`value` / `change` | 只有"按度量""按变化"两种；不提供 A–Z |
 | 视图 | View | `view`：`list` / `cards` | 列表或卡片 |
+| 关注标签 | Watching（`/market` 第一个标签） | `?type=watching`（`MarketTab`、`boardForTab`、`watchedSlugs`，`src/features/market/logic.ts`；`WatchingBoard`） | 行情表标签顺序：**Watching** ｜ All · Skills · Roles · Industries（FE-R6，2026-10-22）。Watching 是轻样式（书签图标 + 文字 + 灰色小号数量），后面一条细竖线，再接四个衬线标签；默认仍打开 All。内容 = All 表只保留 watchlist 里的标的（held 和 watching 都算，同一标的不同筛选只算一次），控件、筛选、排序与 All 相同；标签上的数量与列表一致。未登录：不显示数量，内容是 "Sign in to see what you watch." + Sign in；已登录但没关注："Nothing watched yet." + "Browse all"。375px 下标签行横向滚动 |
 | 信号 | Signal | `Signal`（`rise` / `fall` / `entry_open` / `since_added`） | 满足阈值的显著变化；不代表"应该去学" |
 
 ## 3. 度量（measure）用词

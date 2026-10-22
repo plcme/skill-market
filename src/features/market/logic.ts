@@ -16,17 +16,38 @@ export function firstParam(v: string | string[] | undefined): string | undefined
   return s && s.trim() ? s : undefined;
 }
 
-/** The board opens on All; `?type=skill|role|industry` narrows it. */
+/**
+ * A /market tab: one of the boards, or Watching — the All board restricted to
+ * the viewer's watched instruments (`?type=watching`).
+ */
+export type MarketTab = BoardType | 'watching';
+
+/** The board opens on All; `?type=skill|role|industry|watching` picks another tab. */
 export const DEFAULT_BOARD_TYPE: BoardType = 'all';
 
-export function parseBoardType(v: string | string[] | undefined): BoardType {
+export function parseBoardType(v: string | string[] | undefined): MarketTab {
   const s = firstParam(v);
-  return s === 'skill' || s === 'role' || s === 'industry' ? s : DEFAULT_BOARD_TYPE;
+  return s === 'skill' || s === 'role' || s === 'industry' || s === 'watching' ? s : DEFAULT_BOARD_TYPE;
 }
 
 /** `type` value for a board link: omitted for the default so URLs stay canonical. */
-export function boardTypeParam(type: BoardType): BoardType | undefined {
+export function boardTypeParam(type: MarketTab): MarketTab | undefined {
   return type === DEFAULT_BOARD_TYPE ? undefined : type;
+}
+
+/** The board a tab reads: Watching reads All and keeps only watched rows. */
+export function boardForTab(tab: MarketTab): BoardType {
+  return tab === 'watching' ? 'all' : tab;
+}
+
+/** Instruments on the watchlist (held or watching), once each; items for instruments no longer tracked are skipped. */
+export function watchedSlugs(watchlist: ReadonlyArray<{ instrument_slug: string }>): Set<string> {
+  return new Set(watchlist.map(w => w.instrument_slug).filter(slug => getInstrument(slug)));
+}
+
+/** Board rows for the Watching tab, in board order. */
+export function watchedRows<T extends { instrument: { slug: string } }>(rows: readonly T[], watched: ReadonlySet<string>): T[] {
+  return rows.filter(r => watched.has(r.instrument.slug));
 }
 
 /** Only "by measure" and "by change" — no A–Z (GLOSSARY §2); old `?sort=az|name` falls back. */
@@ -335,5 +356,5 @@ export function keyMetrics(groups: { default: MetricKey; common: MetricKey[] }):
   return [groups.default, ...groups.common];
 }
 
-/** Board tab order (GLOSSARY §2): All · Skills · Roles · Industries. */
+/** Board tab order (GLOSSARY §2): All · Skills · Roles · Industries, after the Watching tab. */
 export const BOARD_TYPES: readonly BoardType[] = ['all', 'skill', 'role', 'industry'];
