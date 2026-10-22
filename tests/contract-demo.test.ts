@@ -127,10 +127,10 @@ describe('coffee chats', () => {
 
     const input = {
       instrument_slug: 'rust', filter: F, signal: null, decision_question: QUESTION, practitioner_id: c.practitioner.id,
-      slot_id: c.slots[0].id, starters: ['One', 'Two', 'Three'], shared_fields: ['university', 'year'], agree_conduct: true,
-    } as const;
+      slot_id: c.slots[0].id, starters: ['One', 'Two', 'Three'], shared_fields: ['university' as const, 'year' as const], agree_conduct: true as const,
+    };
     conforms(CONTRACT.createRequest.input, input, 'createRequest input');
-    const req = data(await createRequest({ ...input, shared_fields: [...input.shared_fields] }));
+    const req = data(await createRequest(input));
     conforms(CONTRACT.createRequest.output, req, 'createRequest');
     conforms(studentRequestGroupsSchema.omit({ waitlist: true }), selectStudentRequests(getDB(), clockNow()), 'student requests');
     const view = selectRequest(getDB(), req.id)!;
