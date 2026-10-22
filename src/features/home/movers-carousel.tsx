@@ -9,10 +9,11 @@ import { instrumentPath } from '@/lib/links';
 import { direction, formatChange, formatCount } from '@/lib/market/format';
 import type { ActiveInstrumentType } from '@/lib/market/types';
 import { Button } from '@/components/ui/button';
-import { Monogram } from '@/components/ui/primitives';
+
 import { Sparkline } from '@/components/market/sparkline';
 import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
 import { cn } from '@/lib/utils';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 // Landing "what moved" carousel: one main card plus the next three as smaller
 // cards, each a link to its instrument page. There is no pause button, so to
@@ -99,7 +100,7 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
         >
           <p className="kicker">{tt(main.type)}</p>
           <div className="mt-3 flex items-center gap-3">
-            <Monogram size="sm">{main.symbol}</Monogram>
+            <InstrumentMark size="sm" slug={main.slug} symbol={main.symbol} />
             <h3 className="min-w-0 font-serif text-[26px] leading-tight">
               <Link href={instrumentPath(main.type, main.slug)} className="after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-accent">
                 {main.name}

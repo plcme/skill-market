@@ -118,6 +118,7 @@
   - `signal` 按钮只出现在信号相关的入口。
   - 危险操作用 `danger`，并且必须二次确认。
 - **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接，或一个覆盖全卡、带 `aria-label` 的 absolute 链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。首页 movers 卡片、详情页 Fundamentals 格子都按此处理（点 Fundamentals 格子 = 把该度量切到顶部 "Right now" 并滚回去）。
+- **标的符号框**：统一用 `InstrumentMark`（`src/components/market/instrument-mark.tsx`）。Skills and tools with a recognisable logo show it, monochrome in ink, in the symbol box; everything else keeps letters. Logos identify the technology only (nominative use), never brand colours; drop a logo if its owner objects. 标志来自 Simple Icons（CC0），映射表在 `src/lib/market/logos.ts`，只收录图标集里确实存在的那一项技术；role、industry 永远用字母。符号框是装饰（`aria-hidden`），名称总在旁边。
 - **数字**：一律通过 `MetricValue` 和 `MetricInfo` 渲染，不要裸写数字。
 - **涨跌**：用 `ChangeBadge`，它永远显示原始计数 from → to。
 - **筛选**：作用于整张表。行情表上：按钮上显示条件数，表上方总有一句白话复述（`FilterReadback`）。详情页上：没有单独的筛选按钮，标题里的 "in …" 就是筛选入口（"SQL in [Sydney · Entry-level ▾]"），点开是同一个 Filter 面板。Filter 面板从上到下：吸顶的 "Currently showing" 复述 → Work rights → Level → Places + Work mode + remote 开关 → Advanced。Places 以不可删除的 "All Australia" 为底，只能缩小到州、城市或区域。

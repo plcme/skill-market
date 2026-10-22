@@ -10,6 +10,7 @@ import { searchInstruments, type SearchHit } from '@/lib/market/catalog';
 import { competencyHref, isExactCompetencyHit, searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import { Kbd, Monogram } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 export const OPEN_SEARCH_EVENT = 'sm:open-search';
 export function openSearch() {
@@ -119,7 +120,7 @@ export function CommandPalette() {
                   >
                     {item.kind === 'instrument' ? (
                       <>
-                        <Monogram size="sm">{item.hit.instrument.symbol}</Monogram>
+                        <InstrumentMark size="sm" slug={item.hit.instrument.slug} symbol={item.hit.instrument.symbol} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{item.hit.instrument.name}</span>
                           <span className="block truncate text-[12.5px] text-muted">

@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/time';
 import type { FilterSpec, MetricKey } from '@/lib/market/types';
 import type { InstrumentDetail } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
-import { Card, Container, Monogram, SectionHeader } from '@/components/ui/primitives';
+import { Card, Container, SectionHeader } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
 import { MetricLabel } from '@/components/market/metric-info';
 import { MetricSwitcher } from '@/components/market/metric-switcher';
@@ -25,6 +25,7 @@ import { InstrumentChart } from './instrument-chart';
 import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
 import { useSignalMove } from './signal-copy';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 /** The flagship full ticker page shared by /s/[slug], /r/[slug] and /i/[slug]. */
 export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; filter: FilterSpec }) {
@@ -60,7 +61,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
       <header className="grid grid-cols-1 gap-8 pb-8 pt-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-12">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <Monogram size="lg" tone={signal ? 'signal' : 'plain'}>{inst.symbol}</Monogram>
+            <InstrumentMark size="lg" tone={signal ? 'signal' : 'plain'} slug={inst.slug} symbol={inst.symbol} />
             <div className="min-w-0">
               <p className="kicker">{tt(type)}{inst.skill_layer ? <>{' · '}{tt(`layer.${inst.skill_layer}`)}</> : null} · {inst.category}</p>
               <p className="mt-1 font-mono text-[12px] text-muted">

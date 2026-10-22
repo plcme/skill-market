@@ -16,6 +16,7 @@ import { Notice } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
 import { barPercent, salaryAxis, togetherness, type Togetherness } from './logic';
 import { MeasureCellLink } from './measure-cell-link';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 // Building blocks of the full ticker page (FR-M2 "full page"); several are reused
 // on /compare so both views explain numbers the same way.
@@ -203,7 +204,7 @@ export function RelatedSkills({ entries, filter }: { entries: CompositionEntry[]
                 href={instrumentPath('skill', e.instrument.slug, filter)}
                 className="inline-flex h-8 items-center gap-2 rounded-full border border-rule bg-surface pl-1 pr-3 text-[13px] font-medium transition-colors hover:border-ink/40 hover:bg-sunken/50"
               >
-                <span className="grid size-6 place-items-center rounded-full bg-sunken font-mono text-[9.5px] uppercase text-ink-2" aria-hidden>{e.instrument.symbol}</span>
+                <InstrumentMark size="sm" slug={e.instrument.slug} symbol={e.instrument.symbol} className="size-6 rounded-full border-0 bg-sunken text-[9.5px] font-normal text-ink-2" />
                 {e.instrument.name}
               </Link>
             ))}

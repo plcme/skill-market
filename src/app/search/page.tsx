@@ -11,9 +11,10 @@ import { searchWithSnapshots, type SearchResult } from '@/lib/queries/market';
 import type { ActiveInstrumentType, FilterSpec } from '@/lib/market/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/form';
-import { Container, EmptyState, Monogram, PageHeader, SectionHeader } from '@/components/ui/primitives';
+import { Container, EmptyState, PageHeader, SectionHeader } from '@/components/ui/primitives';
 import { BoardColumnHeader, BoardRows } from '@/features/market/board';
 import { firstParam, hrefWith } from '@/features/market/logic';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 export async function generateMetadata({ searchParams }: PageProps<'/search'>): Promise<Metadata> {
   const t = await getTranslations('SearchPage');
@@ -90,7 +91,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
         <ul className="divide-y divide-rule border-b border-rule">
           {BROWSE.map(slug => getInstrument(slug)).filter(i => i !== undefined).map(i => (
             <li key={i.id} className="relative flex items-center gap-3 py-2.5 hover:bg-surface">
-              <Monogram size="sm">{i.symbol}</Monogram>
+              <InstrumentMark size="sm" slug={i.slug} symbol={i.symbol} />
               <Link href={hrefWith(instrumentPath(i.type, i.slug), { f })} className="min-w-0 flex-1 truncate font-medium after:absolute after:inset-0">{i.name}</Link>
               <span className="kicker">{tt(i.type)}</span>
             </li>

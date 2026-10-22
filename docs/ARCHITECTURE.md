@@ -609,6 +609,7 @@ flowchart LR
 | JSA Australian Skills Classification | 职业 → 技术工具 / 专业任务 / 核心能力 | 岗位→技能映射 | 版本化 | CC BY 4.0（需复核） | 岗位成分技能的初始权重；技能字典的种子 | 待复核 |
 | ANZSCO（ABS） | 职业分类 | — | — | CC BY 4.0 | `instruments(type=role).anzsco_code` | 待复核 |
 | 首发大学课程目录 | unit code、名称 | — | — | 人工整理公开事实（不抓取） | Tier 1 勾选、技能推断 | 假设 |
+| Simple Icons（npm `simple-icons`，打包进产物，不走 CDN） | 技术与工具的单色 SVG 标志 | 技能级（显式映射 `src/lib/market/logos.ts`） | — | 图标集 CC0 1.0；标志本身是各所有者的商标，只作识别用途（nominative use） | 技能符号框里的单色标志 | 已用 |
 | 平台自有 | 复盘投票、匹配、出席 | — | 自上线起 | 自有 | 情绪面（Post-MVP）、可靠度（内部） | — |
 
 **署名**：`/sources` 页与每个 `SourceBadge` popover 显示各源的署名文本与许可链接；`data_sources.attribution` 字段驱动，不写死。

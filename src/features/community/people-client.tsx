@@ -10,10 +10,11 @@ import { getInstrument } from '@/lib/market/catalog';
 import { chatHref, loginHref } from '@/lib/links';
 import type { Signal } from '@/lib/market/types';
 import { Button } from '@/components/ui/button';
-import { Card, EmptyState, Monogram, Skeleton, Stat } from '@/components/ui/primitives';
+import { Card, EmptyState, Skeleton, Stat } from '@/components/ui/primitives';
 import { FilterReadback } from '@/components/market/filter-readback';
 import { SignalTag } from '@/components/market/signal-tag';
 import { SignalFigures } from './chat-parts';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 export interface MarketSignal {
   slug: string;
@@ -26,7 +27,7 @@ function SignalRow({ slug, name, symbol, signal }: MarketSignal) {
   const t = useTranslations('People');
   return (
     <li className="relative flex flex-wrap items-center gap-x-4 gap-y-2 py-4 hover:bg-surface">
-      <Monogram tone="ink" size="sm">{symbol}</Monogram>
+      <InstrumentMark tone="ink" size="sm" slug={slug} symbol={symbol} />
       <div className="min-w-0 flex-1">
         <Link href={chatHref(slug, signal.filter, signal.kind)} className="font-medium after:absolute after:inset-0">{name}</Link>
         <FilterReadback filter={signal.filter} className="block truncate text-[12.5px] text-muted" />
