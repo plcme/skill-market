@@ -32,19 +32,24 @@ export function PageHeader({ kicker, title, lede, actions, className, children }
 }
 
 /** Section heading with a heavy top rule, like a newspaper section break. */
-export function SectionHeader({ kicker, title, action, className, as: As = 'h2', id }: {
+export function SectionHeader({ kicker, title, info, action, size = 'md', className, as: As = 'h2', id }: {
   kicker?: React.ReactNode;
   title: React.ReactNode;
+  /** `lg`: a page's main section (32 / 40 px), e.g. the detail page's Statistics. */
+  size?: 'md' | 'lg';
+  /** An ⓘ shown right after the title, outside the heading element. */
+  info?: React.ReactNode;
   action?: React.ReactNode;
   className?: string;
   as?: 'h2' | 'h3';
   id?: string;
 }) {
+  const heading = <As id={id} className={cn('font-serif font-normal leading-tight tracking-[-0.015em]', size === 'lg' ? 'text-[32px] sm:text-[40px]' : 'text-[26px]')}>{title}</As>;
   return (
     <div className={cn('flex items-end justify-between gap-4 border-t-2 border-rule-strong pb-4 pt-3', className)}>
       <div className="min-w-0">
         {kicker ? <p className="kicker mb-1.5">{kicker}</p> : null}
-        <As id={id} className="font-serif text-[26px] font-normal leading-tight tracking-[-0.015em]">{title}</As>
+        {info ? <div className="flex items-center gap-1.5">{heading}{info}</div> : heading}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
@@ -84,6 +89,8 @@ const badgeVariants = cva('inline-flex items-center gap-1 whitespace-nowrap roun
       signal: 'bg-signal text-signal-ink',
       up: 'bg-up-soft text-up',
       down: 'bg-down-soft text-down',
+      success: 'bg-success-soft text-success',
+      danger: 'bg-danger-soft text-danger',
       warn: 'bg-warn-soft text-warn',
       ink: 'bg-ink text-paper',
     },
@@ -154,12 +161,12 @@ export function Notice({ tone = 'info', title, children, action, className, icon
         'flex gap-3 rounded-md border px-4 py-3 text-sm',
         tone === 'info' && 'border-rule bg-surface text-ink-2',
         tone === 'warn' && 'border-warn/30 bg-warn-soft text-ink',
-        tone === 'success' && 'border-up/25 bg-up-soft text-ink',
+        tone === 'success' && 'border-success/25 bg-success-soft text-ink',
         tone === 'signal' && 'border-transparent bg-signal-soft text-ink',
         className,
       )}
     >
-      <Icon className={cn('mt-0.5 size-4 shrink-0', tone === 'warn' && 'text-warn', tone === 'success' && 'text-up', (tone === 'info' || tone === 'signal') && 'text-muted')} aria-hidden />
+      <Icon className={cn('mt-0.5 size-4 shrink-0', tone === 'warn' && 'text-warn', tone === 'success' && 'text-success', (tone === 'info' || tone === 'signal') && 'text-muted')} aria-hidden />
       <div className="min-w-0 flex-1">
         {title ? <p className="font-medium text-ink">{title}</p> : null}
         {children ? <div className={cn(title && 'mt-0.5', 'text-ink-2')}>{children}</div> : null}

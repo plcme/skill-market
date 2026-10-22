@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  barPercent, boardTypeParam, chartMetricFor, COMPARE_MAX, compareBlocker, compareHref, compareState, correlationBand, firstParam, hrefWith,
-  keyMetrics, parseBoardType, parseSort, parseView, salaryAxis, SUGGESTED_PAIRS, toggleCompare, toQueryString, togetherness,
+  barPercent, boardForTab, boardTypeParam, canonicalMarketQuery, chartMetricFor, COMPARE_MAX, compareBlocker, compareHref, compareState, correlationBand, firstParam, hrefWith,
+  keyMetrics, marketHref, parseBoardType, parseSort, parseView, salaryAxis, SUGGESTED_PAIRS, toggleCompare, toQueryString, togetherness, watchedRows, watchedSlugs,
 } from '@/features/market/logic';
 import { getInstrument } from '@/lib/market/catalog';
 import { DEFAULT_FILTER, decodeFilter } from '@/lib/filters/spec';
@@ -30,6 +30,21 @@ describe('URL parsing', () => {
     expect(boardTypeParam('all')).toBeUndefined();
     expect(boardTypeParam('skill')).toBe('skill');
     expect(boardTypeParam('role')).toBe('role');
+  });
+  it('has a Watching tab that reads the All board, keeping watched rows only', () => {
+    expect(parseBoardType('watching')).toBe('watching');
+    expect(boardTypeParam('watching')).toBe('watching');
+    expect(boardForTab('watching')).toBe('all');
+    expect(boardForTab('role')).toBe('role');
+    // Held and watching both count; the same instrument under two filters counts once; dropped instruments are skipped.
+    const watched = watchedSlugs([{ instrument_slug: 'sql' }, { instrument_slug: 'data-analyst' }, { instrument_slug: 'sql' }, { instrument_slug: 'gone' }, { instrument_slug: 'mining' }]);
+    expect([...watched]).toEqual(['sql', 'data-analyst', 'mining']);
+    const board = getBoard({ type: 'all', filter: DEFAULT_FILTER });
+    const rows = watchedRows(board.rows, watched);
+    // The tab's count matches the list, which keeps the board's order.
+    expect(rows).toHaveLength(watched.size);
+    expect(rows.map(r => r.instrument.slug)).toEqual(board.rows.map(r => r.instrument.slug).filter(s => watched.has(s)));
+    expect(watchedRows(board.rows, new Set())).toEqual([]);
   });
   it('has no A–Z sort; old links fall back to the measure order', () => {
     expect(parseSort(undefined)).toBe('value');
@@ -104,10 +119,28 @@ describe('compare selection from the board', () => {
     expect(compareBlocker([py], java)).toBeNull();
     expect(compareBlocker([], analyst)).toBeNull();
   });
-  it('links to /compare with a and b and keeps the filter', () => {
+  it('links to /compare with a and b only', () => {
     expect(compareHref([py, java])).toBe('/compare?a=python&b=java');
-    expect(compareHref([py, java], 'r.au_all_all')).toBe('/compare?a=python&b=java&f=r.au_all_all');
     expect(compareHref([py])).toBe('/compare?a=python');
+  });
+});
+
+describe('Market board query', () => {
+  it('links to the board without a filter', () => {
+    expect(marketHref()).toBe('/market');
+    expect(marketHref('all')).toBe('/market');
+    expect(marketHref('role')).toBe('/market?type=role');
+    expect(marketHref('watching')).toBe('/market?type=watching');
+  });
+  it('drops an old ?f= and keeps the rest', () => {
+    expect(canonicalMarketQuery({ type: 'roles', f: 'r.au_all_all', sort: 'change' })).toBe('type=roles&sort=change');
+    expect(canonicalMarketQuery({ f: 'r.au_all_all' })).toBe('');
+    expect(canonicalMarketQuery({ f: ['r.au_all_all', 'x'] })).toBe('');
+  });
+  it('leaves a board URL without a filter alone', () => {
+    expect(canonicalMarketQuery({ type: 'roles', q: 'data' })).toBeNull();
+    expect(canonicalMarketQuery({})).toBeNull();
+    expect(canonicalMarketQuery({ f: '' })).toBeNull();
   });
 });
 
@@ -203,8 +236,10 @@ describe('market page queries', () => {
   });
   it('gives example readings only for types the metric applies to', () => {
     const salary = getMetricExamples('salary_median', DEFAULT_FILTER);
-    expect(salary.length).toBe(2);
-    expect(salary.every(e => e.instrument.type === 'role')).toBe(true);
+    expect(salary.length).toBe(4);
+    expect(salary.every(e => e.instrument.type !== 'industry')).toBe(true);
+    const range = getMetricExamples('salary_p10_p90', DEFAULT_FILTER);
+    expect(range.every(e => e.instrument.type === 'role')).toBe(true);
     expect(getMetricExamples('share_of_ads', DEFAULT_FILTER).length).toBe(6);
     expect(getInstrument('python')).toBeDefined();
   });

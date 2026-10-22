@@ -92,22 +92,17 @@ export function BoardTextFilter({ initial, className }: { initial: string; class
 
 /** For the mixed board only measures valid for both skills and roles are offered (FR-M4). */
 export function SharedMetricSelect({ value, className }: { value: MetricKey; className?: string }) {
-  const t = useTranslations('MarketPage');
   const tm = useTranslations('Metrics');
   const { set } = useSetParams();
   return (
-    <label className={cn('inline-flex items-center gap-2', className)}>
-      <span className="kicker">{tm('switcher')}</span>
-      <Select
-        value={value}
-        onChange={e => set({ metric: e.target.value === 'ad_count' ? null : e.target.value })}
-        aria-describedby="shared-metric-hint"
-        className="h-8 w-auto py-0 pl-2.5 text-[13.5px] font-medium"
-      >
-        {sharedMetrics().map(m => <option key={m} value={m}>{tm(`${m}.label`)}</option>)}
-      </Select>
-      <span id="shared-metric-hint" className="sr-only">{t('sharedMetricHint')}</span>
-    </label>
+    <Select
+      value={value}
+      onChange={e => set({ metric: e.target.value === 'ad_count' ? null : e.target.value })}
+      aria-label={tm('switcher')}
+      className={cn('h-8 w-auto py-0 pl-2.5 text-[13.5px] font-medium', className)}
+    >
+      {sharedMetrics().map(m => <option key={m} value={m}>{tm(`${m}.label`)}</option>)}
+    </Select>
   );
 }
 

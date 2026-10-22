@@ -11,28 +11,37 @@ import { formatChange, formatCount, formatShare } from '@/lib/market/format';
 import { instrumentPath } from '@/lib/links';
 import { formatDate, formatDateTime, formatTime } from '@/lib/time';
 import { Button } from '@/components/ui/button';
-import { Avatar, Badge, Card, Monogram } from '@/components/ui/primitives';
+import { Avatar, Badge, Card } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
+import { DirectionGlyph, signDirection } from '@/components/market/direction-glyph';
 import { FilterReadback } from '@/components/market/filter-readback';
 import { MetricLabel } from '@/components/market/metric-info';
 import { SignalTag } from '@/components/market/signal-tag';
 import { cn } from '@/lib/utils';
 import { locationName, MatchReasons, TopicChips, tzLabel } from './shared';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 /** Signal with the absolute numbers behind it (FR-D3). */
 export function SignalFigures({ signal, className }: { signal: Pick<Signal, 'kind' | 'metric' | 'from' | 'to' | 'magnitude'>; className?: string }) {
   const t = useTranslations('NewChat');
   const unit = METRICS[signal.metric]?.unit;
-  let abs: string;
+  const from = signDirection(signal.from);
+  const to = signDirection(signal.to);
+  let abs: React.ReactNode;
   if (signal.kind === 'entry_open') abs = t('signalPp', { from: formatShare(signal.from), to: formatShare(signal.to) });
   // Rise/fall signals carry the 4-week ad counts before → after.
   else if (signal.kind === 'rise' || signal.kind === 'fall') abs = t('signalAbs', { from: formatCount(Math.round(signal.from)), to: formatCount(Math.round(signal.to)) });
   else if (unit === 'share') abs = `${formatShare(signal.from)} → ${formatShare(signal.to)}`;
-  else if (unit === 'change') abs = `${formatChange(signal.from)} → ${formatChange(signal.to)}`;
+  else if (unit === 'change') abs = <><DirectionGlyph dir={from} />{'\u00a0'}{formatChange(signal.from)} → <DirectionGlyph dir={to} />{'\u00a0'}{formatChange(signal.to)}</>;
   else abs = t('signalAbs', { from: formatCount(Math.round(signal.from)), to: formatCount(Math.round(signal.to)) });
+  const dir = signDirection(signal.magnitude);
   return (
     <span className={cn('num text-[13px] text-ink-2', className)}>
-      {signal.kind === 'entry_open' ? null : <span className="mr-1.5 font-medium text-ink">{formatChange(signal.magnitude)}</span>}
+      {signal.kind === 'entry_open' ? null : (
+        <span className={cn('mr-1.5 font-medium', dir === 'up' && 'text-up', dir === 'down' && 'text-down', dir === 'flat' && 'text-ink')}>
+          <DirectionGlyph dir={dir} />{'\u00a0'}{formatChange(signal.magnitude)}
+        </span>
+      )}
       {abs}
     </span>
   );
@@ -56,7 +65,7 @@ export function ContextPanel({ instrument, filter, signal, change, question, pra
       <div>
         <p className="kicker">{t('contextInstrument')}</p>
         <Link href={instrumentPath(instrument.type, instrument.slug, filter)} className="group mt-1.5 flex items-center gap-2.5">
-          <Monogram tone="ink" size="sm">{instrument.symbol}</Monogram>
+          <InstrumentMark tone="ink" size="sm" slug={instrument.slug} symbol={instrument.symbol} />
           <span className="font-serif text-xl leading-tight group-hover:underline">{instrument.name}</span>
         </Link>
       </div>

@@ -183,22 +183,34 @@ export type ExperienceBucket = 'entry' | 'mid' | 'senior' | 'expert';
 export const EXPERIENCE_BUCKETS: readonly ExperienceBucket[] = ['entry', 'mid', 'senior', 'expert'];
 
 export type BreakdownRightsBucket = 'requires_pr' | 'not_stated' | 'sponsorship_ok';
-export type BreakdownBucketKey = ExperienceBucket | BreakdownRightsBucket | WorkMode;
+/** `all` = the single, unsplit series (Split by: none). */
+export type BreakdownBucketKey = ExperienceBucket | BreakdownRightsBucket | WorkMode | 'all';
+
+/** Buckets of each dimension, in display order (DESIGN §6.3). */
+export const BREAKDOWN_BUCKETS: Record<BreakdownDimension, readonly BreakdownBucketKey[]> = {
+  experience: EXPERIENCE_BUCKETS,
+  rights: ['requires_pr', 'not_stated', 'sponsorship_ok'],
+  mode: WORK_MODES,
+};
 
 export interface BreakdownBucket {
   key: BreakdownBucketKey;
-  /** Stack: 4-week rolling job ads. Lines: rolling 52-week median salary, null where the sample is too small. */
+  /**
+   * Stack: 4-week rolling job ads. Lines: rolling 52-week median salary, or a
+   * 4-week rolling share / employer count; null where the sample is too small.
+   */
   series: SeriesPoint[];
-  /** Latest value for the legend (job ads in the last 4 weeks, or median salary over 12 months). */
+  /** Latest value for the legend (the measure's current reading for this bucket). */
   latest: MetricReading;
   /** Stack only: bucket's share of the latest total (0–1); null for lines. */
   share: number | null;
 }
 
 export interface Breakdown {
-  by: BreakdownDimension;
+  /** null = not split: one `all` bucket. */
+  by: BreakdownDimension | null;
   kind: 'stack' | 'lines';
-  /** The measure actually broken down (`ad_count` or `salary_median`). */
+  /** The measure actually drawn (a chart Y axis option; `ad_count` when the requested one can't be drawn). */
   measure: MetricKey;
   /** The page's selected measure; differs from `measure` when it can't be broken down. */
   requested: MetricKey;

@@ -11,9 +11,10 @@ import { searchWithSnapshots, type SearchResult } from '@/lib/queries/market';
 import type { ActiveInstrumentType, FilterSpec } from '@/lib/market/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/form';
-import { Container, EmptyState, Monogram, PageHeader, SectionHeader } from '@/components/ui/primitives';
+import { Container, EmptyState, PageHeader, SectionHeader } from '@/components/ui/primitives';
 import { BoardColumnHeader, BoardRows } from '@/features/market/board';
-import { firstParam, hrefWith } from '@/features/market/logic';
+import { firstParam, hrefWith, marketHref } from '@/features/market/logic';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 export async function generateMetadata({ searchParams }: PageProps<'/search'>): Promise<Metadata> {
   const t = await getTranslations('SearchPage');
@@ -86,11 +87,11 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
         <p className="mt-3 text-[13px] text-muted">{t('tryNote')}</p>
       </section>
       <section aria-labelledby="browse-h">
-        <SectionHeader id="browse-h" as="h2" kicker={t('browseKicker')} title={t('browseTitle')} action={<Link href={hrefWith('/market', { f })} className="link text-sm">{t('browseAll')}</Link>} />
+        <SectionHeader id="browse-h" as="h2" kicker={t('browseKicker')} title={t('browseTitle')} action={<Link href={marketHref()} className="link text-sm">{t('browseAll')}</Link>} />
         <ul className="divide-y divide-rule border-b border-rule">
           {BROWSE.map(slug => getInstrument(slug)).filter(i => i !== undefined).map(i => (
             <li key={i.id} className="relative flex items-center gap-3 py-2.5 hover:bg-surface">
-              <Monogram size="sm">{i.symbol}</Monogram>
+              <InstrumentMark size="sm" slug={i.slug} symbol={i.symbol} />
               <Link href={hrefWith(instrumentPath(i.type, i.slug), { f })} className="min-w-0 flex-1 truncate font-medium after:absolute after:inset-0">{i.name}</Link>
               <span className="kicker">{tt(i.type)}</span>
             </li>
@@ -124,7 +125,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
             icon={SearchX}
             className="mt-8"
             title={t('emptyTitle', { q })}
-            action={<Button asChild variant="outline" size="sm"><Link href={hrefWith('/market', { f })}>{t('emptyBrowse')}<ArrowRight aria-hidden /></Link></Button>}
+            action={<Button asChild variant="outline" size="sm"><Link href={marketHref()}>{t('emptyBrowse')}<ArrowRight aria-hidden /></Link></Button>}
           >
             {t('emptyBody')}
           </EmptyState>
@@ -139,7 +140,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
           {!competencyFirst && results.competencies.length ? <CompetencyGroup hits={results.competencies} /> : null}
           <p className="mt-8 text-[13px] text-muted">
             {t('missing')}{' '}
-            <Link href={hrefWith('/market', { f })} className="link">{t('browseAll')}</Link>
+            <Link href={marketHref()} className="link">{t('browseAll')}</Link>
           </p>
         </>
       )}

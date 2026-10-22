@@ -57,13 +57,14 @@ export default async function SourcesPage() {
                       <dt className="kicker pt-0.5">{t('cadence')}</dt><dd className="text-ink-2">{s.cadence}</dd>
                       <dt className="kicker pt-0.5">{t('lastRun')}</dt><dd className="num text-ink-2">{formatDate(s.last_run_at, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</dd>
                     </dl>
-                    <p className={cn('inline-flex h-fit items-center gap-1.5 self-start text-[13px] font-medium', s.status === 'healthy' && 'text-up', s.status === 'delayed' && 'text-warn', s.status === 'failed' && 'text-down')}>
+                    <p className={cn('inline-flex h-fit items-center gap-1.5 self-start text-[13px] font-medium', s.status === 'healthy' && 'text-success', s.status === 'delayed' && 'text-warn', s.status === 'failed' && 'text-danger')}>
                       <Icon className="size-4" aria-hidden />{t(`status.${s.status}`)}
                     </p>
                   </li>
                 );
               })}
             </ul>
+            <p className="mt-4 max-w-3xl text-[13px] text-muted">{t('logos')}</p>
           </section>
 
           <section id="kinds" aria-labelledby="kinds-h" className="scroll-mt-24">
@@ -149,7 +150,7 @@ export default async function SourcesPage() {
             <div className="grid max-w-3xl gap-4 text-[15px] leading-relaxed text-ink-2">
               <ul className="flex flex-col gap-2">
                 {(['n1', 'n2', 'n3'] as const).map(k => (
-                  <li key={k} className="flex gap-3"><Ban className="mt-1 size-4 shrink-0 text-down" aria-hidden />{t(`never.${k}`)}</li>
+                  <li key={k} className="flex gap-3"><Ban className="mt-1 size-4 shrink-0 text-danger" aria-hidden />{t(`never.${k}`)}</li>
                 ))}
               </ul>
               <p>{t('neverFoot')}</p>

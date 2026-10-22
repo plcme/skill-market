@@ -3,7 +3,8 @@ import { cooccurrence, getInstrument, INDUSTRY_COMPONENTS, INSTRUMENTS, instrume
 import { searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
 import type { HeatTile, Heatmap } from '@/lib/market/heatmap';
 import { pickMovers } from '@/lib/market/movers';
-import { METRICS, defaultMetric, isValidMetric, metricsFor, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
+import { METRICS, chartSeriesFor, defaultMetric, isValidMetric, metricsFor, resolveDetailMetric, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
+import { chartPlanFor, effectiveSplit, type ChartPlan } from '@/features/market/logic';
 import { sortValue } from '@/lib/market/format';
 import type {
   ActiveInstrumentType, Breakdown, BreakdownDimension, DataSource, FilterSpec, Instrument, InstrumentSnapshot, MetricKey, MetricReading, SeriesPoint, Signal, SkillLayer,
@@ -74,15 +75,18 @@ export interface TapeEntry {
   signal: boolean;
 }
 
+let nationalTape: TapeEntry[] | undefined;
+
 /** Biggest 4-week movers nationally, signals first — for the ticker tape. */
 export function getTape(limit = 16): TapeEntry[] {
+  if (nationalTape) return nationalTape.slice(0, limit);
   const all = INSTRUMENTS.map(i => ({ i, r: computeMetric(i.slug, 'change_4w', { rules: [{ work_modes: ['onsite', 'hybrid', 'remote'], location_ids: ['au'] }], seniority: 'all', work_rights: 'all' }) }))
     .filter(x => x.r.status === 'ok' && x.r.value !== null && x.r.from !== null && x.r.to !== null);
   const signals = new Set(INSTRUMENTS.filter(i => detectSignal(i.slug, { rules: [{ work_modes: ['onsite', 'hybrid', 'remote'], location_ids: ['au'] }], seniority: 'all', work_rights: 'all' })).map(i => i.slug));
-  return all
+  nationalTape = all
     .sort((a, b) => Number(signals.has(b.i.slug)) - Number(signals.has(a.i.slug)) || Math.abs(b.r.value ?? 0) - Math.abs(a.r.value ?? 0))
-    .slice(0, limit)
     .map(({ i, r }) => ({ slug: i.slug, type: i.type, symbol: i.symbol, name: i.name, change: r.value ?? 0, from: r.from ?? 0, to: r.to ?? 0, signal: signals.has(i.slug) }));
+  return nationalTape.slice(0, limit);
 }
 
 export interface CompositionEntry {
@@ -109,22 +113,30 @@ export interface InstrumentDetail {
   /** Skill → often asked together. */
   related: CompositionEntry[];
   locations: Array<{ location_id: string; name: string; count: number }>;
-  /** The selected measure split by one dimension (`?by=`, default experience). */
+  /** The page's one chart: the selected measure's series (`chart.series`) split by one dimension (`?by=`; null = not split, the default). */
   breakdown: Breakdown;
+  /** How the selected measure is charted (series, opening range, compared windows), the Y axis options for this type, and the requested split (`breakdown.by` is the one drawn). */
+  chart: ChartPlan & { options: MetricKey[]; by: BreakdownDimension | null };
   signal: Signal | null;
   as_of: string;
 }
 
-export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension = 'experience'): InstrumentDetail | null {
+/**
+ * One measure param (`?metric=`) drives both the "Right now" figure and the
+ * chart (`chartPlanFor`); `by` is the split (null = no split). A split fixed
+ * by the filter or by the measure is drawn unsplit.
+ */
+export function getInstrumentDetail(slug: string, filter: FilterSpec, metricParam?: string, by: BreakdownDimension | null = null): InstrumentDetail | null {
   const inst = getInstrument(slug);
   if (!inst) return null;
   // Same rule as boards: legacy non-selectable metrics fall back to the default.
-  const metric = metricParam && isValidMetric(inst.type, metricParam) && METRICS[metricParam].selectable ? metricParam : defaultMetric(inst.type);
+  const metric = resolveDetailMetric(inst.type, metricParam);
   const groups = metricsFor(inst.type);
   const readings: Partial<Record<MetricKey, MetricReading>> = {};
   for (const k of [groups.default, ...groups.common, ...groups.advanced]) readings[k] = computeMetric(slug, k, filter);
   const series = computeSeries(slug, METRICS[metric].chartable ? metric : 'ad_count', filter);
   const snap = snapshot(slug, metric, filter);
+  const plan = chartPlanFor(metric, inst.type);
   const components = inst.type === 'role' ? ROLE_COMPONENTS[slug] : inst.type === 'industry' ? INDUSTRY_COMPONENTS[slug] : undefined;
   const composition: CompositionEntry[] = components
     ? components.map(c => {
@@ -145,7 +157,8 @@ export function getInstrumentDetail(slug: string, filter: FilterSpec, metricPara
     heatmap: inst.type === 'industry' ? getIndustrySkillHeatmap(slug, filter) : null,
     related,
     locations: locationBreakdown(slug, filter),
-    breakdown: computeBreakdown(slug, metric, filter, by),
+    breakdown: computeBreakdown(slug, plan.series, filter, effectiveSplit(by, filter, plan.series)),
+    chart: { ...plan, options: chartSeriesFor(inst.type), by },
     signal: snap.signal,
     as_of: DATA_AS_OF,
   };

@@ -3,12 +3,13 @@ import { instrumentPath } from '@/lib/links';
 import { useTranslations } from 'next-intl';
 import { direction } from '@/lib/market/format';
 import type { InstrumentSnapshot } from '@/lib/market/types';
-import { Monogram } from '@/components/ui/primitives';
+
 import { cn } from '@/lib/utils';
 import { ChangeBadge } from './change-badge';
 import { MetricValue } from './metric-value';
 import { SignalTag } from './signal-tag';
 import { Sparkline } from './sparkline';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 // Ticker card family (FR-M2): row / card share one data shape; the full page
 // composes the same pieces at a larger size.
@@ -55,7 +56,7 @@ export function TickerRow({ snap, href, action, select, showType = false }: {
     <div className="@container">
       <div className={cn('group relative grid items-center gap-y-1 py-3 transition-colors hover:bg-surface', ROW_GRID, snap.signal && 'bg-signal-soft/40')}>
         <span className="relative grid place-items-center">
-          <Monogram tone={snap.signal ? 'signal' : 'plain'}>{snap.instrument.symbol}</Monogram>
+          <InstrumentMark tone={snap.signal ? 'signal' : 'plain'} slug={snap.instrument.slug} symbol={snap.instrument.symbol} />
           {select}
         </span>
         <div className="min-w-0">
@@ -99,7 +100,7 @@ export function TickerCard({ snap, href, action, select, className }: {
     <article className={cn('group relative flex flex-col gap-4 rounded-md border border-rule bg-surface p-4 transition-shadow hover:shadow-float', snap.signal && 'border-ink/25', className)}>
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Monogram tone={snap.signal ? 'signal' : 'plain'}>{snap.instrument.symbol}</Monogram>
+          <InstrumentMark tone={snap.signal ? 'signal' : 'plain'} slug={snap.instrument.slug} symbol={snap.instrument.symbol} />
           <div className="min-w-0">
             <Link href={href} className="block truncate font-serif text-[20px] leading-tight after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:outline-accent">
               {snap.instrument.name}

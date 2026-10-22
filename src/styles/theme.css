@@ -5,9 +5,12 @@
 /*
  * Visual language: an editorial market sheet. Warm paper, ink type, hairline
  * rules, a serif for headlines and big numbers, mono for tickers and labels.
- * One cobalt accent for interaction, a highlighter tone reserved for signals.
+ * Interaction is ink (no brand hue); a warm grey marks signals and selection.
  * Up/down is never colour-only: every change also carries an arrow and words.
- * Theme is resolved before paint into html[data-theme] (see ThemeScript).
+ * Theme is resolved before paint into html[data-theme] (see THEME_SCRIPT), and
+ * the up/down colour scheme into html[data-market-colors] (MARKET_COLORS_SCRIPT).
+ * Market colours (up/down, heat bands) follow the scheme; status colours
+ * (danger/success/warn) never do, so an error can't turn green.
  */
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -23,22 +26,33 @@
   --faint: #6c6a62;
   --rule: #d9d4c7;
   --rule-strong: #121316;
-  --accent: #2a45d0;
-  --accent-hover: #1f37b0;
-  --accent-soft: #e3e7f8;
-  --accent-ink: #ffffff;
-  --signal: #e2f25a;
-  --signal-soft: #f3f8cc;
+  --accent: #121316;
+  --accent-hover: #34363c;
+  --accent-soft: #e9e6dc;
+  --accent-ink: #f3f1ea;
+  --signal: #d5cebd;
+  --signal-soft: #ece8dc;
   --signal-ink: #121316;
-  --up: #0b6e43;
-  --up-soft: #dcefe3;
-  --down: #b23a1f;
-  --down-soft: #f6e0d8;
+  --selection: #d5cebd;
+  --selection-ink: #121316;
+  /* The chosen cell in a grid (detail page Statistics); muted text ≥ 4.5:1, up/down ≥ 3:1 (large figures). */
+  --picked: #ddd8ca;
+  /* Market direction (default scheme "green-up"); see the scheme blocks below. */
+  --up: #0b7a34;
+  --up-soft: #e3f3e7;
+  --down: #c62828;
+  --down-soft: #fbe4e1;
+  /* Status: fixed, independent of the market colour scheme. */
+  --danger: #b23a1f;
+  --danger-soft: #f6e0d8;
+  --success: #0b6e43;
+  --success-soft: #dcefe3;
   --warn: #875500;
   --warn-soft: #f5ebd2;
-  --src-official: #2a45d0;
-  --src-ads: #121316;
-  --src-practitioner: #a8501a;
+  /* Source marks differ by shape (■ ● ◆), not colour. */
+  --src-official: #5f5e57;
+  --src-ads: #5f5e57;
+  --src-practitioner: #5f5e57;
   --night: #141518;
   --night-ink: #f3f1ea;
   /* Chart series (DESIGN §2.2): ordered ramp for Experience, categorical for rights / mode. */
@@ -64,22 +78,29 @@
   --faint: #8e8c83;
   --rule: #2f302b;
   --rule-strong: #eeece4;
-  --accent: #9daeff;
-  --accent-hover: #b9c5ff;
-  --accent-soft: #1e2447;
-  --accent-ink: #0b0d1a;
-  --signal: #d4ea3c;
-  --signal-soft: #2a300f;
-  --signal-ink: #121316;
-  --up: #5fd39a;
-  --up-soft: #11291d;
-  --down: #ff9478;
-  --down-soft: #351b12;
+  --accent: #eeece4;
+  --accent-hover: #cfcdc4;
+  --accent-soft: #20211d;
+  --accent-ink: #0f100e;
+  --signal: #3d3e37;
+  --signal-soft: #22231f;
+  --signal-ink: #eeece4;
+  --selection: #3d3e37;
+  --selection-ink: #eeece4;
+  --picked: #34352f;
+  --up: #22c55e;
+  --up-soft: #0f2a18;
+  --down: #f25a52;
+  --down-soft: #351717;
+  --danger: #ff9478;
+  --danger-soft: #351b12;
+  --success: #5fd39a;
+  --success-soft: #11291d;
   --warn: #f0c14b;
   --warn-soft: #2e2410;
-  --src-official: #9daeff;
-  --src-ads: #eeece4;
-  --src-practitioner: #f29a5e;
+  --src-official: #a3a197;
+  --src-ads: #a3a197;
+  --src-practitioner: #a3a197;
   --night: #1b1c19;
   --night-ink: #eeece4;
   --series-ord-1: #5263c2;
@@ -114,6 +135,15 @@
   --color-up-soft: var(--up-soft);
   --color-down: var(--down);
   --color-down-soft: var(--down-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-selection: var(--selection);
+  --color-selection-ink: var(--selection-ink);
+  --color-picked: var(--picked);
+  --color-tape-up: var(--tape-up);
+  --color-tape-down: var(--tape-down);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-src-official: var(--src-official);
@@ -156,7 +186,7 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  ::selection { background: var(--signal); color: var(--signal-ink); }
+  ::selection { background: var(--selection); color: var(--selection-ink); }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   h1, h2, h3, h4 { text-wrap: balance; }
   p { text-wrap: pretty; }
@@ -198,7 +228,6 @@
     text-decoration-color: color-mix(in oklab, var(--accent) 35%, transparent);
   }
   .link:hover { text-decoration-color: currentColor; }
-  .hl { background: linear-gradient(transparent 58%, var(--signal) 58%, var(--signal) 94%, transparent 94%); color: inherit; }
   .live-dot { animation: pulse-dot 2s ease-in-out infinite; }
   .skeleton {
     background: linear-gradient(90deg, var(--sunken) 25%, color-mix(in oklab, var(--sunken) 55%, var(--surface)) 50%, var(--sunken) 75%);
@@ -242,25 +271,86 @@
 }
 
 /*
- * Heatmap bands (diverging, colour-blind-safe blue ↔ orange; neutral near 0).
- * Each band carries its own text colour so tile labels keep AA contrast.
+ * Heatmap bands: four tinted steps around a neutral flat band, plus a hatched
+ * band for thin samples. Each band carries its own text colour so tile labels
+ * keep AA contrast. Default scheme is "green-up"; the scheme blocks below swap
+ * or recolour the up/down steps.
  */
 :root {
-  --heat-dn2: #b4531a; --heat-dn2-ink: #ffffff;
-  --heat-dn1: #f3c9a4; --heat-dn1-ink: #121316;
+  --heat-dn2: #c62828; --heat-dn2-ink: #ffffff;
+  --heat-dn1: #f9d0cc; --heat-dn1-ink: #121316;
   --heat-0: #e2dfd5;   --heat-0-ink: #121316;
-  --heat-up1: #b7cfee; --heat-up1-ink: #121316;
-  --heat-up2: #1f5fa8; --heat-up2-ink: #ffffff;
+  --heat-up1: #c9ead1; --heat-up1-ink: #121316;
+  --heat-up2: #0b7a34; --heat-up2-ink: #ffffff;
   --heat-na: #efece4;  --heat-na-ink: #4f4e48;
+  /* The ticker tape is always on the night surface, so it uses dark-theme values. */
+  --tape-up: #22c55e;
+  --tape-down: #f25a52;
 }
 :root[data-theme="dark"] {
-  --heat-dn2: #f09a5c; --heat-dn2-ink: #0f100e;
-  --heat-dn1: #5a3218; --heat-dn1-ink: #eeece4;
+  --heat-dn2: #f25a52; --heat-dn2-ink: #0f100e;
+  --heat-dn1: #521c1c; --heat-dn1-ink: #eeece4;
   --heat-0: #2a2b27;   --heat-0-ink: #eeece4;
-  --heat-up1: #1f3a5f; --heat-up1-ink: #eeece4;
-  --heat-up2: #7fb0f0; --heat-up2-ink: #0f100e;
+  --heat-up1: #0f4220; --heat-up1-ink: #eeece4;
+  --heat-up2: #22c55e; --heat-up2-ink: #0f100e;
   --heat-na: #1b1c19;  --heat-na-ink: #b3b1a7;
 }
+
+/*
+ * Up/down colour scheme (Settings → Display), resolved before paint into
+ * html[data-market-colors]. Only tokens change here; components never know
+ * the scheme. "green-up" is the :root default above.
+ */
+:root[data-market-colors="red-up"] {
+  --up: #c62828; --up-soft: #fbe4e1;
+  --down: #0b7a34; --down-soft: #e3f3e7;
+  --heat-up2: #c62828; --heat-up2-ink: #ffffff;
+  --heat-up1: #f9d0cc; --heat-up1-ink: #121316;
+  --heat-dn1: #c9ead1; --heat-dn1-ink: #121316;
+  --heat-dn2: #0b7a34; --heat-dn2-ink: #ffffff;
+  --tape-up: #f25a52;
+  --tape-down: #22c55e;
+}
+:root[data-theme="dark"][data-market-colors="red-up"] {
+  --up: #f25a52; --up-soft: #351717;
+  --down: #22c55e; --down-soft: #0f2a18;
+  --heat-up2: #f25a52; --heat-up2-ink: #0f100e;
+  --heat-up1: #521c1c; --heat-up1-ink: #eeece4;
+  --heat-dn1: #0f4220; --heat-dn1-ink: #eeece4;
+  --heat-dn2: #22c55e; --heat-dn2-ink: #0f100e;
+}
+:root[data-market-colors="blue-up"] {
+  --up: #1f5fa8; --up-soft: #e3ecf7;
+  --down: #a84a14; --down-soft: #f6e6d8;
+  --heat-up2: #1f5fa8; --heat-up2-ink: #ffffff;
+  --heat-up1: #c4d6ee; --heat-up1-ink: #121316;
+  --heat-dn1: #f1cfb1; --heat-dn1-ink: #121316;
+  --heat-dn2: #a84a14; --heat-dn2-ink: #ffffff;
+  --tape-up: #7fb0f0;
+  --tape-down: #f09a5c;
+}
+:root[data-theme="dark"][data-market-colors="blue-up"] {
+  --up: #7fb0f0; --up-soft: #16243a;
+  --down: #f09a5c; --down-soft: #33200f;
+  --heat-up2: #7fb0f0; --heat-up2-ink: #0f100e;
+  --heat-up1: #1f3a5f; --heat-up1-ink: #eeece4;
+  --heat-dn1: #5a3218; --heat-dn1-ink: #eeece4;
+  --heat-dn2: #f09a5c; --heat-dn2-ink: #0f100e;
+}
+
+/*
+ * Inverted surfaces (toasts sit on bg-ink): status colours take the other
+ * theme's values there so icons keep their contrast.
+ */
+.on-ink {
+  --success: #5fd39a;
+  --warn: #f0c14b;
+}
+:root[data-theme="dark"] .on-ink {
+  --success: #0b6e43;
+  --warn: #875500;
+}
+
 .heat-dn2 { background: var(--heat-dn2); color: var(--heat-dn2-ink); }
 .heat-dn1 { background: var(--heat-dn1); color: var(--heat-dn1-ink); }
 .heat-0 { background: var(--heat-0); color: var(--heat-0-ink); }

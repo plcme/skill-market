@@ -47,7 +47,7 @@ export function MetricSwitcher({ type, value, onChange, param = 'metric', classN
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger className={cn('inline-flex h-8 items-center gap-2 rounded-[5px] border border-rule bg-surface px-3 text-[13.5px] hover:border-ink/40', className)}>
-        <span className="kicker">{t('switcher')}</span>
+        <span className="sr-only">{t('switcher')}: </span>
         <span className="font-medium">{t(`${value}.label`)}</span>
         <ChevronDown className="size-3.5 text-muted" aria-hidden />
       </PopoverTrigger>

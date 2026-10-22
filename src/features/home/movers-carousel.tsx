@@ -1,20 +1,25 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowUpRight, ChevronLeft, ChevronRight, MessageCircle, Pause, Play } from 'lucide-react';
-import { chatHref, instrumentPath } from '@/lib/links';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AUTO_ADVANCE_QUERY, useMediaQuery } from '@/lib/hooks/use-media-query';
+import { instrumentPath } from '@/lib/links';
 import { direction, formatChange, formatCount } from '@/lib/market/format';
 import type { ActiveInstrumentType } from '@/lib/market/types';
 import { Button } from '@/components/ui/button';
-import { Monogram } from '@/components/ui/primitives';
+
 import { Sparkline } from '@/components/market/sparkline';
+import { DirectionGlyph } from '@/components/market/direction-glyph';
 import { cn } from '@/lib/utils';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 // Landing "what moved" carousel: one main card plus the next three as smaller
-// cards. Auto-advance is opt-out (pause button, hover/focus pauses) and never
-// starts when the viewer prefers reduced motion.
+// cards, each a link to its instrument page. There is no pause button, so to
+// meet WCAG 2.2.2 auto-advance only runs where hover-to-pause works (fine
+// pointer with hover, no reduced-motion preference), pauses on hover or focus,
+// and stops for good once the viewer interacts with the carousel.
 
 export interface MoverItem {
   slug: string;
@@ -30,32 +35,13 @@ export interface MoverItem {
 }
 
 const INTERVAL_MS = 8000;
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
-
-function subscribeReducedMotion(cb: () => void): () => void {
-  try {
-    const mq = window.matchMedia(REDUCED_QUERY);
-    mq.addEventListener('change', cb);
-    return () => mq.removeEventListener('change', cb);
-  } catch {
-    return () => {};
-  }
-}
-
-function readReducedMotion(): boolean {
-  try {
-    return window.matchMedia(REDUCED_QUERY).matches;
-  } catch {
-    return true;
-  }
-}
 
 function useMoveLine() {
   const t = useTranslations('Home');
   return (m: MoverItem) => t('moverLine', {
     type: m.type,
     name: m.name,
-    dir: m.change > 0 ? 'up' : m.change < 0 ? 'down' : 'flat',
+    dir: direction(m.change),
     from: formatCount(m.from),
     to: formatCount(m.to),
   });
@@ -66,14 +52,15 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
   const tt = useTranslations('Ticker');
   const line = useMoveLine();
   const [index, setIndex] = useState(0);
-  // 'auto' follows prefers-reduced-motion; the button sets an explicit choice.
-  const [mode, setMode] = useState<'auto' | 'playing' | 'paused'>('auto');
   const [hold, setHold] = useState(false);
-  const reduced = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => true);
-  const playing = mode === 'playing' || (mode === 'auto' && !reduced);
+  // Set by any pointer, key or prev/next interaction; never reset this session.
+  const [stopped, setStopped] = useState(false);
+  const canAutoAdvance = useMediaQuery(AUTO_ADVANCE_QUERY);
+  const playing = canAutoAdvance && !stopped;
   const n = items.length;
 
   const go = useCallback((delta: number) => setIndex(i => (i + delta + n) % n), [n]);
+  const step = (delta: number) => { setStopped(true); go(delta); };
 
   useEffect(() => {
     if (!playing || hold || n < 2) return;
@@ -90,6 +77,8 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
     <section
       aria-roledescription={t('carouselRole')}
       aria-label={t('moversLabel')}
+      onPointerDown={() => setStopped(true)}
+      onKeyDown={() => setStopped(true)}
       onMouseEnter={() => setHold(true)}
       onMouseLeave={() => setHold(false)}
       onFocus={() => setHold(true)}
@@ -97,11 +86,8 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
     >
       <div className="mb-3 flex items-center justify-end gap-1">
         <span className="num mr-2 text-[12.5px] text-muted" aria-hidden>{index + 1} / {n}</span>
-        <Button variant="ghost" size="icon-sm" onClick={() => go(-1)} aria-label={t('moversPrev')}><ChevronLeft aria-hidden /></Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => go(1)} aria-label={t('moversNext')}><ChevronRight aria-hidden /></Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => setMode(playing ? 'paused' : 'playing')} aria-label={playing ? t('moversPause') : t('moversPlay')} aria-pressed={!playing}>
-          {playing ? <Pause aria-hidden /> : <Play aria-hidden />}
-        </Button>
+        <Button variant="ghost" size="icon-sm" onClick={() => step(-1)} aria-label={t('moversPrev')}><ChevronLeft aria-hidden /></Button>
+        <Button variant="ghost" size="icon-sm" onClick={() => step(1)} aria-label={t('moversNext')}><ChevronRight aria-hidden /></Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -110,23 +96,24 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
           aria-roledescription={t('slideRole')}
           aria-label={t('slideLabel', { i: index + 1, n, name: main.name })}
           aria-live={playing && !hold ? 'off' : 'polite'}
-          className="relative flex flex-col rounded-lg border border-rule bg-surface p-5 motion-safe:animate-fade sm:p-6"
+          className="relative flex flex-col rounded-lg border border-rule bg-surface p-5 transition-colors hover:border-ink/30 hover:bg-sunken/60 motion-safe:animate-fade sm:p-6"
         >
           <p className="kicker">{tt(main.type)}</p>
           <div className="mt-3 flex items-center gap-3">
-            <Monogram size="sm">{main.symbol}</Monogram>
-            <h3 className="min-w-0 font-serif text-[26px] leading-tight">{main.name}</h3>
+            <InstrumentMark size="sm" slug={main.slug} symbol={main.symbol} />
+            <h3 className="min-w-0 font-serif text-[26px] leading-tight">
+              <Link href={instrumentPath(main.type, main.slug)} className="after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-accent">
+                {main.name}
+              </Link>
+            </h3>
           </div>
-          <p className={cn('serif-num mt-4 text-[56px] leading-[0.9] sm:text-[64px]', main.change > 0 ? 'text-up' : main.change < 0 ? 'text-down' : 'text-ink')}>
+          <p className={cn('serif-num mt-4 flex items-baseline gap-2 text-[56px] leading-[0.9] sm:text-[64px]', { up: 'text-up', down: 'text-down', flat: 'text-ink' }[direction(main.change)])}>
+            <DirectionGlyph dir={direction(main.change)} className="text-[0.4em]" />
             {formatChange(main.change)}
           </p>
           <p className="num mt-3 text-[14px] text-ink-2">{line(main)}</p>
           <div className="mt-4">
             <Sparkline values={main.sparkline} dir={direction(main.change)} label={tt('trend')} description={tt('trendDesc', { name: main.name, first: main.sparkline[0] ?? 0, last: main.sparkline[main.sparkline.length - 1] ?? 0 })} width={420} height={56} className="h-auto w-full" />
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-4">
-            <Button asChild variant="outline" size="sm"><Link href={instrumentPath(main.type, main.slug)}>{t('leadOpen', { name: main.name })}<ArrowUpRight aria-hidden /></Link></Button>
-            <Button asChild variant="ghost" size="sm"><Link href={chatHref(main.slug)}><MessageCircle aria-hidden />{t('moverTalk')}</Link></Button>
           </div>
         </article>
 
@@ -135,7 +122,7 @@ export function MoversCarousel({ items }: { items: MoverItem[] }) {
             <li key={m.slug} className="relative flex flex-col gap-1 rounded-md border border-rule bg-surface p-3 transition-colors hover:border-ink/30">
               <div className="flex items-center justify-between gap-2">
                 <span className="kicker">{tt(m.type)}</span>
-                <span className={cn('num text-[15px] font-medium', m.change > 0 ? 'text-up' : m.change < 0 ? 'text-down' : 'text-ink')}>{formatChange(m.change)}</span>
+                <span className={cn('num inline-flex items-center gap-1 text-[15px] font-medium', { up: 'text-up', down: 'text-down', flat: 'text-ink' }[direction(m.change)])}><DirectionGlyph dir={direction(m.change)} />{formatChange(m.change)}</span>
               </div>
               <Link href={instrumentPath(m.type, m.slug)} className="min-w-0 truncate font-medium after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent">
                 {m.name}

@@ -4,19 +4,21 @@ import { ArrowRight } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard, getIndustryHeatmap, getMovers } from '@/lib/queries/market';
 import { METRICS } from '@/lib/metrics/registry';
-import { HeatmapLegend, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
+import { HeatmapSource, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { MoversCarousel, type MoverItem } from '@/features/home/movers-carousel';
-import { formatDate } from '@/lib/time';
 import { Button } from '@/components/ui/button';
 import { Container, SectionHeader } from '@/components/ui/primitives';
 import { ChangeBadge } from '@/components/market/change-badge';
 import { MetricInfo } from '@/components/market/metric-info';
 import { ROW_WATCH_LABEL, TickerRow, instrumentHref } from '@/components/market/ticker';
 import { WatchButton } from '@/components/market/watch-button';
+import { PractitionerJoinCard } from '@/features/community/practitioner-join-card';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 export default async function HomePage() {
   const t = await getTranslations('Home');
   const tt = await getTranslations('Ticker');
+  const tc = await getTranslations('Common');
   const skills = getBoard({ type: 'skill', filter: DEFAULT_FILTER });
   const roles = getBoard({ type: 'role', filter: DEFAULT_FILTER, metric: 'growth_12m' });
   const heat = getIndustryHeatmap(DEFAULT_FILTER);
@@ -37,19 +39,14 @@ export default async function HomePage() {
       <section className="border-b border-rule">
         <Container className="grid gap-10 pb-14 pt-10 lg:grid-cols-[1.25fr_1fr] lg:gap-16 lg:pb-20 lg:pt-16">
           <div className="flex flex-col justify-center animate-rise">
-            <p className="kicker flex items-center gap-2">
-              <span className="live-dot inline-block size-1.5 rounded-full bg-up" aria-hidden />
-              {t('edition', { date: formatDate(skills.as_of) })}
-            </p>
-            <h1 className="display mt-5 text-[46px] sm:text-[64px] lg:text-[76px]">
-              {t('headline')} <em className="text-ink-2">{t('headlineEm')}</em>
+            <h1 className="display text-[46px] sm:text-[64px] lg:text-[76px]">
+              {t('headline')}
             </h1>
             <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-ink-2 sm:text-lg">{t('lede')}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link href="/market">{t('ctaMarket')}<ArrowRight aria-hidden /></Link></Button>
               <Button asChild size="lg" variant="outline"><Link href="/onboarding">{t('ctaStart')}</Link></Button>
             </div>
-            <p className="mt-6 text-[13px] text-muted">{t('promise')}</p>
           </div>
 
           <section aria-labelledby="heat-title" className="flex min-w-0 flex-col animate-rise [animation-delay:80ms]">
@@ -58,22 +55,26 @@ export default async function HomePage() {
               <Link href="/market?type=industry" className="link text-[13px]">{t('heatAll')}</Link>
             </div>
             <HeatmapTiles heatmap={heat} filter={DEFAULT_FILTER} label={t('heatLabel')} />
-            <HeatmapLegend heatmap={heat} filter={DEFAULT_FILTER} className="mt-4" />
+            <HeatmapSource heatmap={heat} filter={DEFAULT_FILTER} className="mt-4" />
             <HeatmapTable heatmap={heat} caption={t('heatLabel')} nameHead={tt('industry')} />
           </section>
         </Container>
       </section>
 
       <Container className="mt-14">
-        <SectionHeader kicker={t('signalsKicker')} title={t('signalsTitle')} action={<Link href="/market" className="link text-sm">{t('seeMarket')}</Link>} />
-        <p className="-mt-2 mb-4 max-w-3xl text-[13px] text-ink-2">{t('moversRule', { min: movers[0]?.minSample ?? METRICS.change_4w.min_sample })}</p>
+        <SectionHeader
+          kicker={t('signalsKicker')}
+          title={t('signalsTitle')}
+          info={<InfoPopover label={tc('aboutSection', { section: t('signalsTitle') })}>{t('moversRule', { min: movers[0]?.minSample ?? METRICS.change_4w.min_sample })}</InfoPopover>}
+          action={<Link href="/market" className="link text-sm">{t('seeMarket')}</Link>}
+        />
         <MoversCarousel items={movers} />
         <p className="mt-3 max-w-2xl text-[13px] text-muted">{t('signalsNote')}</p>
       </Container>
 
       <Container className="mt-16 grid gap-12 lg:grid-cols-[1.35fr_1fr]">
         <section aria-labelledby="skills-h">
-          <SectionHeader id="skills-h" kicker={t('skillsKicker')} title={t('skillsTitle')} action={<MetricInfo metric={skills.metric} type="skill" reading={skills.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
+          <SectionHeader id="skills-h" title={t('skillsTitle')} action={<MetricInfo metric={skills.metric} type="skill" reading={skills.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
           <div className="divide-y divide-rule border-b border-rule">
             {skills.rows.slice(0, 8).map(snap => (
               <TickerRow key={snap.instrument.id} snap={snap} href={instrumentHref(snap)} action={<WatchButton slug={snap.instrument.slug} filter={DEFAULT_FILTER} metric={skills.metric} labelClassName={ROW_WATCH_LABEL} />} />
@@ -81,7 +82,7 @@ export default async function HomePage() {
           </div>
         </section>
         <section aria-labelledby="roles-h">
-          <SectionHeader id="roles-h" kicker={t('rolesKicker')} title={t('rolesTitle')} action={<MetricInfo metric="growth_12m" type="role" reading={roles.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
+          <SectionHeader id="roles-h" title={t('rolesTitle')} action={<MetricInfo metric="growth_12m" type="role" reading={roles.rows[0]?.metric} filter={DEFAULT_FILTER} />} />
           <ul className="divide-y divide-rule border-b border-rule">
             {[...roles.rows].sort((a, b) => (b.metric.value ?? 0) - (a.metric.value ?? 0)).slice(0, 8).map(snap => (
               <li key={snap.instrument.id} className="relative flex items-center justify-between gap-4 py-3 hover:bg-surface">
@@ -97,41 +98,7 @@ export default async function HomePage() {
       </Container>
 
       <Container className="mt-20">
-        <SectionHeader kicker={t('howKicker')} title={t('howTitle')} />
-        <ol className="grid gap-8 sm:grid-cols-3 sm:gap-10">
-          {([['1', '01'], ['2', '02'], ['3', '03']] as const).map(([n, label]) => (
-            <li key={n} className="flex flex-col gap-3">
-              <span aria-hidden data-n={label} className="serif-num text-[64px] leading-none text-ink/15 before:content-[attr(data-n)]" />
-              <h3 className="font-serif text-[22px] leading-snug">{t(`step${n}Title`)}</h3>
-              <p className="text-[15px] text-ink-2">{t(`step${n}Body`)}</p>
-            </li>
-          ))}
-        </ol>
-      </Container>
-
-      <section className="mt-20 bg-night text-night-ink">
-        <Container className="grid gap-10 py-16 lg:grid-cols-[1fr_1.2fr] lg:py-20">
-          <div>
-            <p className="kicker text-night-ink/60">{t('principlesKicker')}</p>
-            <h2 className="display mt-4 text-[40px] sm:text-[52px]">{t('principlesTitle')}</h2>
-          </div>
-          <ul className="grid gap-px overflow-hidden rounded-md bg-night-ink/15 sm:grid-cols-2">
-            {(['p1', 'p2', 'p3', 'p4'] as const).map(k => (
-              <li key={k} className="bg-night p-6 text-[15px] leading-relaxed text-night-ink/85">{t(`principles.${k}`)}</li>
-            ))}
-          </ul>
-        </Container>
-      </section>
-
-      <Container className="mt-20">
-        <div className="grid gap-6 rounded-lg border border-rule bg-surface p-6 sm:p-10 md:grid-cols-[1.4fr_auto] md:items-end">
-          <div>
-            <p className="kicker">{t('practitionerKicker')}</p>
-            <h2 className="mt-3 font-serif text-[32px] leading-tight sm:text-[38px]">{t('practitionerTitle')}</h2>
-            <p className="mt-3 max-w-2xl text-ink-2">{t('practitionerBody')}</p>
-          </div>
-          <Button asChild variant="outline" size="lg"><Link href="/practitioner/join">{t('practitionerCta')}<ArrowRight aria-hidden /></Link></Button>
-        </div>
+        <PractitionerJoinCard />
       </Container>
     </>
   );

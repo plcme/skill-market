@@ -4,19 +4,25 @@
       "skill": "Skills market",
       "role": "Roles market",
       "industry": "Industries market",
-      "all": "Market"
+      "all": "Market",
+      "watching": "Watching"
     },
     "metaDescription": "Every skill and role we track in Australian job ads, with the measure you choose, its change and a 12-month trend.",
-    "kicker": "Job ads · week ending {date}",
     "title": "The market",
-    "lede": "Every skill and role we track, measured the same way under your filter. Tap any number to see exactly what it counts.",
     "boardHeading": "Board",
     "typeTabsLabel": "Instrument type",
     "types": {
+      "watching": "Watching",
       "skill": "Skills",
       "role": "Roles",
       "industry": "Industries",
       "all": "All"
+    },
+    "watching": {
+      "signedOut": "Sign in to see what you watch.",
+      "signIn": "Sign in",
+      "empty": "Nothing watched yet.",
+      "browseAll": "Browse all"
     },
     "sortLabel": "Order",
     "sort": {
@@ -31,7 +37,6 @@
     "textFilterLabel": "Filter this board by name",
     "textFilterPlaceholder": "Filter by name or alias",
     "textFilterClear": "Clear the name filter",
-    "sharedMetricHint": "Only measures that apply to both skills and roles are listed on the mixed board.",
     "colName": "Name",
     "colTrend": "12-month trend",
     "colChangeMixed": "Change",
@@ -45,19 +50,12 @@
     "signalCount": "{n, plural, =0 {no signals} one {# with a signal} other {# with signals}}",
     "matching": "matching “{q}”",
     "emptyTitle": "Nothing on the board matches",
-    "emptyBody": "Nothing on this board under the current filter. Try widening the filter.",
+    "emptyBody": "Nothing on this board right now.",
     "emptyBodyQuery": "Nothing here matches “{q}”. Try a shorter name, a common alias such as “JS”, or search everything.",
     "emptyReset": "Clear the name filter",
     "orderNote": "The order follows the market measure you picked — it ranks skills and roles, never people. Rows with too few ads sink to the bottom and say so instead of showing a number.",
     "illustrativeNote": "Illustrative data: numbers in this preview are generated to behave like the real pipeline and are not real market signals.",
     "sourcesLink": "Sources and method",
-    "signalsNow": "Signals now",
-    "signalsNowCount": "{n, plural, =0 {none} one {# under your filter} other {# under your filter}}",
-    "signalsNowNote": "Flagged when a move is at least 25% and 10 ads, with enough ads to trust it.",
-    "signalsNowEmpty": "Nothing has moved enough to flag under this filter. That is normal for narrow filters — widen it, or browse the board below.",
-    "signalsNowTalk": "Talk to someone",
-    "signalsNowTalkLabel": "Talk to someone who uses {name}",
-    "filterScopeLabel": "Scope of every number on this board",
     "compareMode": "Compare",
     "compareModeOn": "Done comparing",
     "compareSelect": "Select {name} to compare",
@@ -102,7 +100,44 @@
       "role": "Talk to someone who does this job",
       "industry": "Talk to someone working in this industry"
     },
-    "talkNote": "A free 20-minute chat with a verified practitioner. Your filter goes with the request.",
+    "talkShort": "Talk to someone",
+    "places": {
+      "in": "in",
+      "label": {
+        "all": "All Australia",
+        "custom": "custom places",
+        "count": "{n} places",
+        "withRemote": "{places} + remote",
+        "join": ", "
+      }
+    },
+    "titleFilter": {
+      "button": "{filter}. Change filter",
+      "separator": " · ",
+      "seniority": {
+        "entry": "Entry-level",
+        "graduate": "Graduate"
+      },
+      "workRights": "No PR stated",
+      "workModes": {
+        "onsite": "On-site only",
+        "hybrid": "Hybrid only",
+        "remote": "Remote only",
+        "onsite_hybrid": "On-site or hybrid",
+        "onsite_remote": "On-site or remote",
+        "hybrid_remote": "Hybrid or remote"
+      },
+      "workModesInline": {
+        "onsite": "on-site only",
+        "hybrid": "hybrid only",
+        "remote": "remote only",
+        "onsite_hybrid": "on-site or hybrid",
+        "onsite_remote": "on-site or remote",
+        "hybrid_remote": "hybrid or remote"
+      },
+      "placesWithModes": "{places} ({modes})",
+      "by": "by {dimension}"
+    },
     "compareWith": "Compare with…",
     "now": "Right now",
     "whyFlagged": "Why this is flagged:",
@@ -115,15 +150,9 @@
       "entry_open": "Entry-level share {from} → {to} in eight weeks ({pp} pts)"
     },
     "signalTalk": "Ask someone what’s behind it",
-    "noSignal": "Nothing flagged under this filter. We flag a move when it is at least 25% and at least 10 ads, or when entry-level openings rise by 10 points.",
-    "chartCaption": "{metric} · 4-week rolling, weekly to {end}",
-    "chartFallback": "{metric} isn’t a weekly series, so the chart shows the ads behind it over time.",
-    "fundKicker": "Fundamentals",
-    "fundTitle": "Every measure, under your filter",
-    "fundAction": "What each measure means",
-    "shownAbove": "Shown above",
-    "showAbove": "Show above",
-    "showAboveLabel": "Show {metric} in the main figure",
+    "statsTitle": "Statistics",
+    "statsAction": "What each measure means",
+    "showMeasureLabel": "Show {metric} at the top",
     "moreMeasures": "{n, plural, one {# more measure} other {# more measures}}",
     "fewerMeasures": "Fewer measures",
     "advancedNote": "Advanced measures are noisier or easier to misread. Open the ⓘ next to each before leaning on it.",
@@ -150,7 +179,6 @@
       "industry": "Skills its ads mention"
     },
     "compNote": {
-      "skill": "Share of each role’s ads that mention {name}.",
       "role": "The skills that make up this role: the share of {name} ads that mention each one. An ad usually asks for several skills, so shares add up to more than 100%.",
       "industry": "Share of {name} ads that mention each skill, highest first. A list sorted by a measure, not a ranking of people."
     },
@@ -229,7 +257,6 @@
       "role": "Numbers only go so far. Ask someone who does this job.",
       "industry": "Numbers only go so far. Ask someone who works in this industry."
     },
-    "nextBody": "We’ll suggest up to three verified practitioners who opted in, plus questions worth asking. It’s free, and you can decline or reschedule at any time.",
     "nextCta": "Find someone to talk to",
     "provenance": "Where these numbers come from",
     "provSources": "Sources",
@@ -246,6 +273,7 @@
   "ComparePage": {
     "metaTitle": "Compare",
     "metaTitlePair": "{a} vs {b}",
+    "chartCaption": "{metric} · 4-week rolling, weekly to {end}",
     "metaDescription": "Put two skills or two roles side by side under the same filter: demand, change, entry-level share, overlap, effort and transferability.",
     "kicker": "Compare",
     "title": "Side by side",
@@ -376,7 +404,7 @@
     "metaTitle": "{metric} — measure",
     "indexKicker": "Method",
     "indexTitle": "What each number means",
-    "indexLede": "Every measure has one definition, one denominator and one source. Only valid combinations appear in the app — a skill has no salary, so we never show one.",
+    "indexLede": "Every measure has one definition, one denominator and one source. Only valid combinations appear in the app — an industry has no salary figure, so we never show one.",
     "legendApplies": "Applies",
     "legendNot": "Doesn’t apply",
     "legendDefault": "Shown first for that type",
@@ -468,6 +496,7 @@
       "official": "Occupation-level demand for roles, including the 12-month change.",
       "practitioner": "What people in the work said after coffee chats — only ever shown in aggregate."
     },
+    "logos": "Technology logos come from Simple Icons (CC0). They are trademarks of their owners and are used only to identify the technology.",
     "licence": "Licence",
     "cadence": "Updated",
     "lastRun": "Last run",
@@ -545,5 +574,10 @@
     "with": "Chat with {name}",
     "open": "Open chat",
     "private": "Your debriefs stay private. They’re never shown to practitioners or other students."
+  },
+  "RoleNudge": {
+    "body": "You know this job. Give 20 minutes a month to students asking about it.",
+    "cta": "Join as a practitioner",
+    "dismiss": "Dismiss"
   }
 }

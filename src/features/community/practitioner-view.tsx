@@ -104,7 +104,7 @@ export function PractitionerView({ db, view, now, viewerTz }: { db: DemoDB; view
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={status === 'needs_reply' ? 'signal' : status === 'upcoming' ? 'up' : 'outline'}>{t(`pstatus.${status}`)}</Badge>
+        <Badge tone={status === 'needs_reply' ? 'signal' : status === 'upcoming' ? 'success' : 'outline'}>{t(`pstatus.${status}`)}</Badge>
         <span className="num text-sm text-muted">{t('pWhen')} · {formatDateTime(req.slot_start, viewerTz)}</span>
       </div>
       <section aria-live="polite">{actions}</section>

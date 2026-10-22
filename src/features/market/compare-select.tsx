@@ -19,7 +19,6 @@ interface CompareCtx {
   setActive: (on: boolean) => void;
   toggle: (item: CompareItem) => void;
   clear: () => void;
-  f?: string;
 }
 
 const Ctx = createContext<CompareCtx | null>(null);
@@ -30,7 +29,7 @@ function useCompare(): CompareCtx {
   return ctx;
 }
 
-export function CompareSelectionProvider({ f, children }: { f?: string; children: React.ReactNode }) {
+export function CompareSelectionProvider({ children }: { children: React.ReactNode }) {
   const [active, setActiveState] = useState(false);
   const [selection, setSelection] = useState<CompareItem[]>([]);
   const setActive = useCallback((on: boolean) => {
@@ -39,7 +38,7 @@ export function CompareSelectionProvider({ f, children }: { f?: string; children
   }, []);
   const toggle = useCallback((item: CompareItem) => setSelection(s => toggleCompare(s, item).selection), []);
   const clear = useCallback(() => setSelection([]), []);
-  const value = useMemo(() => ({ active, selection, setActive, toggle, clear, f }), [active, selection, setActive, toggle, clear, f]);
+  const value = useMemo(() => ({ active, selection, setActive, toggle, clear }), [active, selection, setActive, toggle, clear]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
@@ -92,7 +91,7 @@ export function CompareCheckbox({ slug, type, name, className }: { slug: string;
 /** Sticky action bar while selecting: count, hint and the link to /compare. */
 export function CompareBar() {
   const t = useTranslations('MarketPage');
-  const { active, selection, setActive, clear, f } = useCompare();
+  const { active, selection, setActive, clear } = useCompare();
   if (!active) return null;
   const n = selection.length;
   const ready = n >= 2;
@@ -113,7 +112,7 @@ export function CompareBar() {
           <Button variant="ghost" size="icon-sm" onClick={() => setActive(false)} aria-label={t('compareExit')}><X aria-hidden /></Button>
         )}
         {ready ? (
-          <Button asChild size="sm"><Link href={compareHref(selection, f)}>{t('compareGo', { n })}</Link></Button>
+          <Button asChild size="sm"><Link href={compareHref(selection)}>{t('compareGo', { n })}</Link></Button>
         ) : (
           <Button size="sm" disabled>{t('compareGo', { n })}</Button>
         )}

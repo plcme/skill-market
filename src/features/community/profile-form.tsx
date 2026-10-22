@@ -18,12 +18,12 @@ const ROLES = instrumentsOfType('role');
 const PLACES = LOCATIONS.filter(l => l.level !== 'country' && l.level !== 'state');
 
 /** Public card fields (FR-P2). Used in the join flow and on the desk. */
-export function ProfileForm({ practitioner, now, submitLabel, onSaved }: { practitioner: Practitioner; now: number; submitLabel: string; onSaved: () => void }) {
+export function ProfileForm({ practitioner, now, submitLabel, onSaved, defaultRole }: { practitioner: Practitioner; now: number; submitLabel: string; onSaved: () => void; defaultRole?: string }) {
   const t = useTranslations('PractitionerJoin');
   const errorText = useErrorText();
   const year = new Date(now).getUTCFullYear();
   const [title, setTitle] = useState(practitioner.current_title);
-  const [role, setRole] = useState(practitioner.current_role_slug);
+  const [role, setRole] = useState(practitioner.current_role_slug || (defaultRole && ROLES.some(r => r.slug === defaultRole) ? defaultRole : ''));
   const [employer, setEmployer] = useState(practitioner.employer);
   const [entryYear, setEntryYear] = useState(practitioner.entry_year);
   const [location, setLocation] = useState(practitioner.location_id);
@@ -100,7 +100,7 @@ export function ProfileForm({ practitioner, now, submitLabel, onSaved }: { pract
       <Field label={t('fBio')} error={err('bio')}>{({ id }) => <Textarea id={id} rows={2} className="min-h-16" maxLength={400} value={bio} placeholder={t('fBioPlaceholder')} onChange={e => setBio(e.target.value)} />}</Field>
       <Field label={t('fLink')} hint={t('fLinkHint')} error={err('meeting_link')}>{({ id, describedBy, invalid }) => <Input id={id} type="url" aria-describedby={describedBy} aria-invalid={invalid} value={link} placeholder={t('fLinkPlaceholder')} onChange={e => setLink(e.target.value)} />}</Field>
       {state.error && !Object.keys(fields).length ? <Notice tone="warn">{errorText(state.error)}</Notice> : null}
-      {Object.keys(fields).length ? <p role="alert" className="text-[13px] font-medium text-down">{errorText(state.error)}</p> : null}
+      {Object.keys(fields).length ? <p role="alert" className="text-[13px] font-medium text-danger">{errorText(state.error)}</p> : null}
       <div><Button type="submit" loading={state.pending}>{submitLabel}</Button></div>
     </form>
   );

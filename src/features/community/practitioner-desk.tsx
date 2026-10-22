@@ -134,7 +134,7 @@ function Desk({ db }: { db: DemoDB }) {
             </div>
             <div className="mt-3">
               {p.verification === 'verified'
-                ? <Badge tone="up"><BadgeCheck className="size-3" aria-hidden />{t('verifiedBadge', { domain: p.work_email_domain })}</Badge>
+                ? <Badge tone="success"><BadgeCheck className="size-3" aria-hidden />{t('verifiedBadge', { domain: p.work_email_domain })}</Badge>
                 : <Badge tone="warn">{t('reviewBadge')}</Badge>}
             </div>
             <p className="mt-3 text-[13.5px] text-ink-2">{p.path}</p>

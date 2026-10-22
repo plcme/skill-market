@@ -1,22 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { ArrowRight, SearchX, SlidersHorizontal } from 'lucide-react';
-import { decodeFilter, encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
-import { getBoard, getSignalsNow, type BoardType } from '@/lib/queries/market';
-import { formatDate } from '@/lib/time';
+import { ArrowRight, Bookmark, SearchX } from 'lucide-react';
+import { DEFAULT_FILTER } from '@/lib/filters/spec';
+import { getBoard } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
-import { Container, EmptyState, PageHeader } from '@/components/ui/primitives';
-import { FilterBar } from '@/components/market/filter-builder';
-import { FilterReadback } from '@/components/market/filter-readback';
+import { Container, EmptyState } from '@/components/ui/primitives';
 import { MetricSwitcher } from '@/components/market/metric-switcher';
-import { SourceBadge } from '@/components/market/source-badge';
 import { BoardCards, BoardColumnHeader, BoardRows } from '@/features/market/board';
 import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitch } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
-import { BOARD_TYPES, boardTypeParam, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView } from '@/features/market/logic';
-import { SignalsStrip } from '@/features/market/signals-strip';
+import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
+import { WatchingBoard, WatchingTabCount } from '@/features/market/watching-board';
 import { cn } from '@/lib/utils';
 
 export async function generateMetadata({ searchParams }: PageProps<'/market'>): Promise<Metadata> {
@@ -28,76 +25,65 @@ export async function generateMetadata({ searchParams }: PageProps<'/market'>): 
 
 export default async function MarketPage({ searchParams }: PageProps<'/market'>) {
   const t = await getTranslations('MarketPage');
-  const tf = await getTranslations('Filter');
   const sp = await searchParams;
-  const type = parseBoardType(sp.type);
+  // The board always covers all of Australia; filters live on detail pages.
+  const canonical = canonicalMarketQuery(sp);
+  if (canonical !== null) redirect(`/market${canonical ? `?${canonical}` : ''}`);
+  const tab = parseBoardType(sp.type);
+  const type = boardForTab(tab);
   const sort = parseSort(sp.sort);
   const view = parseView(sp.view);
   const layer = type === 'skill' ? parseLayer(sp.layer) : null;
   const q = firstParam(sp.q) ?? '';
   const metricParam = firstParam(sp.metric);
-  const filter = decodeFilter(firstParam(sp.f));
-  const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
+  const filter = DEFAULT_FILTER;
 
   const board = getBoard({ type, metric: metricParam, filter, sort, q, layer });
-  const signalsNow = getSignalsNow(filter);
-  const keep = { f, sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
-  const typeHref = (next: BoardType) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
-  const resetHref = hrefWith('/market', { type: boardTypeParam(type), metric: metricParam, layer: layerParam(layer), ...keep });
-  const resetFilterHref = hrefWith('/market', { type: boardTypeParam(type), metric: metricParam, q: q || undefined, layer: layerParam(layer), ...keep, f: undefined });
+  const keep = { sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
+  const typeHref = (next: MarketTab) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
+  const resetHref = hrefWith('/market', { type: boardTypeParam(tab), metric: metricParam, layer: layerParam(layer), ...keep });
   const firstOk = board.rows.find(r => r.metric.status === 'ok') ?? board.rows[0];
   const firstChangeOk = board.rows.find(r => r.change.status === 'ok') ?? board.rows[0];
 
   return (
     <Container className="pb-20">
-      <PageHeader
-        kicker={(
-          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{t('kicker', { date: formatDate(board.as_of) })}</span>
-            <SourceBadge kind="ads" />
-          </span>
-        )}
-        title={t('title')}
-        lede={t('lede')}
-      />
-
-      <SignalsStrip rows={signalsNow} filter={filter} />
+      <h1 className="sr-only">{t('title')}</h1>
 
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
-      <CompareSelectionProvider key={type} f={f}>
-      <section aria-labelledby="board-h" className="mt-8">
+      <CompareSelectionProvider key={tab}>
+      <section aria-labelledby="board-h" className="pt-8 sm:pt-12">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
-        <div className="flex items-end justify-between gap-4 border-b border-rule">
-          <nav aria-label={t('typeTabsLabel')} className="flex min-w-0 flex-wrap items-end gap-x-4 sm:gap-x-6">
+        <div className="border-b border-rule">
+          {/* Scrolls sideways at narrow widths; the nav (not the tabs) overlaps the rule so nothing overflows vertically. */}
+          <nav aria-label={t('typeTabsLabel')} className="-mb-px flex min-w-0 items-end gap-x-3 overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:gap-x-6 [&::-webkit-scrollbar]:hidden">
+            <Link
+              href={typeHref('watching')}
+              aria-current={tab === 'watching' ? 'page' : undefined}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 border-b-2 pb-2.5 text-[14px] font-medium leading-none transition-colors sm:text-[15px]',
+                tab === 'watching' ? 'border-ink text-ink' : 'border-transparent text-ink-2 hover:text-ink',
+              )}
+            >
+              <Bookmark className="size-3.5" aria-hidden />
+              {t('types.watching')}
+              <Suspense fallback={null}><WatchingTabCount /></Suspense>
+            </Link>
+            <span aria-hidden className="mb-2.5 h-5 w-px shrink-0 bg-rule-strong sm:h-6" />
             {BOARD_TYPES.map(k => (
               <Link
                 key={k}
                 href={typeHref(k)}
-                aria-current={k === type ? 'page' : undefined}
+                aria-current={k === tab ? 'page' : undefined}
                 className={cn(
-                  '-mb-px border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-colors sm:text-[26px]',
-                  k === type ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink',
+                  'shrink-0 border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-colors sm:text-[26px]',
+                  k === tab ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink',
                 )}
               >
                 {t(`types.${k}`)}
               </Link>
             ))}
           </nav>
-          <div className="pb-2">
-            <Suspense fallback={<div className="h-8 w-[88px] rounded-[5px] border border-rule bg-surface" />}>
-              <FilterBar variant="button" />
-            </Suspense>
-          </div>
         </div>
-
-        {f ? (
-          <p className="mt-2.5 flex min-w-0 items-start gap-2 text-[13px] leading-snug text-ink-2 sm:items-center">
-            <SlidersHorizontal className="mt-0.5 size-3.5 shrink-0 text-muted sm:mt-0" aria-hidden />
-            <span className="sr-only">{t('filterScopeLabel')}: </span>
-            <FilterReadback filter={filter} className="min-w-0 sm:truncate" />
-            <Link href={resetFilterHref} className="link shrink-0">{tf('scopeReset')}</Link>
-          </p>
-        ) : null}
 
         {type === 'skill' ? (
           <Suspense fallback={<div className="mt-3 h-8" />}>
@@ -116,31 +102,37 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
           </div>
         </Suspense>
 
-        <p className="num mt-5 text-[13px] text-muted" aria-live="polite">
-          {t(`count.${type}`, { n: board.rows.length })}
-          {' · '}
-          {t('signalCount', { n: board.signals })}
-          {q ? <>{' · '}{t('matching', { q })}</> : null}
-        </p>
+        {tab === 'watching' ? (
+          <WatchingBoard rows={board.rows} filter={filter} metric={board.metric} view={view} q={q} allHref={typeHref('all')} resetHref={resetHref} />
+        ) : (
+          <>
+            <p className="num mt-5 text-[13px] text-muted" aria-live="polite">
+              {t(`count.${type}`, { n: board.rows.length })}
+              {' · '}
+              {t('signalCount', { n: board.signals })}
+              {q ? <>{' · '}{t('matching', { q })}</> : null}
+            </p>
 
-        <div className="mt-2">
-          {board.rows.length === 0 ? (
-            <EmptyState
-              icon={SearchX}
-              title={t('emptyTitle')}
-              action={<Button asChild variant="outline" size="sm"><Link href={resetHref}>{t('emptyReset')}</Link></Button>}
-            >
-              {q ? t('emptyBodyQuery', { q }) : t('emptyBody')}
-            </EmptyState>
-          ) : view === 'cards' ? (
-            <BoardCards rows={board.rows} filter={filter} metric={board.metric} selectable />
-          ) : (
-            <>
-              <BoardColumnHeader type={type} metric={board.metric} filter={filter} sample={firstOk} changeSample={firstChangeOk} />
-              <BoardRows rows={board.rows} filter={filter} metric={board.metric} showType={type === 'all'} selectable />
-            </>
-          )}
-        </div>
+            <div className="mt-2">
+              {board.rows.length === 0 ? (
+                <EmptyState
+                  icon={SearchX}
+                  title={t('emptyTitle')}
+                  action={q ? <Button asChild variant="outline" size="sm"><Link href={resetHref}>{t('emptyReset')}</Link></Button> : undefined}
+                >
+                  {q ? t('emptyBodyQuery', { q }) : t('emptyBody')}
+                </EmptyState>
+              ) : view === 'cards' ? (
+                <BoardCards rows={board.rows} filter={filter} metric={board.metric} selectable />
+              ) : (
+                <>
+                  <BoardColumnHeader type={type} metric={board.metric} filter={filter} sample={firstOk} changeSample={firstChangeOk} />
+                  <BoardRows rows={board.rows} filter={filter} metric={board.metric} showType={type === 'all'} selectable />
+                </>
+              )}
+            </div>
+          </>
+        )}
 
         <div className="mt-6 grid gap-3 text-[13px] leading-relaxed text-muted md:grid-cols-2 md:gap-8">
           <p>{t('orderNote')}</p>

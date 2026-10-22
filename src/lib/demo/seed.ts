@@ -117,11 +117,11 @@ const PEOPLE: SeedPractitioner[] = [
   {
     id: 'p-ngaio', display_name: 'Ngaio Parata', current_title: 'Software Tester', current_role_slug: 'software-tester',
     employer: 'Ironbark Games', work_email_domain: 'gmail.example', verification: 'manual_review', entry_year: 2024,
-    location_id: 'nz-wellington', skills: ['testing', 'javascript', 'python', 'agile'],
+    location_id: 'au-qld-brisbane', skills: ['testing', 'javascript', 'python', 'agile'],
     topics: ['first_90_days', 'day_to_day'],
     path: 'QA contractor at a game studio after a diploma in software development.',
     bio: 'Signed up with a personal email — waiting for manual review.',
-    monthly_cap: 2, paused: false, availability: [{ weekday: 1, start: '19:00', end: '20:00' }], tz: 'Pacific/Auckland',
+    monthly_cap: 2, paused: false, availability: [{ weekday: 1, start: '19:00', end: '20:00' }], tz: 'Australia/Brisbane',
   },
   {
     id: 'p-emily', display_name: 'Emily Chen', current_title: 'Graduate Software Engineer', current_role_slug: 'software-engineer',

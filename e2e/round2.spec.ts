@@ -2,37 +2,40 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 // Frontend feedback round 2: breakdown, simple location filter, ASC core competencies.
+// Round 3 folded the breakdown into the detail page's one chart (see detail-chart.spec.ts).
 
-test('role page breakdown switches dimension through the URL', async ({ page }) => {
+test('role page chart splits by dimension through the URL', async ({ page }) => {
   test.slow();
-  await page.goto('/r/data-analyst');
-  const section = page.locator('section#breakdown');
-  await expect(section.getByRole('heading', { name: 'Breakdown' })).toBeVisible();
-  const legend = section.getByRole('list', { name: 'Breakdown values' });
+  await page.goto('/r/data-analyst?by=experience');
+  const chart = page.locator('section#now');
+  await expect(page.locator('section#breakdown')).toHaveCount(0);
+  const legend = chart.getByRole('list', { name: 'Latest values' });
   await expect(legend.getByText('Expert · 10+ yrs')).toBeVisible();
-  await expect(section.getByText('Estimated')).toBeVisible();
-  await expect(section.getByText(/Breakdown shows Job ads/)).toBeVisible();
-  // The click can land before hydration under load; retry until the URL changes.
+  await expect(chart.getByText('Estimated')).toBeVisible();
+  const menu = page.getByRole('dialog', { name: 'Filter' });
   await expect(async () => {
-    if (!/by=rights/.test(page.url())) await section.getByRole('radio', { name: 'Work rights' }).click({ timeout: 5000 });
-    await expect(page).toHaveURL(/by=rights/, { timeout: 10000 });
+    if (!(await menu.isVisible())) await page.locator('h1').getByRole('button').click({ timeout: 5000 });
+    await expect(menu).toBeVisible({ timeout: 5000 });
   }).toPass({ timeout: 40000 });
+  await menu.getByRole('radio', { name: 'Work rights', exact: true }).click();
+  await menu.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page).toHaveURL(/by=rights/, { timeout: 30000 });
   await expect(legend.getByText('Requires PR or citizenship')).toBeVisible();
-  await section.getByRole('button', { name: 'Show data table' }).click();
-  await expect(section.getByRole('table')).toBeVisible();
-  const axe = await new AxeBuilder({ page }).include('section#breakdown').analyze();
+  await chart.getByRole('button', { name: 'Show data table' }).click();
+  await expect(chart.getByRole('table')).toBeVisible();
+  const axe = await new AxeBuilder({ page }).include('section#now').analyze();
   expect(axe.violations.filter(v => ['serious', 'critical'].includes(v.impact ?? '')).map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
 
-  await page.goto('/r/data-analyst?metric=salary_median&by=mode');
-  await expect(section.getByText(/ads that state a salary/)).toBeVisible();
-  await expect(section.getByText('Estimated')).toHaveCount(0);
+  await page.goto('/r/data-analyst?y=salary&by=mode');
+  await expect(chart.getByText(/ads state a salary/)).toBeVisible();
+  await expect(chart.getByText('Estimated')).toHaveCount(0);
   await expect(legend.getByText('Remote')).toBeVisible();
 });
 
 test('remote-anywhere switch changes the readback and the URL', async ({ page }) => {
   test.slow();
-  await page.goto('/market?type=skill&f=oh.au-nsw-sydney_all_all');
-  const open = page.getByRole('button', { name: /Filter the whole board/ });
+  await page.goto('/s/sql?f=oh.au-nsw-sydney_all_all');
+  const open = page.locator('h1').getByRole('button');
   const dialog = page.getByRole('dialog', { name: 'Filter' });
   await expect(async () => {
     if (!(await dialog.isVisible())) await open.click({ timeout: 5000 });
@@ -44,10 +47,10 @@ test('remote-anywhere switch changes the readback and the URL', async ({ page })
   await expect(readback).toHaveText(/plus remote roles anywhere in Australia/);
   await dialog.getByRole('button', { name: 'Apply' }).click();
   await expect(page).toHaveURL(/f=oh\.au-nsw-sydney(\*|%2A)r\.au_all_all/, { timeout: 30000 });
-  await expect(page.getByText(/plus remote roles anywhere in Australia/).first()).toBeVisible();
+  await expect(page.locator('h1')).toHaveText(/^SQL\s+in Sydney \(on-site or hybrid\) \+ remote$/);
 
   // A spec the simple controls can't express opens with Advanced expanded.
-  await page.goto('/market?f=o.au-nsw*h.au-vic_all_all');
+  await page.goto('/s/sql?f=o.au-nsw*h.au-vic_all_all');
   await expect(async () => {
     if (!(await dialog.isVisible())) await open.click({ timeout: 5000 });
     await expect(dialog).toBeVisible({ timeout: 5000 });

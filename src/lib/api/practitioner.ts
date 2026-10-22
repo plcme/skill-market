@@ -24,7 +24,7 @@ export const CAP_MAX = 4;
 export const MAX_WINDOWS = 14;
 export const PRACTITIONER_TIMEZONES = [
   'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Adelaide', 'Australia/Perth',
-  'Australia/Hobart', 'Australia/Darwin', 'Pacific/Auckland',
+  'Australia/Hobart', 'Australia/Darwin',
 ] as const;
 
 /** Personal / disposable mail domains can't prove employment (ARCHITECTURE §8.1). */

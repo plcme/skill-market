@@ -65,10 +65,14 @@ describe('squarify', () => {
 
 describe('heat bands', () => {
   const r = (value: number | null, status: MetricReading['status'] = 'ok') => ({ value, status });
-  it('bins change into a diverging scale with a neutral band near zero', () => {
-    expect(heatStep(r(0.01))).toBe(0);
-    expect(heatStep(r(-0.019))).toBe(0);
+  it('bins change by sign: light under 10%, strong from 10%, neutral only at 0.0%', () => {
+    expect(heatStep(r(0))).toBe(0);
+    expect(heatStep(r(0.0004))).toBe(0);
+    expect(heatStep(r(0.001))).toBe(1);
+    expect(heatStep(r(0.01))).toBe(1);
+    expect(heatStep(r(-0.019))).toBe(-1);
     expect(heatStep(r(0.05))).toBe(1);
+    expect(heatStep(r(0.099))).toBe(1);
     expect(heatStep(r(0.1))).toBe(2);
     expect(heatStep(r(-0.05))).toBe(-1);
     expect(heatStep(r(-0.25))).toBe(-2);

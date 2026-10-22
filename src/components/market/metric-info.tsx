@@ -98,7 +98,7 @@ export function MetricInfo({ metric, type, reading, filter, subject, className }
 }
 
 /** Label with its info button — use for every column head / figure label. */
-export function MetricLabel({ metric, type, reading, filter, subject, short = false, column = false, className }: {
+export function MetricLabel({ metric, type, reading, filter, subject, short = false, column = false, className, infoClassName }: {
   metric: MetricKey;
   type: ActiveInstrumentType;
   reading?: MetricReading;
@@ -109,13 +109,15 @@ export function MetricLabel({ metric, type, reading, filter, subject, short = fa
   /** Table column head: uses the metric's `column` wording when it has one (e.g. Demand → "Job ads"). */
   column?: boolean;
   className?: string;
+  /** Extra classes for the ⓘ button, e.g. to lift it above a stretched link. */
+  infoClassName?: string;
 }) {
   const t = useTranslations('Metrics');
   const key = column && t.has(`${metric}.column`) ? 'column' : short ? 'short' : 'label';
   return (
     <span className={cn('inline-flex items-center gap-1', className)}>
       <span className="kicker">{t(`${metric}.${key}`)}</span>
-      <MetricInfo metric={metric} type={type} reading={reading} filter={filter} subject={subject} />
+      <MetricInfo metric={metric} type={type} reading={reading} filter={filter} subject={subject} className={infoClassName} />
     </span>
   );
 }

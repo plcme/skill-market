@@ -64,7 +64,7 @@ export function MatchReasons({ reasons, className, compact = false }: { reasons:
         const vars = r.factor === 'topic_overlap' && typeof r.vars.topic === 'string' && tt.has(r.vars.topic) ? { ...r.vars, topic: tt(r.vars.topic) } : r.vars;
         return (
           <li key={`${r.factor}-${i}`} className={cn('flex gap-2 leading-snug text-ink-2', compact ? 'text-[13px]' : 'text-sm')}>
-            <Check className={cn('mt-0.5 size-3.5 shrink-0', r.factor === 'adjacent_skill' ? 'text-warn' : 'text-up')} aria-hidden />
+            <Check className={cn('mt-0.5 size-3.5 shrink-0', r.factor === 'adjacent_skill' ? 'text-warn' : 'text-success')} aria-hidden />
             <span>{t(`reasons.${r.factor}`, vars)}</span>
           </li>
         );

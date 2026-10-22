@@ -1,5 +1,7 @@
 # 前端暴露接口报告（frontend-v2）
 
+> **快照，截至 FE-R2（2026-10-07）。** 之后 FE-R3 到 FE-R7 改过的部分（详情页单图与 `?metric=` / `?by=`、行情表去掉筛选与 `?f=`、Statistics、Watching 标签、held）这里没有同步，以代码为准。开始接后端（M1/M2）前整份刷新一次。
+
 | 项 | 内容 |
 |---|---|
 | 分支 / worktree | `frontend-v2`，`../skill-market-fe2`，基于 `m0-foundation@a0428bd` |

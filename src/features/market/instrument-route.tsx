@@ -7,8 +7,9 @@ import { instrumentPath } from '@/lib/links';
 import { decodeFilter } from '@/lib/filters/spec';
 import type { ActiveInstrumentType } from '@/lib/market/types';
 import { getInstrumentDetail } from '@/lib/queries/market';
+import { resolveDetailMetric } from '@/lib/metrics/registry';
 import { InstrumentView } from './instrument-view';
-import { firstParam, parseBreakdownBy, toQueryString, type SearchParamsRecord } from './logic';
+import { canonicalDetailQuery, firstParam, parseBreakdownBy, toQueryString, type SearchParamsRecord } from './logic';
 
 // Route glue shared by /s/[slug], /r/[slug] and /i/[slug]: 404 for unknown slugs,
 // and a redirect when an instrument is opened under another type's prefix.
@@ -38,6 +39,9 @@ export async function InstrumentRoute({ type, slug, searchParams }: { type: Acti
     permanentRedirect(`${instrumentPath(inst.type, inst.slug)}${qs ? `?${qs}` : ''}`);
   }
   const filter = decodeFilter(firstParam(searchParams.f));
+  // One measure param: old `?y=` links and splits fixed by the filter or measure are rewritten once.
+  const canonical = canonicalDetailQuery(searchParams, filter, resolveDetailMetric(inst.type, firstParam(searchParams.metric)), inst.type);
+  if (canonical !== null) redirect(`${instrumentPath(inst.type, inst.slug)}${canonical ? `?${canonical}` : ''}`);
   const detail = getInstrumentDetail(inst.slug, filter, firstParam(searchParams.metric), parseBreakdownBy(searchParams.by));
   if (!detail) notFound();
   return <InstrumentView detail={detail} filter={filter} />;

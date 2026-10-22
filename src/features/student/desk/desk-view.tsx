@@ -11,11 +11,12 @@ import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getInstrument } from '@/lib/market/catalog';
 import { DEFAULT_TZ, formatDate } from '@/lib/time';
 import { Button } from '@/components/ui/button';
-import { Container, EmptyState, Monogram, Notice, SectionHeader } from '@/components/ui/primitives';
+import { Container, EmptyState, Notice, SectionHeader } from '@/components/ui/primitives';
 import { WatchButton } from '@/components/market/watch-button';
 import { useModeT } from '../shared';
 import { ChatsCard, NextStepCard, SkillsCard } from './side-cards';
 import { SignalCard, WatchHead, WatchRow } from './watchlist';
+import { InstrumentMark } from '@/components/market/instrument-mark';
 
 function greetingKey(now: number): 'morning' | 'afternoon' | 'evening' {
   const hour = Number(new Intl.DateTimeFormat('en-AU', { hour: 'numeric', hour12: false, timeZone: DEFAULT_TZ }).format(now));
@@ -51,7 +52,7 @@ function EmptyWatchlist({ db }: { db: DemoDB }) {
             {fallback.map(s => (
               <li key={s.slug} className="flex items-center justify-between gap-3 px-3 py-2.5">
                 <span className="flex min-w-0 items-center gap-2.5">
-                  <Monogram size="sm">{s.symbol}</Monogram>
+                  <InstrumentMark size="sm" slug={s.slug} symbol={s.symbol} />
                   <Link href={`/s/${s.slug}`} className="truncate font-medium hover:underline">{s.name}</Link>
                 </span>
                 <WatchButton slug={s.slug} filter={DEFAULT_FILTER} />
@@ -70,7 +71,7 @@ function Desk({ db }: { db: DemoDB }) {
   const groups = selectWatchlistGroups(db);
   const board = selectSkillBoard(db);
   const name = (db.student?.display_name ?? db.session?.display_name ?? '').split(' ')[0];
-  const total = groups.held.length + groups.watching.length;
+  const total = groups.held.length + groups.worked.length + groups.watching.length;
   const watchedRole = db.watchlist.find(w => getInstrument(w.instrument_slug)?.type === 'role')?.instrument_slug ?? null;
   const setupPending = db.student?.onboarding.tier0 === 'pending';
 
@@ -114,6 +115,7 @@ function Desk({ db }: { db: DemoDB }) {
               <>
                 <p className="text-[13px] text-muted">{t('watchNote')}</p>
                 <Group title={t('held')} rows={groups.held} emptyText={t('heldEmpty')} />
+                {groups.worked.length ? <Group title={t('worked')} rows={groups.worked} emptyText="" /> : null}
                 <Group title={t('watching')} rows={groups.watching} emptyText={t('watchingEmpty')} />
               </>
             )}

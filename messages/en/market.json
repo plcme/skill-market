@@ -13,10 +13,6 @@
       "ruleRemoteAnywhere": "remote roles anywhere in Australia"
     },
     "title": "Filter",
-    "button": "Filter",
-    "buttonLabel": "Filter the whole board",
-    "buttonLabelActive": "Filter the whole board, {n, plural, one {# condition} other {# conditions}} active",
-    "scopeReset": "Reset filter",
     "edit": "Edit filter",
     "apply": "Apply",
     "reset": "Reset",
@@ -30,11 +26,12 @@
     "workMode": "Work mode",
     "modes": { "onsite": "On-site", "hybrid": "Hybrid", "remote": "Remote" },
     "places": "Places",
-    "addPlace": "Add a place",
-    "searchPlaces": "Search a city, state or region",
+    "narrowPlaces": "Narrow to a state or city",
+    "addAnotherPlace": "Add another place",
+    "searchPlaces": "Search a state, city or region",
     "removePlace": "Remove {place}",
     "noPlaces": "No matching places",
-    "levels": { "country": "Country", "state": "State", "city": "City", "region": "Region" },
+    "levels": { "state": "State", "city": "City", "region": "Region" },
     "seniority": "Level",
     "seniorityOptions": { "all": "All levels", "entry": "Entry-level", "graduate": "Graduate" },
     "seniorityHint": "Entry-level includes graduate, junior and intern ads.",
@@ -42,13 +39,13 @@
     "workRightsOptions": { "all": "Any", "no_pr_required": "No PR or citizenship stated" },
     "workRightsHint": "Detected from ad text. \"Not stated\" does not guarantee you can apply.",
     "modeRequired": "Pick at least one work mode.",
-    "placeRequired": "Pick at least one place.",
     "maxRules": "You can combine up to {max} rules.",
     "currentlyShowing": "Currently showing",
     "remoteAnywhere": "Also include remote jobs anywhere in Australia",
     "remoteAnywhereHint": "Adds remote roles from every state on top of the places above.",
+    "remoteAnywhereCoveredShort": "Already included.",
     "remoteAnywhereCovered": "Already included — your places and work modes cover remote roles across Australia.",
-    "placesHint": "Pick any mix of countries, states, cities or regions.",
+    "placesHint": "All of Australia by default. Narrow to any mix of states, cities or regions.",
     "workModeLegend": "Work mode",
     "advanced": "Advanced: combine your own rules",
     "advancedHint": "Each rule is one way of working in one or more places; an ad counts if it matches any rule.",
@@ -150,7 +147,7 @@
     "salary_median": {
       "label": "Median salary",
       "short": "Median",
-      "definition": "The middle advertised base salary for this role in the last 12 months.",
+      "definition": "The middle advertised base salary in ads for this role, or in ads that mention this skill, over the last 12 months.",
       "unit": "AUD per year",
       "denominator": "Ads that state a salary",
       "method": "Annualised from the ad’s stated range midpoint; hourly and daily rates are converted.",
@@ -294,25 +291,15 @@
     "caption": "{metric}, weekly, {start} – {end}",
     "range": { "3m": "3M", "6m": "6M", "1y": "1Y", "2y": "2Y" },
     "rangeLabel": "Time range",
-    "noData": "No data for this range"
+    "noData": "No data for this range",
+    "windows": {
+      "prev": "{weeks, select, 52 {Previous 12 months} other {Previous {weeks} weeks}}",
+      "last": "{weeks, select, 52 {Last 12 months} other {Last {weeks} weeks}}"
+    },
+    "windowsSpoken": "Shaded: the previous {weeks} weeks and the last {weeks} weeks, {from} → {to} job ads."
   },
   "Heatmap": {
-    "sizeLabel": "Size:",
-    "sizeIndustries": "job ads in each industry in the last 4 weeks.",
-    "sizeSkills": "job ads in {industry} that mention each skill, last 4 weeks.",
-    "colourLabel": "Colour:",
-    "colourBody": "4-week change — the last 4 weeks against the 4 weeks before.",
-    "legendLabel": "Colour bands",
-    "band": {
-      "dn2": "−{strong}% or more",
-      "dn1": "−{flat} to −{strong}%",
-      "flat": "within ±{flat}%",
-      "up1": "+{flat} to +{strong}%",
-      "up2": "+{strong}% or more",
-      "na": "fewer than {min} ads"
-    },
     "window": "Window {start} – {end}.",
-    "thinNote": "Grey, hatched tiles have fewer than {min} ads in the earlier 4 weeks, so no change is shown.",
     "tileLabel": "{name}: {ads} job ads, {dir, select, up {up {change}} down {down {change}} other {no change}} in 4 weeks ({from} → {to}).",
     "tileLabelThin": "{name}: {ads} job ads. Too few ads (under {min}) to show a 4-week change.",
     "thinShort": "Too few ads",
@@ -393,9 +380,29 @@
     "monogram": "ASC"
   },
   "Breakdown": {
-    "title": "Breakdown",
-    "kicker": "One dimension at a time",
-    "dimensionLabel": "Break down by",
+    "yAxis": "Y axis",
+    "splitBy": "Split by",
+    "none": "None",
+    "close": "Close",
+    "measures": {
+      "ad_count": "Job ads",
+      "salary_median": "Median salary",
+      "entry_level_share": "Entry-level share",
+      "no_pr_required_share": "No PR stated",
+      "employer_concentration": "Employers hiring",
+      "remote_share": "Remote or hybrid",
+      "contract_share": "Contract share"
+    },
+    "measureButton": "Chart: {measure}. Change measure",
+    "measureMenu": "Measure",
+    "captionBy": "{measure}, {window}, by {dimension}",
+    "captionAll": "{measure}, {window}",
+    "rolling": {
+      "weeks": "{n}-week rolling",
+      "months": "rolling {n} months"
+    },
+    "gapsAds": "Too few ads for {buckets}.",
+    "fixedByMeasure": "Not for this measure",
     "dims": {
       "experience": "Experience",
       "rights": "Work rights",
@@ -407,6 +414,7 @@
       "mode": "work mode"
     },
     "buckets": {
+      "all": "All ads",
       "entry": "Entry · 0–2 yrs",
       "mid": "Mid · 3–5 yrs",
       "senior": "Senior · 6–9 yrs",
@@ -419,6 +427,7 @@
       "remote": "Remote"
     },
     "short": {
+      "all": "All ads",
       "entry": "Entry",
       "mid": "Mid",
       "senior": "Senior",
@@ -430,11 +439,7 @@
       "hybrid": "Hybrid",
       "remote": "Remote"
     },
-    "captionStack": "Job ads by {dimension}, 4-week rolling",
-    "captionLines": "Median advertised salary by {dimension}, rolling 12 months",
-    "stackNote": "Bands add up to the total line: every ad sits in exactly one band.",
-    "fallback": "Breakdown shows Job ads — {metric} can’t be split this way.",
-    "filteredTo": "Filtered to {buckets} by your filter.",
+    "filteredTo": "Filtered to {buckets}.",
     "estimated": "Estimated",
     "methodLabel": "How {dimension} is estimated",
     "methodTitle": "How we estimate {dimension}",
@@ -442,19 +447,14 @@
       "experience": "Read from the years of experience or level an ad asks for (“3+ years”, “senior”). Graduate, junior and intern ads count as Entry; ads that state neither are placed by job title. Some ads will be misread, so treat the bands as approximate.",
       "rights": "Read from phrases about permanent residency, citizenship, security clearance or visa sponsorship. “Not stated” means the ad doesn’t say — it does not guarantee you can apply."
     },
-    "salaryStated": "From {with} of {total} ads that state a salary (last 12 months).",
-    "gaps": "Gaps mean too few ads in that group state a salary: {buckets}.",
-    "legendLabel": "Breakdown values",
-    "legendStack": "Job ads, last 4 weeks · share",
-    "legendLines": "Median salary, last 12 months",
+    "salaryStated": "{with} of {total} ads state a salary",
+    "gaps": "Too few ads state a salary for {buckets}.",
+    "legendLabel": "Latest values",
     "total": "All job ads",
     "notEnough": "Not enough ads",
     "chartLabel": "{caption}. {buckets}.",
-    "illustrative": "Illustrative fixture data.",
-    "thin": "Fewer than {min} ads in the last 4 weeks for {buckets}, so we don’t give a number — the band is hatched to show roughly where those ads sit.",
-    "filteredToGraduate": "Filtered to graduate ads by your filter.",
-    "graduateBucket": "Graduate ads",
-    "graduateShort": "Graduate",
-    "allThin": "Too few ads under this filter to split them reliably. Widen the filter to see the breakdown."
+    "thin": "Too few ads for a number: {buckets}.",
+    "fixedByFilter": "Fixed by your filter",
+    "allThin": "Too few ads under this filter to split them reliably."
   }
 }

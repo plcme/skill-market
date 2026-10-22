@@ -46,7 +46,7 @@ const RIGHTS_CODE: Record<WorkRights, string> = { all: 'all', no_pr_required: 'n
 
 /**
  * URL codec. Only characters that survive form-encoding untouched are used:
- * `ohr.au-nsw-sydney.au-vic-melbourne*r.au.nz_entry_npr`
+ * `ohr.au-nsw-sydney.au-vic-melbourne*r.au-qld.au-wa_entry_npr`
  */
 export function encodeFilter(spec: FilterSpec): string {
   const n = normaliseFilter(spec);
@@ -83,17 +83,6 @@ export function filterHash(spec: FilterSpec): string {
 
 export function isDefaultFilter(spec: FilterSpec): boolean {
   return filterHash(spec) === filterHash(DEFAULT_FILTER);
-}
-
-/**
- * How many conditions narrow the board, for the Filter button's badge: each
- * place/work-mode rule (unless it's the national default), plus seniority and
- * work rights when set.
- */
-export function activeConditionCount(spec: FilterSpec): number {
-  const n = normaliseFilter(spec);
-  const defaultRules = sameFilter({ ...n, seniority: 'all', work_rights: 'all' }, DEFAULT_FILTER);
-  return (defaultRules ? 0 : n.rules.length) + (n.seniority !== 'all' ? 1 : 0) + (n.work_rights !== 'all' ? 1 : 0);
 }
 
 export function sameFilter(a: FilterSpec, b: FilterSpec): boolean {
@@ -232,4 +221,87 @@ export function fromSimpleFilter(simple: SimpleFilter, base: Pick<FilterSpec, 's
     rules.push({ work_modes: [...REMOTE_ANYWHERE_RULE.work_modes], location_ids: [...REMOTE_ANYWHERE_RULE.location_ids] });
   }
   return { rules, seniority: base.seniority, work_rights: base.work_rights };
+}
+
+// --- Detail-page title: "SQL in [places]" (GLOSSARY §2, 2026-10-17) -------------
+
+/** Copy for the places label in a detail-page title; from messages so it stays translatable. */
+export interface PlacesCopy {
+  all: string; // "All Australia"
+  custom: string; // "custom places" — a multi-rule spec the simple controls can't show
+  count: string; // "{n} places"
+  withRemote: string; // "{places} + remote"
+  join: string; // ", "
+}
+
+/**
+ * Short label for where a spec looks: "All Australia", up to two place names,
+ * or "N places", plus " + remote" when remote-anywhere is on; `custom` for
+ * multi-rule specs. Work modes, seniority and work rights are not part of it.
+ */
+export function placesLabel(spec: FilterSpec, copy: PlacesCopy, nameOf: (id: string) => string = id => getLocation(id)?.name ?? id): string {
+  const simple = toSimpleFilter(spec);
+  if (!simple) return copy.custom;
+  const places = simple.places;
+  const base = places.length === 1 && places[0] === 'au'
+    ? copy.all
+    : places.length <= 2 ? places.map(nameOf).join(copy.join) : fillTemplate(copy.count, { n: places.length });
+  return simple.includeRemoteAnywhere ? fillTemplate(copy.withRemote, { places: base }) : base;
+}
+
+/** Conditions besides places that narrow a spec; listed after the places in a detail-page title. */
+export type ScopeCondition = 'seniority' | 'work_rights' | 'work_modes';
+
+export function scopeConditions(spec: FilterSpec): ScopeCondition[] {
+  const n = normaliseFilter(spec);
+  const out: ScopeCondition[] = [];
+  if (n.seniority !== 'all') out.push('seniority');
+  if (n.work_rights !== 'all') out.push('work_rights');
+  const simple = toSimpleFilter(n);
+  if (simple && simple.modes.length < WORK_MODES.length) out.push('work_modes');
+  return out;
+}
+
+/** Copy for the detail-page title filter ("in Sydney + remote · Entry-level ▾"); from messages so it stays translatable. */
+export interface TitleFilterCopy {
+  places: PlacesCopy;
+  separator: string; // " · "
+  seniority: Record<Exclude<Seniority, 'all'>, string>; // "Entry-level", "Graduate"
+  workRights: string; // "No PR stated"
+  /** Keyed by the selected modes in WORK_MODES order joined with "_", e.g. `onsite_hybrid`. */
+  workModes: Record<string, string>;
+  /** Same keys, lower case inside a sentence: "on-site or hybrid". */
+  workModesInline: Record<string, string>;
+  /** "{places} ({modes})": the places rule's modes when remote-anywhere is also on. */
+  placesWithModes: string;
+}
+
+/**
+ * The active filter as a short sentence for a detail-page title: the places
+ * label (always), then only the conditions that narrow — level, work modes,
+ * work rights — joined by the separator, then the chart split when one is
+ * drawn ("by experience"). "All Australia" for the default.
+ *
+ * With remote-anywhere on, the work modes belong to the places rule only, so
+ * they go in brackets after those places — "Sydney (on-site or hybrid) +
+ * remote" — instead of a separate "On-site or hybrid" that the "+ remote"
+ * would contradict.
+ */
+export function titleFilterLabel(spec: FilterSpec, copy: TitleFilterCopy, nameOf?: (id: string) => string, split?: string): string {
+  const n = normaliseFilter(spec);
+  const conditions = scopeConditions(n);
+  const simple = toSimpleFilter(n);
+  const modesKey = WORK_MODES.filter(m => simple?.modes.includes(m)).join('_');
+  const scopedModes = conditions.includes('work_modes') && simple?.includeRemoteAnywhere === true;
+  const places = scopedModes && simple
+    ? fillTemplate(copy.places.withRemote, {
+      places: fillTemplate(copy.placesWithModes, { places: placesLabel({ ...n, rules: [n.rules.find(r => !isRemoteAnywhereRule(r)) ?? n.rules[0]] }, copy.places, nameOf), modes: copy.workModesInline[modesKey] ?? modesKey }),
+    })
+    : placesLabel(n, copy.places, nameOf);
+  const parts = [places];
+  if (n.seniority !== 'all') parts.push(copy.seniority[n.seniority]);
+  if (conditions.includes('work_modes') && !scopedModes) parts.push(copy.workModes[modesKey] ?? modesKey);
+  if (n.work_rights !== 'all') parts.push(copy.workRights);
+  if (split) parts.push(split);
+  return parts.join(copy.separator);
 }
