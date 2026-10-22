@@ -35,6 +35,11 @@ export function boardTypeParam(type: MarketTab): MarketTab | undefined {
   return type === DEFAULT_BOARD_TYPE ? undefined : type;
 }
 
+/** Link to the market board (optionally a tab). The board has no filter, so links never carry `f`. */
+export function marketHref(tab?: MarketTab): string {
+  return hrefWith('/market', { type: tab ? boardTypeParam(tab) : undefined });
+}
+
 /** The board a tab reads: Watching reads All and keeps only watched rows. */
 export function boardForTab(tab: MarketTab): BoardType {
   return tab === 'watching' ? 'all' : tab;

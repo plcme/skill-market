@@ -20,7 +20,7 @@ import { WatchButton } from '@/components/market/watch-button';
 import { HeatmapSource, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, LocationBars, Provenance, RelatedSkills, SalaryBlock, Statistics } from './instrument-sections';
-import { breakdownParam, chartPlanFor, hrefWith, metricParam, nextByParam } from './logic';
+import { breakdownParam, chartPlanFor, hrefWith, marketHref, metricParam, nextByParam } from './logic';
 import { InstrumentChart } from './instrument-chart';
 import { TitleFilter, TitleFilterStatic } from './instrument-title-filter';
 import { MyNotes } from './my-notes';
@@ -54,9 +54,9 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
     <Container className="pb-20">
       <nav aria-label={t('breadcrumb')} className="pt-6">
         <ol className="flex flex-wrap items-center gap-1 text-[13px] text-muted">
-          <li><Link href={hrefWith('/market', { f })} className="hover:text-ink hover:underline">{t('crumbMarket')}</Link></li>
+          <li><Link href={marketHref()} className="hover:text-ink hover:underline">{t('crumbMarket')}</Link></li>
           <li aria-hidden><ChevronRight className="size-3.5" /></li>
-          <li><Link href={hrefWith('/market', { type, f })} className="hover:text-ink hover:underline">{t(`crumbType.${type}`)}</Link></li>
+          <li><Link href={marketHref(type)} className="hover:text-ink hover:underline">{t(`crumbType.${type}`)}</Link></li>
           <li aria-hidden><ChevronRight className="size-3.5" /></li>
           <li aria-current="page" className="text-ink">{inst.name}</li>
         </ol>
