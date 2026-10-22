@@ -75,15 +75,18 @@ export interface TapeEntry {
   signal: boolean;
 }
 
+let nationalTape: TapeEntry[] | undefined;
+
 /** Biggest 4-week movers nationally, signals first — for the ticker tape. */
 export function getTape(limit = 16): TapeEntry[] {
+  if (nationalTape) return nationalTape.slice(0, limit);
   const all = INSTRUMENTS.map(i => ({ i, r: computeMetric(i.slug, 'change_4w', { rules: [{ work_modes: ['onsite', 'hybrid', 'remote'], location_ids: ['au'] }], seniority: 'all', work_rights: 'all' }) }))
     .filter(x => x.r.status === 'ok' && x.r.value !== null && x.r.from !== null && x.r.to !== null);
   const signals = new Set(INSTRUMENTS.filter(i => detectSignal(i.slug, { rules: [{ work_modes: ['onsite', 'hybrid', 'remote'], location_ids: ['au'] }], seniority: 'all', work_rights: 'all' })).map(i => i.slug));
-  return all
+  nationalTape = all
     .sort((a, b) => Number(signals.has(b.i.slug)) - Number(signals.has(a.i.slug)) || Math.abs(b.r.value ?? 0) - Math.abs(a.r.value ?? 0))
-    .slice(0, limit)
     .map(({ i, r }) => ({ slug: i.slug, type: i.type, symbol: i.symbol, name: i.name, change: r.value ?? 0, from: r.from ?? 0, to: r.to ?? 0, signal: signals.has(i.slug) }));
+  return nationalTape.slice(0, limit);
 }
 
 export interface CompositionEntry {

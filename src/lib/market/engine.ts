@@ -195,9 +195,20 @@ function weeklyRaw(slug: string, filter: FilterSpec, slice: Slice = {}): number[
   return m.weekly.map((n, w) => n * pairWeight(m, effective, w) * bucketSum(seniorityWeights(m.p, w), effective.seniority) * rightsW);
 }
 
+// Fixture series are deterministic for this build. Reuse them across metrics
+// instead of regenerating the same 104 weeks for every card and reading.
+// Bound memory because filter combinations originate in request URLs.
+const weeklyCountsCache = new Map<string, number[]>();
+
 /** Weekly counts for an instrument under a filter (optionally overriding buckets). */
 function weeklyCounts(slug: string, filter: FilterSpec, slice: Slice = {}): number[] {
-  return weeklyRaw(slug, filter, slice).map(Math.round);
+  const key = JSON.stringify([slug, filter, slice]);
+  const cached = weeklyCountsCache.get(key);
+  if (cached) return cached;
+  const counts = weeklyRaw(slug, filter, slice).map(Math.round);
+  if (weeklyCountsCache.size >= 512) weeklyCountsCache.delete(weeklyCountsCache.keys().next().value!);
+  weeklyCountsCache.set(key, counts);
+  return counts;
 }
 
 function uniquePairs(cells: CellSet, modes: readonly WorkMode[]): CellSet['pairs'] {
