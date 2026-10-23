@@ -174,6 +174,65 @@ test('settings offer Light / Dark and a way back to matching the device', async 
   expect(await page.evaluate(() => localStorage.getItem('sm-theme'))).toBeNull();
 });
 
+test.describe('first visit', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  const INTRO = /A stock market for skills/;
+
+  test('/ lands on the market board', async ({ page }) => {
+    await page.goto('/?type=role');
+    await expect(page).toHaveURL(/\/market\?type=role$/);
+    await expect(page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Roles' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('the intro band shows once, with the board tabs peeking below it', async ({ page }) => {
+    await page.goto('/market');
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Explore the market' })).toHaveAttribute('href', '#board');
+    await expect(page.getByRole('link', { name: 'Personalise' })).toHaveAttribute('href', '/onboarding');
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+    await expect.poll(async () => (await page.context().cookies()).find(c => c.name === 'intro_seen')?.value).toBe('1');
+    await page.reload();
+    await expect(page.getByRole('heading', { name: INTRO })).toHaveCount(0);
+  });
+
+  test('signed-in visitors never see the band', async ({ page, context, baseURL }) => {
+    await context.addCookies([{ name: 'sb-test-auth-token', value: 'x', url: baseURL }]);
+    await page.goto('/market');
+    await expect(page.getByRole('heading', { name: INTRO })).toHaveCount(0);
+  });
+
+  test('Explore the market flips to the board; a part-way scroll settles on the nearer page', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/market');
+    await page.getByRole('link', { name: 'Explore the market' }).click();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+    const anchor = await page.evaluate(() => window.scrollY);
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+    await page.evaluate(y => window.scrollTo(0, y), Math.round(anchor * 0.4));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await page.evaluate(y => window.scrollTo(0, y), Math.round(anchor * 0.6));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(anchor);
+    // Past the board, scrolling is free.
+    await page.evaluate(y => window.scrollTo(0, y), anchor + 200);
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => window.scrollY)).toBe(anchor + 200);
+  });
+
+  test('intro heatmap tiles are labelled links to industry pages', async ({ page }, info) => {
+    await page.goto('/market');
+    await expect(page.getByRole('table').filter({ hasText: 'Industries by job ads' })).toHaveCount(1);
+    test.skip(info.project.name === 'mobile', 'Tiles are hidden on phones; the table remains');
+    const map = page.getByRole('list', { name: /Industries by job ads/ }).filter({ visible: true });
+    const tile = map.getByRole('link', { name: /^Mining: [\d,]+ job ads/ });
+    await expect(tile).toBeVisible();
+    await expect(tile).toHaveAttribute('aria-label', /4.week|up|down|unchanged/i);
+    await tile.click();
+    await expect(page).toHaveURL(/\/i\/mining$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
+    await expect(page.getByText('ANZSIC Division B')).toBeVisible();
+  });
+});
+
 test.describe('industries', () => {
   test('Industries tab lists ANZSIC divisions by Demand', async ({ page }) => {
     await page.goto('/market');
@@ -184,33 +243,6 @@ test.describe('industries', () => {
     await expect(page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Industries' })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('button', { name: /Measure:\s*Demand/ })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Health Care and Social Assistance' }).first()).toBeVisible();
-  });
-
-  test('landing heatmap tiles are labelled links to industry pages', async ({ page }) => {
-    await page.goto('/');
-    const map = page.getByRole('list', { name: /Industries by job ads/ }).filter({ visible: true });
-    const tile = map.getByRole('link', { name: /^Mining: [\d,]+ job ads/ });
-    await expect(tile).toBeVisible();
-    await expect(tile).toHaveAttribute('aria-label', /4.week|up|down|unchanged/i);
-    await expect(page.getByRole('table').filter({ hasText: 'Industries by job ads' })).toHaveCount(1);
-    await tile.click();
-    await expect(page).toHaveURL(/\/i\/mining$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
-    await expect(page.getByText('ANZSIC Division B')).toBeVisible();
-  });
-
-  test('movers carousel states its rule, advances and links to the instrument', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/');
-    await page.getByRole('button', { name: 'About Today’s signals' }).click();
-    await expect(page.getByText(/biggest 4-week changes, up or down/)).toBeVisible();
-    await page.keyboard.press('Escape');
-    const carousel = page.getByRole('region', { name: 'Biggest 4-week moves' });
-    const first = await carousel.getByRole('heading', { level: 3 }).textContent();
-    await expect(carousel.getByRole('heading', { level: 3 }).getByRole('link')).toHaveAttribute('href', /^\/(s|r|i)\/[a-z0-9-]+$/);
-    await carousel.getByRole('button', { name: 'Next move' }).click();
-    await expect(carousel.getByRole('heading', { level: 3 })).not.toHaveText(first ?? '');
-    await expect(carousel.getByText(/^Ads (mentioning|for|in) .+ (rose|fell) [\d,]+ → [\d,]+ in 4 weeks\.$/).first()).toBeVisible();
   });
 
   test('industry page shows skills as a heatmap and a labelled list, plus a way to talk', async ({ page }) => {
