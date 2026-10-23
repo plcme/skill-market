@@ -5,7 +5,8 @@
 
 ## 当前状态（2026-10-23）
 
-- M0 本地完成（云端接入未完成，见 `docs/SETUP.md`）。之后一直在做前端原型迭代：FE-R1 到 FE-R7 已全部合并 `dev` 并 push，`main` 未更新。
+- M0 本地完成（云端接入未完成，见 `docs/SETUP.md`）。之后一直在做前端原型迭代：FE-R1 到 FE-R7 已全部进入 `main` 并上线（`brewdex.app`，Cloudflare）。
+- **Git 流程（2026-10-23 起）**：只有 `main` 一条长期分支，短分支 → PR → 用户确认合并 → 自动打 tag 并上线；`dev` 停用（其内容 `main` 已全部包含）。
 - 前端是完整可交互原型：市场数字来自合成引擎，用户数据存浏览器 localStorage，**没有接 Supabase**。
 - **数据来源已定（2026-10-23）**：第一版技能级只用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与覆盖率校准用 JSA IVI；不接 Adzuna、Workday。三家接口和 IVI 都**没有明文许可**，商业化前要拿到书面答复并请律师看（`docs/SETUP.md` §6）。
 - 采集节奏：指标每天结算；每小时轻量检查新职位，按雇主活跃度（泊松速率 λ）调频；盘中喂行情条与"今日新增"；每个数据面标出 "Updated today, 2:14 am"（架构 §6.7、`DESIGN.md` §8）。
@@ -46,7 +47,8 @@
 
 - [ ] e2e 同步并全量跑通：`frontend.spec.ts`（:90、:103–121、:196）、`round2.spec.ts`（:35–58）、`detail-chart.spec.ts`、`responsive.spec.ts`；FE-R4 起改过的 e2e 都没跑过
 - [ ] `eslint.config.mjs` 的 `globalIgnores` 加入 `.claude/worktrees/**`（否则 `eslint .` 会扫进 worktree）
-- [ ] 清理已合并分支：`fe-r4-cleanup`、`fe-r5`、`fe-r6`、`fe-r7`
+- [ ] 清理已合并分支与 worktree（清单待用户确认后执行）
+- [ ] `docs/SETUP.md` §1、§3 仍写着 `dev` 分支与 "`dev` 与 PR 生成 preview"，需用户 / Codex 改为只有 `main` + PR 预览
 - [ ] 用户确认后才合并 `main`
 
 已知遗留（非阻断）：全部分档低于阈值时 thin 文案与画面不符（`breakdown-section.tsx:92`）；localStorage 禁用时主题手动选择不生效；单档低于阈值可被总量反推；`/sources` 仍用 `bg-signal-soft`；Watching 数量缺读屏说明；名称搜索时数量与列表不一致；整张 All 表传给客户端（接 Supabase 后改服务端过滤）；Sign in 链接丢筛选参数；375px 标签行可横滑但无提示；标题句子可能自相矛盾；被固定的 `by` 参数在 URL 中清不掉。
@@ -67,6 +69,7 @@
 
 ## 日志（新的在上）
 
+- 2026-10-23：去掉 `dev`，改为单主干（分支 → PR → `main` 自动上线）。同步 CLAUDE.md、架构 §3.3 / §10、里程碑、implementer / reviewer 定义；`ci.yml` 去掉 `dev`，`dependabot.yml` 改指 `main`，`migrate.yml` 改为只手动触发。
 - 2026-10-23：核实 ATS 与 JSA 条款（三家 ATS 官方文档无明文许可也无禁止；Workday 无公开接口；IVI 许可未注明），第一版来源收窄；写入采集节奏、轻量检查、按活跃度调频、泊松信号、行情条盘中层、"Updated" 时间格式、`/bot` 页；记录域名 `brewdex.app`。
 
 - 2026-10-23：文档整理。删除 `product-working-doc-original.md`、`FRONTEND_V2_BRIEF.md` 和本地 `coda-feedback/`；`SETUP_CHECKLIST.md` + `SETUP_STATUS.md` 合并为 `docs/SETUP.md`；去掉预算跟踪；数据来源定为 ATS 公开 API + JSA IVI 并同步 PRD / 架构 / 里程碑 / 术语表；架构 §4 路由表同步到 FE-R7；`FRONTEND_API_REPORT.md` 标为 FE-R2 快照；Windows 桥接写进 CLAUDE.md，桥接脚本与说明只留本机。
