@@ -36,9 +36,6 @@ importers:
       geist:
         specifier: ^1.7.2
         version: 1.7.2(next@16.4.1(@babel/core@7.29.7)(@playwright/test@1.63.0)(@types/node@22.20.4)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
-      jose:
-        specifier: 6.2.13
-        version: 6.2.13
       lucide-react:
         specifier: ^1.47.0
         version: 1.47.0(react@19.3.0)

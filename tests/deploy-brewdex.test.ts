@@ -7,8 +7,8 @@ let calls: { url: string; init: RequestInit }[];
 beforeEach(() => {
   vi.resetModules();
   vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token');
-  runWorkerFirst = true;
-  metadata = { main_module: 'worker.js', bindings: ['ASSETS', 'WORKER_SELF_REFERENCE', 'INVITE_RATE_LIMITER'].map(name => ({ name })) };
+  runWorkerFirst = false;
+  metadata = { main_module: 'worker.js', bindings: ['ASSETS', 'WORKER_SELF_REFERENCE'].map(name => ({ name })) };
   calls = [];
   fs.readdir.mockResolvedValue([{ name: 'app.js', isDirectory: () => false, isFile: () => true }]);
   fs.readFile.mockImplementation(async (path: string) => {
@@ -27,7 +27,7 @@ beforeEach(() => {
   }));
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
-it('uploads only Brewdex, retains secrets and keeps asset requests behind the gate', async () => {
+it('uploads only Brewdex, retains application secrets and serves static assets directly', async () => {
   await import('../scripts/deploy-brewdex.mjs');
   expect(calls.map(c => new URL(c.url).pathname)).toEqual([
     '/client/v4/accounts/b1eb3d7d03b40f01f9e9c3ef18cf00d5/workers/scripts/brewdex/assets-upload-session',
@@ -36,13 +36,15 @@ it('uploads only Brewdex, retains secrets and keeps asset requests behind the ga
   const form = calls[1].init.body as FormData;
   const sent = JSON.parse(await (form.get('metadata') as Blob).text());
   expect(sent.keep_bindings).toContain('secret_text');
-  expect(sent.assets).toEqual({ config: { run_worker_first: true }, jwt: 'asset-completion' });
+  expect(sent.assets).toEqual({ config: { run_worker_first: false }, jwt: 'asset-completion' });
   expect(form.has('worker.js')).toBe(true);
 });
-it('refuses to deploy if static assets could bypass the invite gate', async () => {
-  runWorkerFirst = false;
-  await expect(import('../scripts/deploy-brewdex.mjs')).rejects.toThrow('invite gate');
-  expect(calls).toHaveLength(0);
+it('honours an explicit worker-first asset routing configuration', async () => {
+  runWorkerFirst = true;
+  await import('../scripts/deploy-brewdex.mjs');
+  const form = calls[1].init.body as FormData;
+  const sent = JSON.parse(await (form.get('metadata') as Blob).text());
+  expect(sent.assets.config.run_worker_first).toBe(true);
 });
 it('refuses incomplete required bindings', async () => {
   metadata.bindings = [];
