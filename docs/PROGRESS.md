@@ -9,7 +9,7 @@
 - 前端是完整可交互原型：市场数字来自合成引擎，用户数据存浏览器 localStorage，**没有接 Supabase**。
 - **数据来源已定（2026-10-23）**：第一版技能级只用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与覆盖率校准用 JSA IVI；不接 Adzuna、Workday。三家接口和 IVI 都**没有明文许可**，商业化前要拿到书面答复并请律师看（`docs/SETUP.md` §6）。
 - 采集节奏：指标每天结算；每小时轻量检查新职位，按雇主活跃度（泊松速率 λ）调频；盘中喂行情条与"今日新增"；每个数据面标出 "Updated today, 2:14 am"（架构 §6.7、`DESIGN.md` §8）。
-- 域名已买：`brewdex.app`。
+- 产品名已确定为 **Brewdex**（2026-10-23）；域名已买：`brewdex.app`。
 - 本机限制：Mac 跑不动全量数据库，数据库与 pgTAP 测试走 Windows 桥接（见 CLAUDE.md "本机开发环境"）。
 - 下一步：继续前端反馈轮次，或开始 M1 接真实数据，由用户决定。
 
@@ -26,7 +26,6 @@
 
 | # | 问题 | 建议 / 现状 | 何时需要 |
 |---|---|---|---|
-| 1 | 产品名（PRD Q1）：域名已是 `brewdex.app`，产品名是否就叫 Brewdex | 先用 `APP_NAME=skill-market` | M8 前 |
 | 2 | 错误监控接不接 Sentry（EU，PII scrub） | 接 | M8 前 |
 | 3 | 备份强度：每日 schema + 公共数据 artifact，每周全量加密 dump | 接受 | M8 前 |
 | 4 | Vercel Hobby 禁止商用：升 Pro（USD 20/月）还是迁 Cloudflare Workers | 开发期留在 Hobby，上线时再选 | M8 |
@@ -40,7 +39,7 @@
 | 12 | 细分行业颗粒度：ANZSIC Subdivision 还是 Group | — | 前端下一轮 |
 | 13 | 未排期的产品想法：首页标语与开场动画；LinkedIn 证书导入；Twitter 书签式交互；对比页超过 2 个标的 | — | 用户提出时 |
 
-已决定、不再列出：数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
+已决定、不再列出：产品名 Brewdex（域名 `brewdex.app` 已买，`APP_NAME` 默认值为 Brewdex）；数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
 
 ## 上 main 前必须做
 

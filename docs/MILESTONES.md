@@ -36,7 +36,7 @@
 
 **范围内**
 - Next.js 16 + TypeScript strict + pnpm + Tailwind v4 + shadcn/ui 初始化；`output: 'standalone'`
-- `src/config/app.ts` 导出 `APP_NAME`（读 `NEXT_PUBLIC_APP_NAME`，缺省 `skill-market`）；ESLint 规则禁止在 `src/` 出现字面量产品名
+- `src/config/app.ts` 导出 `APP_NAME`（读 `NEXT_PUBLIC_APP_NAME`，缺省 `Brewdex`）；ESLint 规则禁止在 `src/` 出现字面量产品名
 - `next-intl` 单 locale；`messages/en.json`；ESLint 规则禁止 JSX 中裸英文文案（`react/jsx-no-literals` 限定范围）
 - `src/env.ts` Zod 环境变量校验（server / client 分组）
 - Supabase CLI：`supabase init`、本地 `supabase start`、第一条 migration（`profiles` 表 + `handle_new_user` trigger + RLS + `is_admin()`）、`supabase gen types` 脚本
