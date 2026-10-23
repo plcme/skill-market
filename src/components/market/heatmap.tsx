@@ -22,6 +22,8 @@ const STEP_CLASS: Record<string, string> = { '-2': 'heat-dn2', '-1': 'heat-dn1',
 /** Treemap canvas in abstract units; the element keeps the same aspect ratio. */
 const W = 100;
 const H = 60;
+/** Width ÷ height of the desktop treemap, for layouts that size it by available height. */
+export const TREEMAP_ASPECT = W / H;
 
 function useTileCopy() {
   const t = useTranslations('Heatmap');
