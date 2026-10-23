@@ -53,10 +53,14 @@ function TileChange({ tile, fallback }: { tile: HeatTile; fallback: string }) {
   return <span className="whitespace-nowrap"><DirectionGlyph dir={direction(tile.change.value)} spoken={false} className="mr-[0.2em] text-[0.6em]" />{text}</span>;
 }
 
+function sampleTile(heatmap: Heatmap): HeatTile | undefined {
+  return heatmap.tiles.find(x => x.ads.status === 'ok') ?? heatmap.tiles[0];
+}
+
 /** Where the tiles come from and which window they cover. Colour is explained on each tile (glyph + %). */
 export function HeatmapSource({ heatmap, filter, className }: { heatmap: Heatmap; filter: FilterSpec; className?: string }) {
   const t = useTranslations('Heatmap');
-  const sample = heatmap.tiles.find(x => x.ads.status === 'ok') ?? heatmap.tiles[0];
+  const sample = sampleTile(heatmap);
   const window = sample?.ads.window;
   const type = heatmap.kind === 'industries' ? 'industry' : 'skill';
   return (
@@ -134,13 +138,18 @@ export function HeatmapTiles({ heatmap, filter, label, className }: { heatmap: H
 }
 
 /** The same numbers as a table, visually hidden: screen readers get every figure without the treemap. */
-export function HeatmapTable({ heatmap, caption, nameHead }: { heatmap: Heatmap; caption: string; nameHead: string }) {
+export function HeatmapTable({ heatmap, caption, nameHead, withSource = false }: { heatmap: Heatmap; caption: string; nameHead: string; withSource?: boolean }) {
   const t = useTranslations('Heatmap');
+  const ts = useTranslations('Sources');
+  // `withSource`: for layouts that hide <HeatmapSource>, the caption carries the source and window instead.
+  const window = withSource ? sampleTile(heatmap)?.ads.window : undefined;
   return (
     // A wrapper, not the table itself: an absolutely positioned table can still widen the page.
     <div className="sr-only">
       <table>
-        <caption>{caption}</caption>
+        <caption>
+          {withSource ? t('captionSourced', { caption, source: ts('kinds.ads'), window: window ? t('window', { start: formatDate(window.start), end: formatDate(window.end) }) : '' }) : caption}
+        </caption>
         <thead>
           <tr>
             <th scope="col">{nameHead}</th>

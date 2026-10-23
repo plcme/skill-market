@@ -71,3 +71,26 @@ export function flipTarget(y: number, anchor: number): number | null {
   if (y <= EDGE || y >= anchor - EDGE) return null;
   return y > anchor / 2 ? anchor : 0;
 }
+
+/** Keyboard input this recent means the scroll was the user's (focus moves, arrow keys): leave it alone. */
+export const KEYBOARD_QUIET_MS = 600;
+
+/**
+ * Whether to leave a settled scroll where it is instead of flipping to
+ * `target`: right after keyboard input, or when the flip would carry the
+ * keyboard-focused element (viewport rect, `null` if none) entirely out of the
+ * visible area between `viewTop` (under the sticky header) and `viewBottom`.
+ */
+export function skipSnap({ msSinceKeyboard, focus, y, target, viewTop, viewBottom }: {
+  msSinceKeyboard: number;
+  focus: { top: number; bottom: number } | null;
+  y: number;
+  target: number;
+  viewTop: number;
+  viewBottom: number;
+}): boolean {
+  if (msSinceKeyboard < KEYBOARD_QUIET_MS) return true;
+  if (!focus) return false;
+  const shift = target - y;
+  return focus.bottom - shift <= viewTop || focus.top - shift >= viewBottom;
+}

@@ -13,7 +13,7 @@ export default async function NotFound() {
       <p className="mt-4 max-w-lg text-lg text-ink-2">{t('notFoundBody')}</p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button asChild><Link href="/market">{t('goMarket')}</Link></Button>
-        <Button asChild variant="outline"><Link href="/">{tn('home')}</Link></Button>
+        <Button asChild variant="outline"><Link href="/market">{tn('home')}</Link></Button>
       </div>
     </Container>
   );

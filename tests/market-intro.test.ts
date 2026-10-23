@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_QUERY_KEYS, flipTarget, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, shouldShowIntro } from '@/features/market/intro';
+import { BOARD_QUERY_KEYS, flipTarget, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, KEYBOARD_QUIET_MS, shouldShowIntro, skipSnap } from '@/features/market/intro';
 import { marketEntryHref } from '@/features/market/logic';
 
 describe('intro band gating', () => {
@@ -75,6 +75,34 @@ describe('flipTarget', () => {
     expect(flipTarget(10, 0)).toBeNull();
     expect(flipTarget(10, -50)).toBeNull();
     expect(flipTarget(1, 2)).toBeNull();
+  });
+});
+
+describe('skipSnap', () => {
+  // 812px phone-ish viewport, 65px sticky header; settled at y=120, about to flip back to 0 (content moves down 120px).
+  const base = { msSinceKeyboard: Infinity, focus: null, y: 120, target: 0, viewTop: 65, viewBottom: 812 };
+
+  it('snaps when nothing keyboard-related is going on', () => {
+    expect(skipSnap(base)).toBe(false);
+  });
+  it('leaves the page alone right after keyboard input or a focus move', () => {
+    expect(skipSnap({ ...base, msSinceKeyboard: 0 })).toBe(true);
+    expect(skipSnap({ ...base, msSinceKeyboard: KEYBOARD_QUIET_MS - 1 })).toBe(true);
+    expect(skipSnap({ ...base, msSinceKeyboard: KEYBOARD_QUIET_MS })).toBe(false);
+    expect(KEYBOARD_QUIET_MS).toBe(600);
+  });
+  it('does not flip a keyboard-focused element out of view', () => {
+    // A board tab just scrolled into view at the bottom edge: flipping back to 0 would push it below the fold.
+    expect(skipSnap({ ...base, focus: { top: 720, bottom: 750 } })).toBe(true);
+    // Flipping on to the board would push a band CTA up under the header.
+    expect(skipSnap({ ...base, y: 400, target: 600, focus: { top: 200, bottom: 244 } })).toBe(true);
+  });
+  it('still flips when the focused element stays at least partly visible', () => {
+    expect(skipSnap({ ...base, focus: { top: 300, bottom: 344 } })).toBe(false);
+    expect(skipSnap({ ...base, focus: { top: 650, bottom: 700 } })).toBe(false);
+    expect(skipSnap({ ...base, y: 400, target: 600, focus: { top: 500, bottom: 540 } })).toBe(false);
+    // A tall focused region (the board section) that spans the move.
+    expect(skipSnap({ ...base, focus: { top: 100, bottom: 4000 } })).toBe(false);
   });
 });
 

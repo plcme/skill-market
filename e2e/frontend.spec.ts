@@ -212,6 +212,10 @@ test.describe('first visit', () => {
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
     const anchor = await page.evaluate(() => window.scrollY);
     await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+    // Focus follows, like a native in-page anchor.
+    await expect(page.locator('#board')).toBeFocused();
+    // Snapping stays off for a moment after any focus move or key press.
+    await page.waitForTimeout(700);
     await page.evaluate(y => window.scrollTo(0, y), Math.round(anchor * 0.4));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     await page.evaluate(y => window.scrollTo(0, y), Math.round(anchor * 0.6));
@@ -220,6 +224,20 @@ test.describe('first visit', () => {
     await page.evaluate(y => window.scrollTo(0, y), anchor + 200);
     await page.waitForTimeout(400);
     expect(await page.evaluate(() => window.scrollY)).toBe(anchor + 200);
+  });
+
+  test('keyboard focus and arrow keys are never snapped away', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/market');
+    await page.getByRole('link', { name: 'Personalise' }).focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(800);
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y).toBeGreaterThan(0);
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(800);
+    await expect(page.locator(':focus')).toBeInViewport();
   });
 
   test('intro heatmap tiles are labelled links to industry pages', async ({ page }, info) => {
