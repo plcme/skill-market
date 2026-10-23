@@ -120,6 +120,9 @@
   },
   "Watch": {
     "watch": "Watch",
+    "watchAll": "Watch all",
+    "allWatching": "All watched",
+    "allAdded": "{count, plural, one {# item added to your watchlist} other {# items added to your watchlist}}",
     "watching": "Watching",
     "held": "Held",
     "watchThis": "Watch this",
@@ -220,6 +223,9 @@
   },
   "WatchPlain": {
     "watch": "Track",
+    "watchAll": "Track all",
+    "allWatching": "All tracked",
+    "allAdded": "{count, plural, one {Now tracking # new item} other {Now tracking # new items}}",
     "watching": "Tracking",
     "held": "I have it",
     "watchThis": "Track this",
