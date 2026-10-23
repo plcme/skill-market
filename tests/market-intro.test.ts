@@ -1,14 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { flipTarget, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, shouldShowIntro } from '@/features/market/intro';
+import { BOARD_QUERY_KEYS, flipTarget, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, shouldShowIntro } from '@/features/market/intro';
 import { marketEntryHref } from '@/features/market/logic';
 
 describe('intro band gating', () => {
-  it('shows only to anonymous visitors without the cookie', () => {
-    expect(shouldShowIntro({ signedIn: false, cookieValue: undefined })).toBe(true);
-    expect(shouldShowIntro({ signedIn: false, cookieValue: '1' })).toBe(false);
-    expect(shouldShowIntro({ signedIn: false, cookieValue: '' })).toBe(false);
-    expect(shouldShowIntro({ signedIn: true, cookieValue: undefined })).toBe(false);
-    expect(shouldShowIntro({ signedIn: true, cookieValue: '1' })).toBe(false);
+  it('shows only to anonymous visitors without the cookie, on the bare entry', () => {
+    expect(shouldShowIntro({ signedIn: false, cookieValue: undefined, bareEntry: true })).toBe(true);
+    expect(shouldShowIntro({ signedIn: false, cookieValue: '1', bareEntry: true })).toBe(false);
+    expect(shouldShowIntro({ signedIn: false, cookieValue: '', bareEntry: true })).toBe(false);
+    expect(shouldShowIntro({ signedIn: true, cookieValue: undefined, bareEntry: true })).toBe(false);
+    expect(shouldShowIntro({ signedIn: true, cookieValue: '1', bareEntry: true })).toBe(false);
+    expect(shouldShowIntro({ signedIn: false, cookieValue: undefined, bareEntry: false })).toBe(false);
+    expect(shouldShowIntro({ signedIn: true, cookieValue: '1', bareEntry: false })).toBe(false);
+  });
+
+  it('counts /market as the bare entry only without board query keys', () => {
+    expect(isBareEntry({})).toBe(true);
+    expect(isBareEntry({ utm_source: 'newsletter', ref: 'x' })).toBe(true);
+    expect(isBareEntry({ type: '', q: '  ', sort: undefined, view: [] })).toBe(true);
+    for (const key of BOARD_QUERY_KEYS) expect(isBareEntry({ [key]: 'x' }), key).toBe(false);
+    expect(isBareEntry({ type: 'role' })).toBe(false);
+    expect(isBareEntry({ q: ['', 'js'] })).toBe(false);
+    expect(BOARD_QUERY_KEYS).toEqual(['type', 'q', 'sort', 'view', 'layer', 'metric']);
   });
 
   it('treats a Supabase auth cookie, whole or chunked, as signed in', () => {

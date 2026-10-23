@@ -10,9 +10,24 @@ export const INTRO_MAX_AGE = 60 * 60 * 24 * 30;
 export const BOARD_ANCHOR_ID = 'board';
 export const INTRO_ID = 'intro';
 
-/** Signed-in visitors never see the band; anonymous ones see it until the cookie exists. */
-export function shouldShowIntro({ signedIn, cookieValue }: { signedIn: boolean; cookieValue: string | undefined }): boolean {
-  return !signedIn && cookieValue === undefined;
+/** Board query keys that make a /market URL a deep link rather than the bare entry. */
+export const BOARD_QUERY_KEYS = ['type', 'q', 'sort', 'view', 'layer', 'metric'] as const;
+
+/** Whether `/market` was opened bare: none of the board's own query keys carry a value (tracking params don't count). */
+export function isBareEntry(sp: Record<string, string | string[] | undefined>): boolean {
+  return BOARD_QUERY_KEYS.every(key => {
+    const v = sp[key];
+    return (Array.isArray(v) ? v : [v]).every(x => !x || !x.trim());
+  });
+}
+
+/**
+ * The band greets the bare entry only: signed-in visitors never see it, deep
+ * links skip it (without marking it seen), and anonymous visitors see it until
+ * the cookie exists.
+ */
+export function shouldShowIntro({ signedIn, cookieValue, bareEntry }: { signedIn: boolean; cookieValue: string | undefined; bareEntry: boolean }): boolean {
+  return bareEntry && !signedIn && cookieValue === undefined;
 }
 
 /** Supabase SSR stores the session as `sb-<project-ref>-auth-token`, chunked as `.0`, `.1`, … when large. */

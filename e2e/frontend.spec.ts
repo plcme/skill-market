@@ -178,14 +178,18 @@ test.describe('first visit', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
   const INTRO = /A stock market for skills/;
 
-  test('/ lands on the market board', async ({ page }) => {
+  test('a deep link through / lands on its board tab without the band, and leaves it unseen', async ({ page }) => {
     await page.goto('/?type=role');
     await expect(page).toHaveURL(/\/market\?type=role$/);
     await expect(page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Roles' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('heading', { name: INTRO })).toHaveCount(0);
+    await page.waitForLoadState('networkidle');
+    expect((await page.context().cookies()).find(c => c.name === 'intro_seen')).toBeUndefined();
   });
 
-  test('the intro band shows once, with the board tabs peeking below it', async ({ page }) => {
-    await page.goto('/market');
+  test('the bare entry shows the intro band once, with the board tabs peeking below it', async ({ page }) => {
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/market$/);
     await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Explore the market' })).toHaveAttribute('href', '#board');
     await expect(page.getByRole('link', { name: 'Personalise' })).toHaveAttribute('href', '/onboarding');

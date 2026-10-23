@@ -16,7 +16,7 @@ import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/featu
 import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
 import { WatchingBoard, WatchingTabCount } from '@/features/market/watching-board';
 import { IntroBand } from '@/features/market/intro-band';
-import { BOARD_ANCHOR_ID, hasSessionCookie, INTRO_COOKIE, shouldShowIntro } from '@/features/market/intro';
+import { BOARD_ANCHOR_ID, hasSessionCookie, INTRO_COOKIE, isBareEntry, shouldShowIntro } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
 
 export async function generateMetadata({ searchParams }: PageProps<'/market'>): Promise<Metadata> {
@@ -49,7 +49,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
   const firstChangeOk = board.rows.find(r => r.change.status === 'ok') ?? board.rows[0];
   // Decided here, not in the browser, so the band never flashes in or out.
   const jar = await cookies();
-  const showIntro = shouldShowIntro({ signedIn: hasSessionCookie(jar.getAll()), cookieValue: jar.get(INTRO_COOKIE)?.value });
+  const showIntro = shouldShowIntro({ signedIn: hasSessionCookie(jar.getAll()), cookieValue: jar.get(INTRO_COOKIE)?.value, bareEntry: isBareEntry(sp) });
 
   return (
     <>
