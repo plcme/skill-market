@@ -1,4 +1,5 @@
 import { getInstrument, normaliseQuery } from './catalog';
+import { createSearch } from '@/lib/search/matcher';
 
 // Australian Skills Classification (Jobs and Skills Australia) core
 // competencies: ten transferable abilities every job uses. They are NOT
@@ -102,18 +103,10 @@ export interface CompetencyHit {
  * Search the core competencies by alias, so "communication" or "teamwork"
  * lands on an explainer rather than a ticker. Exact alias first, then prefix.
  */
+const competencySearch = createSearch(CORE_COMPETENCIES, c => c.aliases.map(text => ({ text, kind: 'alias' })));
 export function searchCompetencies(q: string, limit = 3): CompetencyHit[] {
-  const needle = normaliseQuery(q);
-  if (needle.length < 3) return [];
-  const exact: CompetencyHit[] = [];
-  const prefix: CompetencyHit[] = [];
-  for (const c of CORE_COMPETENCIES) {
-    const hit = c.aliases.find(a => a === needle);
-    if (hit) { exact.push({ slug: c.slug, matched: hit }); continue; }
-    const pre = c.aliases.find(a => a.startsWith(needle));
-    if (pre) prefix.push({ slug: c.slug, matched: pre });
-  }
-  return [...exact, ...prefix].slice(0, limit);
+  if (normaliseQuery(q).length < 3) return [];
+  return competencySearch(q, { limit }).map(h => ({ slug: h.item.slug, matched: normaliseQuery(h.matched) }));
 }
 
 /** True when the query is exactly one of the competency's aliases: only then does it lead search results. */

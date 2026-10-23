@@ -5,6 +5,8 @@
 
 ## 当前状态（2026-10-23）
 
+- 独立分支 `codex/fuzzy-search-research` 已完成全部九类搜索入口的模糊搜索；320 项单测、56 项浏览器回归、lint、typecheck 和生产构建通过。未合并或部署，见 `docs/FUZZY_SEARCH_IMPLEMENTATION.md`。
+
 - M0 本地完成（云端接入未完成，见 `docs/SETUP.md`）。之后一直在做前端原型迭代：FE-R1 到 FE-R7 已全部合并 `dev` 并 push，`main` 未更新。
 - 前端是完整可交互原型：市场数字来自合成引擎，用户数据存浏览器 localStorage，**没有接 Supabase**。
 - **数据来源已定（2026-10-23）**：第一版技能级只用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与覆盖率校准用 JSA IVI；不接 Adzuna、Workday。三家接口和 IVI 都**没有明文许可**，商业化前要拿到书面答复并请律师看（`docs/SETUP.md` §6）。

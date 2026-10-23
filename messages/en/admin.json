@@ -131,6 +131,8 @@
       "remove": "Remove",
       "removed": "Alias removed",
       "filter": "Filter aliases",
+      "includeSimilar": "Include similar matches",
+      "similar": "Similar match",
       "source": "Source",
       "sources": {
         "catalogue": "Catalogue",

@@ -1,4 +1,5 @@
 import type { StudyYear } from '@/lib/api/types';
+import { createSearch, normalizeSearch } from '@/lib/search/matcher';
 
 // Education catalogue for onboarding (FR-O1, FR-O2) and gap "ways to get it"
 // (FR-G3). Mirrors the `universities`, `course_units` and `course_unit_skills`
@@ -113,12 +114,13 @@ export function unitsFor(universityId: string | null | undefined): CourseUnit[] 
   return COURSE_UNITS.filter(u => u.university_id === universityId);
 }
 
-/** Case-insensitive search over code and title. */
+const unitSearch = createSearch(COURSE_UNITS, u => [{ text: u.title, kind: 'name' }, { text: u.code, kind: 'code', fuzzy: false }]);
+/** Titles tolerate typos; numeric course codes are always literal. */
 export function searchUnits(universityId: string | null | undefined, q: string): CourseUnit[] {
-  const needle = q.trim().toLowerCase();
-  const units = unitsFor(universityId);
-  if (!needle) return units;
-  return units.filter(u => u.code.toLowerCase().includes(needle) || u.title.toLowerCase().includes(needle));
+  const needle = normalizeSearch(q);
+  if (!needle) return unitsFor(universityId);
+  const code = /^[a-z]+\s*\d+$/i.test(needle) ? needle.replace(/\s/g, '') : needle;
+  return unitSearch(code, { accept: u => u.university_id === universityId }).map(h => h.item);
 }
 
 /** Units that teach a skill, strongest first (FR-G3 "ways to get it"). */
