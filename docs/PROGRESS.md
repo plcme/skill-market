@@ -39,7 +39,7 @@
 | 12 | 细分行业颗粒度：ANZSIC Subdivision 还是 Group | — | 前端下一轮 |
 | 13 | 未排期的产品想法：首页标语与开场动画；LinkedIn 证书导入；Twitter 书签式交互；对比页超过 2 个标的 | — | 用户提出时 |
 
-已决定、不再列出：产品名 Brewdex（域名 `brewdex.app` 已买，`APP_NAME` 默认值为 Brewdex）；数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
+已决定、不再列出：产品名 Brewdex（域名 `brewdex.app` 已买，`APP_NAME` 默认值为 `skill-market`，仅 `brewdex.app` 发布配置为 `Brewdex`）；数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
 
 ## 上 main 前必须做
 
