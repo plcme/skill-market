@@ -952,7 +952,7 @@ sequenceDiagram
 
 | # | 类型 | 问题 | 本文采用的默认 | 阻塞 |
 |---|---|---|---|---|
-| 1 | D | 产品名（PRD Q1） | `APP_NAME` 常量，默认 `skill-market`；域名已买 `brewdex.app`（2026-10-23），产品名是否就叫 Brewdex 待用户确认 | M8 |
+| 1 | D | 产品名（PRD Q1） | **已定（2026-10-23）**：Brewdex；`APP_NAME` 常量默认 `skill-market`；仅 `brewdex.app` 发布配置设为 `Brewdex`；域名 `brewdex.app` 已买 | M8 |
 | 2 | A | 会议链接（PRD Q2） | 从业者自带；系统只存链接并在确认邮件中发送 | — |
 | 3 | A | 界面语言（PRD Q3） | 英文；`next-intl` 单 locale | — |
 | 4 | A | 首发范围（PRD Q4） | 悉尼大学 工程与 IT 学院 × 软件 / 数据（ATS 覆盖最好的领域）；技能约 150、岗位约 25 | — |
@@ -1014,7 +1014,7 @@ docs/                      本目录
 
 | 变量 | 用途 | 环境 |
 |---|---|---|
-| `NEXT_PUBLIC_APP_NAME` | 产品名（`APP_NAME` 常量来源；缺省 `skill-market`） | 全部 |
+| `APP_NAME` | 产品名（`APP_NAME` 常量来源；缺省 `skill-market`；`brewdex.app` 发布配置为 `Brewdex`） | 全部 |
 | `NEXT_PUBLIC_APP_URL` | 绝对链接（邮件、ics） | 全部 |
 | `JOBS_SECRET` | `/api/jobs/*` 鉴权；同一值写入 Supabase Vault | server |
 | `ATS_USER_AGENT` | 采集请求的可识别 User-Agent，形如 `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <联系邮箱>)` | server |
@@ -1022,4 +1022,4 @@ docs/                      本目录
 | `SENTRY_DSN`（待拍板） | 错误监控 | server + client |
 | `E2E_*`（仅 CI） | 测试账号 | CI |
 
-已有变量（`.env.example`）：`APP_NAME`（建议改名为 `NEXT_PUBLIC_APP_NAME`，因客户端也需读取）、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`SUPABASE_DB_PASSWORD`、`RESEND_API_KEY`、`EMAIL_FROM`（`ADZUNA_APP_ID`、`ADZUNA_APP_KEY` 不再需要）。
+已有变量（`.env.example`）：`APP_NAME`（server-only，通过 AppProvider 传给客户端）、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`SUPABASE_DB_PASSWORD`、`RESEND_API_KEY`、`EMAIL_FROM`（`ADZUNA_APP_ID`、`ADZUNA_APP_KEY` 不再需要）。

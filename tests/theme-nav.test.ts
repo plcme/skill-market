@@ -52,7 +52,7 @@ describe('navigation model', () => {
     const desk = deskFor(student);
     expect(desk?.href).toBe('/me');
     expect(accountLinks(student).map(l => l.href)).not.toContain('/me');
-    expect(accountMenuLinks(student).map(l => l.href)).toEqual(['/me', '/me/skills', '/me/requests', '/me/settings']);
+    expect(accountMenuLinks(student).map(l => l.href)).toEqual(['/me', '/me#watchlist', '/me/skills', '/me/requests', '/me/settings']);
     expect(accountMenuLinks(practitioner).map(l => l.href)).toEqual(['/practitioner']);
     expect(accountMenuLinks(null)).toEqual([]);
   });

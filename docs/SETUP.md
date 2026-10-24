@@ -70,7 +70,7 @@ M1 前：
 
 ## §7 上线前（M8）
 
-- [x] 域名：`brewdex.app`（2026-10-23 已买；产品名是否就叫 Brewdex 待定）
+- [x] 域名：`brewdex.app`（2026-10-23 已买；产品名已确定为 Brewdex）
 - [ ] 联系邮箱（如 `data@brewdex.app`），写进 `ATS_USER_AGENT` 与 `/bot` 页面
 - [ ] Resend 域名 DNS（SPF / DKIM），Supabase Auth SMTP 改用 Resend
 - [ ] Google consent screen 从 Testing 切到 Production（需要自有域名上的首页与隐私政策）

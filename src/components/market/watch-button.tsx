@@ -80,7 +80,7 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
 
   const doAdd = async (status: 'held' | 'watching') => {
     const r = await add({ instrument_slug: slug, status, filter, metric });
-    if (r?.ok) toast({ tone: 'success', title: status === 'held' ? heldCopy.added : t('added', { name: inst.name }), body: t('filterIncluded') });
+    if (r?.ok) toast({ tone: 'success', title: status === 'held' ? heldCopy.added : t('added', { name: inst.name }), body: t('filterIncluded'), action: { label: t('viewWatchlist'), onClick: () => router.push('/me#watchlist') } });
     else if (r && !r.ok) onError(r.error.message);
   };
 
