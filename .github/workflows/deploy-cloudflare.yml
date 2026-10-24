@@ -11,6 +11,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    env:
+      APP_NAME: Brewdex
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

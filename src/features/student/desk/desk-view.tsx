@@ -104,7 +104,7 @@ function Desk({ db }: { db: DemoDB }) {
             </section>
           ) : null}
 
-          <section aria-labelledby="watch-h">
+          <section id="watchlist" aria-labelledby="watch-h" className="scroll-mt-24">
             <SectionHeader
               id="watch-h"
               kicker={t('watchKicker')}

@@ -15,3 +15,7 @@ Wrangler runs the generated OpenNext Worker directly. Cloudflare serves static a
 ## Verification
 
 Deployment tests validate scoped upload endpoints, asset routing, required application bindings and authorization failures. After deployment, check that `/` and `/market` return HTTP 200 without a Cookie header, then verify detail pages and filtered navigation in a browser. Existing application authentication remains responsible for private features.
+
+## Product name
+
+The repository, local development and ordinary previews default to `skill-market`. The release build and the Brewdex Worker set `APP_NAME=Brewdex` for `brewdex.app`; components continue to read the shared app-name configuration.
