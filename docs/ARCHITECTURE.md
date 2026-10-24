@@ -1016,3 +1016,11 @@ docs/                      本目录
 
 | 变量 | 用途 | 环境 |
 |---|---|---|
+| `NEXT_PUBLIC_APP_URL` | 绝对链接（邮件、ics） | 全部 |
+| `JOBS_SECRET` | `/api/jobs/*` 鉴权；同一值写入 Supabase Vault | server |
+| `ATS_USER_AGENT` | 采集请求的可识别 User-Agent，形如 `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <联系邮箱>)` | server |
+| `MIN_SAMPLE_N` | 样本阈值默认（默认 30；也可在 registry 覆盖） | server |
+| `SENTRY_DSN`（待拍板） | 错误监控 | server + client |
+| `E2E_*`（仅 CI） | 测试账号 | CI |
+
+已有变量（`.env.example`）：`APP_NAME`（只在服务端读取，客户端经 `AppProvider` 拿到产品名，不需要 `NEXT_PUBLIC_` 前缀）、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`SUPABASE_DB_PASSWORD`、`RESEND_API_KEY`、`EMAIL_FROM`（`ADZUNA_APP_ID`、`ADZUNA_APP_KEY` 不再需要）。
