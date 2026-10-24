@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: 里程碑代码审查 agent。implementer 完成一个里程碑后，主会话派它审查该分支相对 dev 的改动，给出通过或退回。
+description: 里程碑代码审查 agent。implementer 完成一个里程碑后，主会话派它审查该分支相对 main 的改动，给出通过或退回。
 model: opus
 tools: Read, Glob, Grep, Bash, Write
 ---
@@ -16,7 +16,7 @@ tools: Read, Glob, Grep, Bash, Write
 - `CLAUDE.md` 的质量底线
 
 步骤：
-1. 用 `git diff dev...<branch>` 看改动；只读与改动相关的文件，不要通读整个仓库
+1. 用 `git diff main...<branch>` 看改动；只读与改动相关的文件，不要通读整个仓库
 2. 亲自运行该里程碑的验收命令，以及 lint、类型检查、测试
 3. 逐项检查：
    - 验收标准是否全部满足

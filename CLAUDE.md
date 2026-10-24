@@ -42,10 +42,10 @@
 对 `docs/MILESTONES.md` 中的每个里程碑 M{n}，按顺序：
 
 1. **前置检查**：该里程碑"需要人类完成的事项"是否已完成（查 `docs/SETUP.md`，由用户和 Codex 维护）。未完成 → 停下，给用户一份逐步操作清单，等完成后再继续
-2. **实现**：派 `implementer` 子 agent（Opus），只给它这一个里程碑。它在分支 `m{n}-<slug>` 上工作
-3. **审查**：派 `reviewer` 子 agent（Opus），审查该分支相对 `dev` 的改动
+2. **实现**：派 `implementer` 子 agent（Opus），只给它这一个里程碑。它在从 `main` 切出的分支 `m{n}-<slug>` 上工作
+3. **审查**：派 `reviewer` 子 agent（Opus），审查该分支相对 `main` 的改动
 4. **结论**：
-   - 通过 → 合并到 `dev`，push（如已有 remote），更新 `docs/PROGRESS.md`，进入下一个里程碑
+   - 通过 → push 分支并开 PR（CI 与 Vercel 预览自动跑），更新 `docs/PROGRESS.md`，**如本次会话尚未授权合并，则请用户确认；已有授权时不重复确认**；合并后从新的 `main` 切下一个分支
    - 退回 → 把 `docs/reviews/M{n}.md` 的问题清单交给 implementer 修复，再审
    - **同一里程碑退回 3 次 → 停下找用户**
 5. 每个里程碑结束时向用户简短汇报：完成了什么、审查结论、有无待拍板事项
@@ -56,7 +56,7 @@
 
 - 阶段 1 架构完成后（等确认）
 - 需要开账号、填密钥、买域名、做任何需要人类身份的操作
-- 合并到 `main`（= 生产环境部署）之前
+- 合并到 `main` 前尚未获得本次会话的授权，或打 / 推送发布标签前尚未获得发布授权
 - 同一里程碑审查退回 3 次
 - 任何不可逆或对外可见的操作：删除数据、改动生产数据库、发送真实邮件给非测试用户、修改 DNS
 - 需要推翻"已定约束"时
@@ -76,9 +76,11 @@
 
 ## Git 约定
 
-- `main` = 生产（Vercel production），**只有用户确认后才合并**
-- `dev` = 集成分支（Vercel preview）
-- 每个里程碑一个分支 `m{n}-<slug>`，从 `dev` 切出
+- 只有一条长期分支 `main`，流程是：**分支 → PR → `main`（仅集成）→ 经用户授权推送 `v*` tag → 上线**（2026-10-23 起不再使用 `dev`）
+- 合进 `main` 不上线，也不自动打 tag。只有推送指向 `main` 历史提交的 `v*` tag，`Brewdex release` workflow 才检查并发布到 Cloudflare（`brewdex.app`）；手动运行 workflow 仅验证
+- PR 合并到 `main` **需用户授权；同一会话已授权的范围内可连续执行，不重复确认**
+- 每项工作一个短分支，从 `main` 切出：里程碑 `m{n}-<slug>`，前端轮次 `fe-r{n}`，其他 `feat/…`、`fix/…`、`chore/…`；合并后先列出分支和 worktree 清理清单，经用户确认再删除
+- Vercel 只用来看 PR 的预览链接，不承担生产
 - commit 小而清晰，英文，conventional commits 风格（`feat:`、`fix:`、`chore:`…）
 - 永远不提交 `.env*`（`.env.example` 除外）；永远不在输出中打印密钥
 

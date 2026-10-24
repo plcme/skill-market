@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, dev, 'm*-*']
+    branches: [main, 'm*-*']
 permissions:
   contents: read
 concurrency:

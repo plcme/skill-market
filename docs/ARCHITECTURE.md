@@ -141,24 +141,24 @@ flowchart LR
         D2["supabase start<br/>Docker: Postgres, Auth, Inbucket 邮件收件箱, Storage"]
         D1 --> D2
     end
-    subgraph preview["Preview = 分支 dev 与 PR"]
+    subgraph preview["Preview = PR"]
         V1[Vercel Preview Deployments]
         S1[("Supabase 项目 2: skill-market-dev<br/>Sydney")]
         V1 --> S1
         R1["Resend onboarding 域名<br/>仅能发到所有者邮箱"]
         V1 --> R1
     end
-    subgraph prod["Production = 分支 main"]
-        V2[Vercel Production<br/>brewdex.app]
+    subgraph prod["Production = main 上的 v* tag"]
+        V2[Cloudflare Worker<br/>brewdex.app]
         S2[("Supabase 项目 1: skill-market<br/>Sydney")]
         V2 --> S2
         R2[Resend 自有域名 SPF/DKIM]
         V2 --> R2
     end
-    GIT["GitHub<br/>main 受保护 · dev 集成 · m{n}-slug 特性分支"]
-    GIT -- push dev / PR --> V1
-    GIT -- merge main 需用户确认 --> V2
-    CI["GitHub Actions<br/>ci.yml: lint typecheck vitest pgTAP build playwright<br/>migrate.yml: dev→项目2, main→项目1 需 environment 审批"]
+    GIT["GitHub<br/>只有 main 一条长期分支 · 短分支经 PR 合入"]
+    GIT -- PR --> V1
+    GIT -- 经用户授权推送 v* tag<br/>检查 tag 属于 main 后发布 --> V2
+    CI["GitHub Actions<br/>ci.yml: lint typecheck vitest pgTAP build playwright<br/>migrate.yml 手动: PR 分支→项目2, main→项目1 需审批"]
     GIT --> CI
     CI --> S1
     CI --> S2
@@ -169,10 +169,10 @@ flowchart LR
 | 环境 | 代码 | 数据库 | 邮件 | 登录 | 用途 |
 |---|---|---|---|---|---|
 | local | `next dev` | `supabase start`（Docker） | Inbucket（本地收件箱） | magic link（本地）；Google 需真实 client 可选 | 开发、全部自动化测试 |
-| preview | Vercel Preview（`dev` 分支与 PR） | Supabase 项目 2 `skill-market-dev` | Resend `onboarding@resend.dev` | Google Testing 模式（≤100 测试用户） | 集成验收、可用性测试 |
-| production | Vercel Production（`main`） | Supabase 项目 1 `skill-market` | Resend 自有域名 | Google Production | 真实用户 |
+| preview | Vercel Preview（PR） | Supabase 项目 2 `skill-market-dev` | Resend `onboarding@resend.dev` | Google Testing 模式（≤100 测试用户） | 集成验收、可用性测试 |
+| production | Cloudflare Worker（`main` 历史上的 `v*` tag，推送 tag 发布） | Supabase 项目 1 `skill-market` | Resend 自有域名 | Google Production | 真实用户 |
 
-Supabase 免费档允许 2 个项目，正好一 prod 一 dev。migration 通过 `supabase db push` 由 GitHub Actions 执行；生产 push 放在 GitHub `production` environment 下需人工审批（与 CLAUDE.md "合并到 main 前必须找用户"一致）。
+Supabase 免费档允许 2 个项目，正好一 prod 一 dev。migration 通过 `supabase db push` 由 GitHub Actions 执行；生产 push 放在 GitHub `production` environment 下需人工审批；代码合并授权与生产数据库操作授权分别取得。
 
 ---
 
@@ -914,14 +914,15 @@ sequenceDiagram
 
 ```
 .github/workflows/
-  ci.yml        PR 与 push(dev, main, m*-*)：pnpm install → gitleaks → lint → typecheck → test:unit → supabase start → db reset → test:db → test:integration → build → test:e2e（对 next start）→ 上传 Playwright 报告
-  migrate.yml   push dev → supabase db push（项目 2）；push main → environment "production"（需人工审批）→ db push（项目 1）→ 调用 /api/jobs/health
+  ci.yml        PR 与 push(main, m*-*)：pnpm install → gitleaks → lint → typecheck → test:unit → supabase start → db reset → test:db → test:integration → build → test:e2e（对 next start）→ 上传 Playwright 报告
+  migrate.yml   workflow_dispatch：任意分支 → supabase db push（项目 2）；main → environment "production"（需人工审批）→ db push（项目 1）→ 调用 /api/jobs/health
+  deploy-cloudflare.yml  push v* tag → lint → typecheck → test:unit → OpenNext build → 检查 tag 属于 main → 发布 brewdex.app；workflow_dispatch 仅验证（见 docs/CLOUDFLARE_DEPLOYMENT.md）
   ingest.yml    workflow_dispatch：手动触发任意 job（兜底）
   backup.yml    每日 schedule：schema + 公共数据 dump 作为 artifact
 ```
 
-- Vercel Git 集成负责部署：`dev` 与 PR → Preview，`main` → Production。Vercel 构建只跑 `next build`，测试全部在 GitHub Actions。
-- 分支保护：`main` 需 CI 通过 + 1 个审批（用户）；`dev` 需 CI 通过。
+- 只有一条长期分支 `main`：短分支 → PR → `main` 仅集成；经用户授权推送 `v*` tag 才上线。Vercel Git 集成只用来给 PR 出预览（它也会把 `main` 部署到 `*.vercel.app`，不作生产用）；Vercel 构建只跑 `next build`，测试全部在 GitHub Actions。
+- 分支保护：`main` 需 CI 通过 + 1 个审批（用户）。
 - 版本与变更：conventional commits；`CHANGELOG.md` 在上线前由 M8 生成。
 - 环境变量：`.env.example` 由用户 / Codex 维护；本文 §12 附录列出需要新增的变量，由主会话写入 PROGRESS.md 提出。
 
