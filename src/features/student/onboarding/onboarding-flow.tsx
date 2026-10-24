@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react';
 import { useDB } from '@/lib/demo/store';
@@ -215,7 +216,7 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
       <div className="min-w-0">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
-          <Input value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchUnits')} aria-label={t('searchUnits')} className="pl-9" />
+          <Input maxLength={MAX_SEARCH_LENGTH} value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchUnits')} aria-label={t('searchUnits')} className="pl-9" />
         </div>
         <p className="mt-2 text-[13px] text-muted">{t('unitsFrom', { university: uni.name, n: unitsFor(uni.id).length })}</p>
         <fieldset className="mt-4">

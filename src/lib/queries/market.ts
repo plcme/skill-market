@@ -1,6 +1,7 @@
 import { computeBreakdown, computeMetric, computeSeries, computeSparkline, correlation, DATA_AS_OF, detectSignal, industrySkillReadings, locationBreakdown, snapshot, SOURCE_IDS } from '@/lib/market/engine';
 import { cooccurrence, getInstrument, INDUSTRY_COMPONENTS, INSTRUMENTS, instrumentsOfType, relatedSkills, ROLE_COMPONENTS, rolesForSkill, searchInstruments, type SearchHit } from '@/lib/market/catalog';
 import { searchCompetencies, type CompetencyHit } from '@/lib/market/competencies';
+import type { SearchAlias } from '@/lib/market/catalog';
 import type { HeatTile, Heatmap } from '@/lib/market/heatmap';
 import { pickMovers } from '@/lib/market/movers';
 import { METRICS, chartSeriesFor, defaultMetric, isValidMetric, metricsFor, resolveDetailMetric, sharedMetrics, signalMetric } from '@/lib/metrics/registry';
@@ -48,14 +49,15 @@ export function resolveBoardMetric(type: BoardType, metric?: string): MetricKey 
   return metric && isValidMetric(type, metric) && METRICS[metric].selectable ? metric : defaultMetric(type);
 }
 
-export function getBoard(query: BoardQuery): Board {
+export function getBoard(query: BoardQuery, aliases?: readonly SearchAlias[]): Board {
   const metric = resolveBoardMetric(query.type, query.metric);
   const sort = query.sort ?? 'value';
   const needle = query.q?.trim().toLowerCase() ?? '';
   const layer = query.type === 'skill' ? query.layer ?? null : null;
   const pool = INSTRUMENTS.filter(i => (query.type === 'all' || i.type === query.type) && (!layer || i.skill_layer === layer));
+  const matches = needle ? new Set(searchInstruments(needle, INSTRUMENTS.length, { type: query.type === 'all' ? undefined : query.type, layer: layer ?? undefined, aliases }).map(h => h.instrument.slug)) : null;
   const rows = pool
-    .filter(i => !needle || i.name.toLowerCase().includes(needle) || i.aliases.some(a => a.includes(needle)) || i.symbol.toLowerCase() === needle)
+    .filter(i => !matches || matches.has(i.slug))
     .map(i => snapshot(i.slug, metric, query.filter));
   rows.sort((a, b) => {
     if (sort === 'change') return sortValue(b.change) - sortValue(a.change);
@@ -192,13 +194,12 @@ export function getComparison(aSlug: string, bSlug: string, filter: FilterSpec):
   return { a, b, correlation: correlation(aSlug, bSlug, filter), overlap, shared, onlyA, onlyB };
 }
 
-export function search(q: string): { skills: SearchHit[]; roles: SearchHit[]; industries: SearchHit[]; competencies: CompetencyHit[] } {
-  const hits = searchInstruments(q, 40);
+export function search(q: string, aliases?: readonly SearchAlias[]): { skills: SearchHit[]; roles: SearchHit[]; industries: SearchHit[]; competencies: CompetencyHit[] } {
   return {
     competencies: searchCompetencies(q),
-    skills: hits.filter(h => h.instrument.type === 'skill'),
-    roles: hits.filter(h => h.instrument.type === 'role'),
-    industries: hits.filter(h => h.instrument.type === 'industry'),
+    skills: searchInstruments(q, 40, { type: 'skill', aliases }),
+    roles: searchInstruments(q, 40, { type: 'role', aliases }),
+    industries: searchInstruments(q, 40, { type: 'industry', aliases }),
   };
 }
 
@@ -233,8 +234,8 @@ export interface SearchResult {
  * (FR-D6). ASC core competencies come back separately: they link to an
  * explainer, never to a ticker.
  */
-export function searchWithSnapshots(q: string, filter: FilterSpec): { skills: SearchResult[]; roles: SearchResult[]; industries: SearchResult[]; competencies: CompetencyHit[] } {
-  const { skills, roles, industries, competencies } = search(q);
+export function searchWithSnapshots(q: string, filter: FilterSpec, aliases?: readonly SearchAlias[]): { skills: SearchResult[]; roles: SearchResult[]; industries: SearchResult[]; competencies: CompetencyHit[] } {
+  const { skills, roles, industries, competencies } = search(q, aliases);
   const withSnap = (hit: SearchHit): SearchResult => ({ hit, snapshot: snapshot(hit.instrument.slug, defaultMetric(hit.instrument.type), filter) });
   return { skills: skills.map(withSnap), roles: roles.map(withSnap), industries: industries.map(withSnap), competencies };
 }

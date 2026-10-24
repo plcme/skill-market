@@ -9,6 +9,7 @@ import type { BoardSort } from '@/lib/queries/market';
 import { Input, Segmented, Select } from '@/components/ui/form';
 import { useSetParams } from '@/components/market/use-url-state';
 import { cn } from '@/lib/utils';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
 import { layerParam, type BoardView } from './logic';
 
 /** Sort + list/cards toggle; both live in the URL so a board view is shareable. */
@@ -43,6 +44,7 @@ export function BoardTextFilter({ initial, className }: { initial: string; class
   const t = useTranslations('MarketPage');
   const { set, pending } = useSetParams();
   const [value, setValue] = useState(initial);
+  const [composing, setComposing] = useState(false);
   // Last value pushed to (or received from) the URL.
   const [synced, setSynced] = useState(initial);
   const [prevInitial, setPrevInitial] = useState(initial);
@@ -56,6 +58,7 @@ export function BoardTextFilter({ initial, className }: { initial: string; class
     }
   }
   useEffect(() => {
+    if (composing) return;
     const next = value.trim();
     if (next === synced.trim()) return;
     const id = window.setTimeout(() => {
@@ -63,13 +66,16 @@ export function BoardTextFilter({ initial, className }: { initial: string; class
       set({ q: next || null });
     }, 280);
     return () => window.clearTimeout(id);
-  }, [value, synced, set]);
+  }, [value, synced, set, composing]);
   return (
     <div className={cn('relative', className)}>
       <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" aria-hidden />
       <Input
         type="search"
+        maxLength={MAX_SEARCH_LENGTH}
         value={value}
+        onCompositionStart={() => setComposing(true)}
+        onCompositionEnd={() => setComposing(false)}
         onChange={e => setValue(e.target.value)}
         placeholder={t('textFilterPlaceholder')}
         aria-label={t('textFilterLabel')}
