@@ -234,6 +234,12 @@ export function canonicalMarketQuery(sp: SearchParamsRecord): string | null {
   return q.toString();
 }
 
+/** Where `/` sends a visitor: the board, keeping its query (already canonical, so one redirect). */
+export function marketEntryHref(sp: SearchParamsRecord): string {
+  const qs = canonicalMarketQuery(sp) ?? toQueryString(sp);
+  return qs ? `/market?${qs}` : '/market';
+}
+
 /** `metric` value for a link: omitted for the type's default measure. */
 export function metricParam(metric: MetricKey, defaultMetric: MetricKey): string | null {
   return metric === defaultMetric ? null : metric;

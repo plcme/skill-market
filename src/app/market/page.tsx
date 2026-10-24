@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ArrowRight, Bookmark } from 'lucide-react';
@@ -13,6 +14,8 @@ import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitc
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
 import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
 import { WatchingTabCount } from '@/features/market/watching-board';
+import { IntroBand } from '@/features/market/intro-band';
+import { BOARD_ANCHOR_ID, hasSessionCookie, INTRO_COOKIE, isBareEntry, shouldShowIntro } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
 
 export async function generateMetadata({ searchParams }: PageProps<'/market'>): Promise<Metadata> {
@@ -41,14 +44,19 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
   const keep = { sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
   const typeHref = (next: MarketTab) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
   const resetHref = hrefWith('/market', { type: boardTypeParam(tab), metric: metricParam, layer: layerParam(layer), ...keep });
+  // Decided here, not in the browser, so the band never flashes in or out.
+  const jar = await cookies();
+  const showIntro = shouldShowIntro({ signedIn: hasSessionCookie(jar.getAll()), cookieValue: jar.get(INTRO_COOKIE)?.value, bareEntry: isBareEntry(sp) });
 
   return (
+    <>
+    <h1 className="sr-only">{t('title')}</h1>
+    {showIntro ? <IntroBand /> : null}
     <Container className="pb-20">
-      <h1 className="sr-only">{t('title')}</h1>
-
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
       <CompareSelectionProvider key={tab}>
-      <section aria-labelledby="board-h" className="pt-8 sm:pt-12">
+      {/* Scroll margin = sticky header (h-16 + 1px rule), so #board lands just under it; focusable so the intro's link can move focus here. */}
+      <section id={BOARD_ANCHOR_ID} tabIndex={-1} aria-labelledby="board-h" className="scroll-mt-[65px] pt-8 sm:pt-12">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
         <div className="border-b border-rule">
           {/* Scrolls sideways at narrow widths; the nav (not the tabs) overlaps the rule so nothing overflows vertically. */}
@@ -112,5 +120,6 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
       </section>
       </CompareSelectionProvider>
     </Container>
+    </>
   );
 }

@@ -32,7 +32,7 @@ export function SiteHeader() {
   const otherPersonas = (session?.personas ?? []).filter(p => p !== session?.active);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-rule bg-paper/90 backdrop-blur-md supports-[backdrop-filter]:bg-paper/75">
+    <header data-site-header className="sticky top-0 z-40 border-b border-rule bg-paper/90 backdrop-blur-md supports-[backdrop-filter]:bg-paper/75">
       <Container className="flex h-16 items-center gap-4 lg:gap-8">
         <Wordmark name={appName} />
         <nav aria-label={t('primary')} className="hidden md:block">

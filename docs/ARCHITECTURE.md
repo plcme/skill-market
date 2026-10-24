@@ -180,13 +180,15 @@ Supabase 免费档允许 2 个项目，正好一 prod 一 dev。migration 通过
 
 ### 4.1 路由与信息架构
 
-> 现状（2026-10-23，FE-R7）：前端是完整可交互的原型，数据来自合成市场引擎 + 浏览器内演示后端（`src/lib/demo/store.ts`，localStorage），尚未接 Supabase。前后端契约见 `docs/FRONTEND_API_REPORT.md`；视觉与交互以 `docs/DESIGN.md` 为准，本节只记路由。
+> 现状（2026-10-23，FE-R8）：前端是完整可交互的原型，数据来自合成市场引擎 + 浏览器内演示后端（`src/lib/demo/store.ts`，localStorage），尚未接 Supabase。前后端契约见 `docs/FRONTEND_API_REPORT.md`；视觉与交互以 `docs/DESIGN.md` 为准，本节只记路由。
 
 ```
-/                                  首页：搜索 + 行业热力图 + 信号卡轮播（未登录可用）
+/                                  307 → /market（保留查询参数，同一跳去掉旧 ?f=）；没有单独的首页
 /market?type=watching|all|skill|role|industry&metric=&layer=&q=
                                    行情表。没有筛选，固定 All Australia · All levels · 任意 work rights；
                                    旧链接的 ?f= 重定向去掉。Watching 标签在最前（书签 + 数量）
+                                   首访开场区块：不带参数、未登录、没有 intro_seen cookie 时，
+                                   在盘面上方显示标语 + 行业热力图（DESIGN.md §4「开场区块」）
 /s/[slug] · /r/[slug] · /i/[slug]  技能 / 岗位 / 行业详情页：一张图 + Statistics。
                                    ?metric= 同时驱动 Right now 与大图；?by= 拆分（默认不拆）；?f= 筛选，
                                    入口是标题里的 "in …"
@@ -1014,7 +1016,6 @@ docs/                      本目录
 
 | 变量 | 用途 | 环境 |
 |---|---|---|
-| `APP_NAME` | 产品名（`APP_NAME` 常量来源；缺省 `skill-market`；`brewdex.app` 发布配置为 `Brewdex`） | 全部 |
 | `NEXT_PUBLIC_APP_URL` | 绝对链接（邮件、ics） | 全部 |
 | `JOBS_SECRET` | `/api/jobs/*` 鉴权；同一值写入 Supabase Vault | server |
 | `ATS_USER_AGENT` | 采集请求的可识别 User-Agent，形如 `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <联系邮箱>)` | server |
@@ -1022,4 +1023,4 @@ docs/                      本目录
 | `SENTRY_DSN`（待拍板） | 错误监控 | server + client |
 | `E2E_*`（仅 CI） | 测试账号 | CI |
 
-已有变量（`.env.example`）：`APP_NAME`（server-only，通过 AppProvider 传给客户端）、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`SUPABASE_DB_PASSWORD`、`RESEND_API_KEY`、`EMAIL_FROM`（`ADZUNA_APP_ID`、`ADZUNA_APP_KEY` 不再需要）。
+已有变量（`.env.example`）：`APP_NAME`（只在服务端读取，客户端经 `AppProvider` 拿到产品名，不需要 `NEXT_PUBLIC_` 前缀）、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`SUPABASE_DB_PASSWORD`、`RESEND_API_KEY`、`EMAIL_FROM`（`ADZUNA_APP_ID`、`ADZUNA_APP_KEY` 不再需要）。

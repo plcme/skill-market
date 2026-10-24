@@ -14,7 +14,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function Wordmark({ name, className }: { name: string; className?: string }) {
   return (
-    <Link href="/" className={cn('group inline-flex items-center gap-2.5 rounded-[4px]', className)}>
+    <Link href="/market" className={cn('group inline-flex items-center gap-2.5 rounded-[4px]', className)}>
       <LogoMark />
       <span className="font-serif text-[21px] italic leading-none tracking-[-0.02em] text-ink">{name}</span>
     </Link>

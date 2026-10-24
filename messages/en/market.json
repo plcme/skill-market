@@ -300,6 +300,7 @@
   },
   "Heatmap": {
     "window": "Window {start} – {end}.",
+    "captionSourced": "{caption}. {source}. {window}",
     "tileLabel": "{name}: {ads} job ads, {dir, select, up {up {change}} down {down {change}} other {no change}} in 4 weeks ({from} → {to}).",
     "tileLabelThin": "{name}: {ads} job ads. Too few ads (under {min}) to show a 4-week change.",
     "thinShort": "Too few ads",

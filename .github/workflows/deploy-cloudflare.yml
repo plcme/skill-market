@@ -70,7 +70,7 @@ jobs:
         if: steps.release.outputs.deploy == 'true'
         run: |
           for path in / /market; do
-            status=$(curl --silent --show-error --retry 5 --retry-delay 5 --output /dev/null --write-out '%{http_code}' "https://brewdex.app$path")
+            status=$(curl --location --silent --show-error --retry 5 --retry-delay 5 --output /dev/null --write-out '%{http_code}' "https://brewdex.app$path")
             test "$status" = 200
           done
           echo 'Live site: https://brewdex.app — public pages verified' >> "$GITHUB_STEP_SUMMARY"
