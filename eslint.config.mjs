@@ -9,5 +9,5 @@ export default defineConfig([
   { files: ['src/**/*.{ts,tsx}'], ignores: ['src/config/app.ts'], rules: {
     'no-restricted-syntax': ['error', { selector: "Literal[value='skill-market']", message: 'Read the product name from APP_NAME.' }]
   } },
-  globalIgnores(['.next/**', 'next-env.d.ts', 'playwright-report/**', 'test-results/**', 'supabase/.temp/**'])
+  globalIgnores(['.open-next/**', '.wrangler/**', '.next/**', 'next-env.d.ts', 'playwright-report/**', 'test-results/**', 'supabase/.temp/**'])
 ]);

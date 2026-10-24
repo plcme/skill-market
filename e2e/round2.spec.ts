@@ -6,19 +6,19 @@ import AxeBuilder from '@axe-core/playwright';
 
 test('role page chart splits by dimension through the URL', async ({ page }) => {
   test.slow();
-  await page.goto('/r/data-analyst');
+  await page.goto('/r/data-analyst?by=experience');
   const chart = page.locator('section#now');
   await expect(page.locator('section#breakdown')).toHaveCount(0);
   const legend = chart.getByRole('list', { name: 'Latest values' });
   await expect(legend.getByText('Expert · 10+ yrs')).toBeVisible();
   await expect(chart.getByText('Estimated')).toBeVisible();
-  // The click can land before hydration under load; retry until the URL changes.
-  const menu = page.getByRole('dialog', { name: 'Split by' });
+  const menu = page.getByRole('dialog', { name: 'Filter' });
   await expect(async () => {
-    if (!(await menu.isVisible())) await chart.getByRole('button', { name: /^Split by Experience/ }).click({ timeout: 5000 });
+    if (!(await menu.isVisible())) await page.locator('h1').getByRole('button').click({ timeout: 5000 });
     await expect(menu).toBeVisible({ timeout: 5000 });
   }).toPass({ timeout: 40000 });
-  await menu.getByRole('button', { name: /^Work rights/ }).click();
+  await menu.getByRole('radio', { name: 'Work rights', exact: true }).click();
+  await menu.getByRole('button', { name: 'Apply', exact: true }).click();
   await expect(page).toHaveURL(/by=rights/, { timeout: 30000 });
   await expect(legend.getByText('Requires PR or citizenship')).toBeVisible();
   await chart.getByRole('button', { name: 'Show data table' }).click();
@@ -34,8 +34,8 @@ test('role page chart splits by dimension through the URL', async ({ page }) => 
 
 test('remote-anywhere switch changes the readback and the URL', async ({ page }) => {
   test.slow();
-  await page.goto('/market?type=skill&f=oh.au-nsw-sydney_all_all');
-  const open = page.getByRole('button', { name: /Filter the whole board/ });
+  await page.goto('/s/sql?f=oh.au-nsw-sydney_all_all');
+  const open = page.locator('h1').getByRole('button');
   const dialog = page.getByRole('dialog', { name: 'Filter' });
   await expect(async () => {
     if (!(await dialog.isVisible())) await open.click({ timeout: 5000 });
@@ -47,10 +47,10 @@ test('remote-anywhere switch changes the readback and the URL', async ({ page })
   await expect(readback).toHaveText(/plus remote roles anywhere in Australia/);
   await dialog.getByRole('button', { name: 'Apply' }).click();
   await expect(page).toHaveURL(/f=oh\.au-nsw-sydney(\*|%2A)r\.au_all_all/, { timeout: 30000 });
-  await expect(page.getByText(/plus remote roles anywhere in Australia/).first()).toBeVisible();
+  await expect(page.locator('h1')).toHaveText(/^SQL\s+in Sydney \(on-site or hybrid\) \+ remote$/);
 
   // A spec the simple controls can't express opens with Advanced expanded.
-  await page.goto('/market?f=o.au-nsw*h.au-vic_all_all');
+  await page.goto('/s/sql?f=o.au-nsw*h.au-vic_all_all');
   await expect(async () => {
     if (!(await dialog.isVisible())) await open.click({ timeout: 5000 });
     await expect(dialog).toBeVisible({ timeout: 5000 });
