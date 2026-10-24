@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
  * Held reads "I have this skill" for skills and "I've worked in this role"
  * for roles; industries are only watched.
  */
-export function WatchButton({ slug, filter, metric, size = 'sm', prominent = false, className, labelClassName }: {
+export function WatchButton({ slug, filter, metric, size = 'sm', prominent = false, compact = false, className, labelClassName }: {
   slug: string;
   filter: FilterSpec;
   metric?: MetricKey;
@@ -29,6 +29,8 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
    * fill until watched, then an outline "Watching" so the state reads clearly.
    */
   prominent?: boolean;
+  /** Icon-only row action with the same width before and after watching. */
+  compact?: boolean;
   className?: string;
   /**
    * Applied to the visible text. Pass e.g. `@max-4xl:sr-only` to render an
@@ -47,9 +49,11 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
   const [update, updateState] = useAction(updateWatchlistItem);
   const [remove, removeState] = useAction(removeWatchlistItem);
   const busy = addState.pending || updateState.pending || removeState.pending;
-  const label = (text: string) => (labelClassName ? <span className={labelClassName}>{text}</span> : text);
+  const labelStyle = compact ? 'sr-only' : labelClassName;
+  const label = (text: string) => (labelStyle ? <span className={labelStyle}>{text}</span> : text);
+  className = cn(compact && 'w-16', className);
   // Icon-only buttons need square-ish padding once the label is hidden.
-  const iconPad = labelClassName ? '@max-4xl:px-2' : undefined;
+  const iconPad = compact ? 'px-2' : labelClassName ? '@max-4xl:px-2' : undefined;
   const sz = prominent ? 'lg' : size;
   const wide = prominent ? 'w-full' : undefined;
   const callVariant = prominent ? 'accent' : 'subtle';
@@ -80,7 +84,7 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
 
   const doAdd = async (status: 'held' | 'watching') => {
     const r = await add({ instrument_slug: slug, status, filter, metric });
-    if (r?.ok) toast({ tone: 'success', title: status === 'held' ? heldCopy.added : t('added', { name: inst.name }), body: t('filterIncluded') });
+    if (r?.ok) toast({ tone: 'success', title: status === 'held' ? heldCopy.added : t('added', { name: inst.name }), body: t('filterIncluded'), action: { label: t('viewWatchlist'), onClick: () => router.push('/me#watchlist') } });
     else if (r && !r.ok) onError(r.error.message);
   };
 
@@ -89,10 +93,10 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
     return (
       <Menu>
         <MenuTrigger asChild>
-          <Button variant={prominent ? 'outline' : 'primary'} size={sz} loading={busy} className={cn(iconPad, wide, className)} aria-label={t('manage', { name: inst.name })}>
-            {!busy ? <Icon aria-hidden /> : null}
+          <Button variant={prominent ? 'outline' : 'primary'} size={sz} loading={busy} className={cn(iconPad, wide, className, compact && 'relative grid grid-cols-2 gap-0 px-0 before:pointer-events-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:bg-paper/30 [&>svg]:translate-x-px [&>svg]:justify-self-center')} aria-label={t('manage', { name: inst.name })}>
+            {!busy ? <Icon className={compact ? '!size-[18px]' : undefined} aria-hidden /> : null}
             {label(item.status === 'held' ? heldCopy.label : t('watching'))}
-            <ChevronDown className="!size-3.5 opacity-70" aria-hidden />
+            <ChevronDown className={cn(compact ? '!size-4' : '!size-3.5', 'opacity-70')} aria-hidden />
           </Button>
         </MenuTrigger>
         <MenuContent>
@@ -117,7 +121,7 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
 
   return (
     <span className={cn('inline-flex', wide, className)}>
-      <Button variant={addVariant} size={sz} loading={busy} className={cn('rounded-r-none', prominent && 'flex-1', iconPad)} onClick={() => doAdd('watching')}>
+      <Button variant={addVariant} size={sz} loading={busy} className={cn('rounded-r-none', (prominent || compact) && 'flex-1', iconPad)} onClick={() => doAdd('watching')}>
         {!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}
       </Button>
       <Menu>

@@ -19,6 +19,7 @@ import { SourceBadge } from '@/components/market/source-badge';
 import { WatchButton } from '@/components/market/watch-button';
 import { HeatmapSource, HeatmapTable, HeatmapTiles } from '@/components/market/heatmap';
 import { competencyLevels } from '@/lib/market/competencies';
+import { WatchAllButton } from '@/components/market/watch-all-button';
 import { BeforeYouDecide, CompositionList, CoreCompetencies, Figure, LocationBars, Provenance, RelatedSkills, SalaryBlock, Statistics } from './instrument-sections';
 import { breakdownParam, chartPlanFor, hrefWith, marketHref, metricParam, nextByParam } from './logic';
 import { InstrumentChart } from './instrument-chart';
@@ -200,7 +201,7 @@ export function InstrumentView({ detail, filter }: { detail: InstrumentDetail; f
       ) : (
       <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-12">
         <section aria-labelledby="comp-h">
-          <SectionHeader id="comp-h" kicker={t(`compKicker.${type}`)} title={t(`compTitle.${type}`, { name: inst.name })} />
+          <SectionHeader id="comp-h" kicker={t(`compKicker.${type}`)} title={t(`compTitle.${type}`, { name: inst.name })} action={<WatchAllButton slugs={detail.composition.map(entry => entry.instrument.slug)} filter={filter} />} />
           {type === 'role' ? <p className="-mt-1 mb-4 text-[13px] text-muted">{t('compNote.role', { name: inst.name })}</p> : null}
           <CompositionList entries={detail.composition} parent={inst} filter={filter} mode={type === 'role' ? 'skillsOfRole' : 'rolesOfSkill'} />
         </section>

@@ -8,7 +8,7 @@
 
 | § | 服务 | 状态 | 资源名称 / 标识 | 免费额度与限制 | 备注 |
 |---|---|---|---|---|---|
-| 1 | GitHub | 🟨 部分完成（2026-09-22） | `plcme/skill-market`（private） | Actions 每月约 2000 分钟 | `main` / `dev` 已推送；`main` 分支保护待设置 |
+| 1 | GitHub | 🟨 部分完成（2026-09-22） | `plcme/skill-market`（private） | Actions 每月约 2000 分钟 | `main` 为唯一长期分支；`dev` 停用待清理；`main` 分支保护待设置 |
 | 2 | Supabase | 🟨 本地通过；云端待接入 | 云端 `skill-market`（Sydney）；本地数据库在 Windows 开发机 | 2 个项目、500MB DB、1GB 存储、5 万 MAU；闲置 7 天暂停 | 还需第二个项目 `skill-market-dev`；CLI 云端未登录 |
 | 3 | Vercel | 🟨 已关联 GitHub | `skill-market` / `skill-market-two.vercel.app` | Hobby，**不允许商用** | 已加 Next.js / syd1 部署配置 |
 | 4 | Resend | ⬜ 未开始 | | 每月 3000 封、每天 100 封、1 个域名 | M3 前 |
@@ -23,7 +23,7 @@
 
 ## §1 GitHub
 
-- [x] 仓库、`main` / `dev` 分支
+- [x] 仓库与 `main` 主干；`dev` 停用（删除另列清单确认）
 - [ ] `main` 分支保护：禁止 force push、禁止删除
 
 ## §2 Supabase
@@ -35,7 +35,7 @@
 
 ## §3 Vercel
 
-- [x] 关联 GitHub，Production = `main`，`dev` 与 PR 生成 preview
+- [x] 关联 GitHub；PR 生成 preview；Git 流程只使用 `main`，生产由 Cloudflare 上的 `v*` tag 发布（main 合并不发布）
 - [ ] Supabase 变量加到 Preview 与 Production 环境
 
 ## §4 Resend
@@ -70,7 +70,7 @@ M1 前：
 
 ## §7 上线前（M8）
 
-- [x] 域名：`brewdex.app`（2026-10-23 已买；产品名是否就叫 Brewdex 待定）
+- [x] 域名：`brewdex.app`（2026-10-23 已买；产品名已确定为 Brewdex）
 - [ ] 联系邮箱（如 `data@brewdex.app`），写进 `ATS_USER_AGENT` 与 `/bot` 页面
 - [ ] Resend 域名 DNS（SPF / DKIM），Supabase Auth SMTP 改用 Resend
 - [ ] Google consent screen 从 Testing 切到 Production（需要自有域名上的首页与隐私政策）

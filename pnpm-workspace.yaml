@@ -5,3 +5,4 @@ onlyBuiltDependencies:
 overrides:
   source-map-js: ^1.2.2
   "glob@>=10.2.0 <10.5.0": 10.5.0
+  "undici@>=7.18.0 <7.30.1": 7.30.1
