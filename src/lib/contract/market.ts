@@ -310,7 +310,7 @@ export const comparisonSchema = z.object({
   onlyB: z.array(instrumentSchema),
 });
 
-export const searchHitSchema = z.object({ instrument: instrumentSchema, matched: z.string(), via: z.enum(['name', 'alias', 'symbol', 'prefix']) });
+export const searchHitSchema = z.object({ instrument: instrumentSchema, matched: z.string(), via: z.enum(['name', 'alias', 'symbol', 'prefix', 'fuzzy']) });
 /** ASC core competencies are not instruments; hits link to /metrics#competency-<slug>. */
 export const competencyHitSchema = z.object({ slug: z.string(), matched: z.string() });
 export const competencyLevelSchema = z.object({ slug: z.string(), level: z.number().int().min(1).max(10) });
@@ -395,7 +395,7 @@ export const marketOps = {
   }),
   search: op({
     kind: 'read', access: 'public', input: z.object({ q: z.string().max(80) }), output: searchResultsSchema,
-    does: 'Alias-aware search grouped by type, plus core competency hits.',
+    does: 'Alias-aware conservative fuzzy search grouped by type, plus core competency hits. Exact matches precede prefix, substring and fuzzy results; short symbols, numeric codes and technical punctuation remain literal.',
     ui: '⌘K search panel in the header',
     tables: ['instruments', 'instrument_aliases'], fr: ['FR-D6'],
   }),

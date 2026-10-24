@@ -149,8 +149,8 @@ export const studentOps = {
     tables: ['universities', 'degrees'], fr: ['FR-O1'],
   }),
   searchUnits: op({
-    kind: 'read', access: 'public', input: z.object({ university_id: z.string(), q: z.string().max(40).default('') }), output: z.array(courseUnitSchema),
-    does: 'Units of a university matching a code or title (all units when q is empty).',
+    kind: 'read', access: 'public', input: z.object({ university_id: z.string(), q: z.string().max(80).default('') }), output: z.array(courseUnitSchema),
+    does: 'Units of a university matching a code or title, including conservative typo matching (all units when q is empty).',
     ui: '/onboarding?step=units search box and list',
     tables: ['course_units'], fr: ['FR-O2'],
   }),
@@ -232,6 +232,15 @@ export const studentOps = {
     ui: 'Detail page "Watch" (primary header action) → I have this / I\'ve worked in this role / Watch',
     errors: ['not_found:instrumentNotFound', 'validation:industriesCannotBeHeld', 'conflict:alreadyWatching', 'validation:watchlistFull'],
     tables: ['watchlist_items'], fr: ['FR-W1', 'FR-F6'],
+  }),
+  watchAllItems: op({
+    kind: 'action', access: 'student',
+    input: z.object({ slugs: z.array(slug).min(1), filter: filterSpecSchema }),
+    output: z.object({ added: z.number().int().min(0).max(MAX_WATCHLIST_ITEMS) }),
+    does: 'Atomically watch all distinct instruments for the normalised filter. Preserve existing held/watching status and baselines; use each new instrument default metric. Reject the whole batch if the 30-item capacity would be exceeded.',
+    ui: 'Skill detail Roles and role detail Skills: Watch all',
+    errors: ['not_found:instrumentNotFound', 'validation:watchlistFull'],
+    tables: ['watchlist_items', 'metric_points'], fr: ['FR-W1'],
   }),
   updateWatchlistItem: op({
     kind: 'action', access: 'student', input: updateWatchlistInput, output: watchlistItemSchema,

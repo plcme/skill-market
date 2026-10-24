@@ -11,7 +11,7 @@ import { competencyLevels } from '@/lib/market/competencies';
 import { DEGREES, searchUnits, UNIVERSITIES } from '@/lib/demo/education';
 import { completeTier0, completeTier1, selectOnboarding, skipOnboarding } from '@/lib/api/onboarding';
 import { addSkill, confirmSkill, selectSkillBoard } from '@/lib/api/skills';
-import { addWatchlistItem, selectWatchlistGroups, updateWatchlistItem } from '@/lib/api/watchlist';
+import { addWatchlistItem, selectWatchlistGroups, updateWatchlistItem, watchAllItems } from '@/lib/api/watchlist';
 import { diagnoseGap } from '@/lib/api/gap';
 import { requestExport, selectConsents, updateEmailPreferences, updateFieldVisibility, updateProfile } from '@/lib/api/privacy';
 import { findCandidates, selectSupply } from '@/lib/api/matching';
@@ -67,6 +67,9 @@ describe('market reads', () => {
     conforms(CONTRACT.getCoreCompetencies.output, competencyLevels('software-engineer'), 'competencies');
     conforms(CONTRACT.getComparison.output, market.getComparison('python', 'rust', F), 'comparison');
     conforms(CONTRACT.search.output, market.search('py'), 'search');
+    const typo = market.search('pyhton');
+    expect(typo.skills.some(hit => hit.instrument.slug === 'python' && hit.via === 'fuzzy')).toBe(true);
+    conforms(CONTRACT.search.output, typo, 'fuzzy search');
     conforms(CONTRACT.searchWithSnapshots.output, market.searchWithSnapshots('data', F), 'searchWithSnapshots');
     conforms(CONTRACT.getTape.output.shape.changes, market.getTape(16), 'tape changes');
     conforms(CONTRACT.getIndustryHeatmap.output, market.getIndustryHeatmap(F), 'heatmap');
@@ -78,6 +81,17 @@ describe('market reads', () => {
 });
 
 describe('student desk', () => {
+  it('bulk watch output matches the contract and preserves held items', async () => {
+    setPersona('student');
+    const held = data(await addWatchlistItem({ instrument_slug: 'python', status: 'held', filter: F }));
+    const input = { slugs: ['python', 'sql', 'sql'], filter: F };
+    conforms(CONTRACT.watchAllItems.input, input, 'bulk watch input');
+    const result = data(await watchAllItems(input));
+    conforms(CONTRACT.watchAllItems.output, result, 'bulk watch output');
+    expect(result.added).toBe(1);
+    expect(getDB().watchlist.find(item => item.id === held.id)).toEqual(held);
+  });
+
   it('onboarding, skills, watchlist, gap, settings', async () => {
     conforms(CONTRACT.getEducationOptions.output, { universities: UNIVERSITIES, degrees: DEGREES }, 'education');
     conforms(CONTRACT.searchUnits.output, searchUnits('usyd', 'info'), 'units');

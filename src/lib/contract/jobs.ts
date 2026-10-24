@@ -45,12 +45,12 @@ export const jobOps = {
   // once a day; the hourly polls only feed the intraday layer (new_today, tape).
   pollAts: op({
     kind: 'job', access: 'system', input: jobInput, output: jobOutput,
-    does: 'Hourly, staggered: for each employer with next_poll_at due, fetch the light job list (id, title, updated time) from its ATS; queue new ids, set closed_at on ids gone; re-estimate post_rate (Poisson λ, last 8 weeks) and set next_poll_at (busy → hourly, quiet → daily, new employers hourly for 2 weeks). Polite: ATS_USER_AGENT, robots.txt, back off on 429.',
+    does: 'Hourly, staggered: for each employer with next_poll_at due, fetch the light job list (id, title, updated time) from its ATS; queue new or changed ids; set closed_at only for ids absent from a successful complete employer snapshot, never on timeout, 429, failed or partial responses; re-estimate post_rate (Poisson λ, last 8 weeks) and set next_poll_at (busy → hourly, quiet → daily, new employers hourly for 2 weeks). Polite: ATS_USER_AGENT, robots.txt, back off on 429.',
     ui: '', tables: ['employers', 'job_ads', 'data_sources', 'ingestion_runs'], fr: ['FR-D1'],
   }),
   fetchAtsDetails: op({
     kind: 'job', access: 'system', input: jobInput, output: jobOutput,
-    does: 'After poll-ats: fetch full text only for queued new ids; strip recruiter names, emails and phone numbers; dedupe on (employer, normalised title, location, description hash); upsert job_ads (raw_snippet kept 30 days).',
+    does: 'After poll-ats: fetch full text only for queued new or changed ids; strip recruiter names, emails and phone numbers; dedupe on (employer, normalised title, location, description hash); upsert job_ads (raw_snippet kept 30 days).',
     ui: '', tables: ['employers', 'job_ads', 'ingestion_runs'], fr: ['FR-D1'],
   }),
   extractFeatures: op({
@@ -75,7 +75,7 @@ export const jobOps = {
   }),
   computeCoverage: op({
     kind: 'job', access: 'system', input: jobInput, output: jobOutput,
-    does: 'After ingest-jsa: coverage_ratio = our deduped new ads ÷ IVI new ads per ANZSCO4 × state × month (skills weight their main occupations), its band (COVERAGE_THRESHOLDS), and the occupation × state reweighting factors for share_of_ads.',
+    does: 'After ingest-jsa: coverage_ratio = our deduped new ads ÷ IVI new ads per ANZSCO4 × state × month (skills weight their main occupations), its band (COVERAGE_THRESHOLDS), and the occupation × state reweighting factors for share_of_ads. Record source, occupation, state, month, numerator, denominator and method version; an IVI occupation estimate does not validate skill-level counts. Suppress estimates below min_sample (default 30), with missing cells or zero denominators.',
     ui: '', tables: ['job_ads', 'metric_points'], fr: ['FR-D1', 'FR-D2'],
   }),
   detectSignals: op({
