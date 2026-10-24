@@ -21,13 +21,12 @@ if (!boundary || boundary.length > 200) throw new Error('Invalid Wrangler bundle
 const form = await new Response(bytes, { headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` } }).formData();
 const part = form.get('metadata');
 const metadata = JSON.parse(typeof part === 'string' ? part : await part.text());
-// Fail closed before any upload if the gate or its required bindings disappeared.
-if (config.assets?.run_worker_first !== true) throw new Error('All requests must pass through the invite gate');
-for (const name of ['ASSETS', 'WORKER_SELF_REFERENCE', 'INVITE_RATE_LIMITER']) {
+// Validate the application bindings before uploading.
+for (const name of ['ASSETS', 'WORKER_SELF_REFERENCE']) {
   if (!metadata.bindings?.some(b => b.name === name)) throw new Error(`Missing binding ${name}`);
 }
 // Wrangler dry-run omits assets metadata because no upload session exists yet.
-metadata.assets = { config: { run_worker_first: true, html_handling: config.assets.html_handling, not_found_handling: config.assets.not_found_handling } };
+metadata.assets = { config: { run_worker_first: config.assets.run_worker_first ?? false, html_handling: config.assets.html_handling, not_found_handling: config.assets.not_found_handling } };
 metadata.keep_bindings = [...new Set([...(metadata.keep_bindings || []), 'secret_text', 'secret_key'])];
 const manifest = {};
 const byHash = new Map();

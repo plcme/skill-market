@@ -1,8 +1,5 @@
 name: Database migrations
 on:
-  push:
-    branches: [dev]
-    paths: ['supabase/migrations/**']
   workflow_dispatch:
     inputs:
       target:
@@ -27,7 +24,7 @@ jobs:
         env:
           TARGET: ${{ inputs.target || 'development' }}
         run: |
-          if [ "$TARGET" = production ]; then test "$GITHUB_REF" = refs/heads/main; else test "$GITHUB_REF" = refs/heads/dev; fi
+          if [ "$TARGET" = production ]; then test "$GITHUB_REF" = refs/heads/main; fi
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

@@ -6,7 +6,7 @@
     "title": "Ask someone who does the work.",
     "lede": "When a skill you follow moves, we find up to three people who use it every day and have 20 minutes free. You bring the decision you’re stuck on.",
     "ctaStart": "Start from a signal",
-    "ctaRequests": "My requests",
+    "ctaRequests": "My coffee chats",
     "rulesKicker": "The rules",
     "rulesTitle": "Built so nobody is left hanging",
     "rules": {
@@ -139,7 +139,7 @@
     "waitlistBody": "That happens while we grow. Join the waitlist and we’ll email you the moment someone who uses {name} opens times. Nothing else is shared.",
     "waitlistJoin": "Join the waitlist",
     "waitlistJoined": "You’re on the waitlist for {name}",
-    "waitlistJoinedBody": "We’ll email you when someone opens times. You can leave the waitlist from My requests.",
+    "waitlistJoinedBody": "We’ll email you when someone opens times. You can leave the waitlist from My coffee chats.",
     "waitlistRecruit": "Know someone who uses {name}? Practitioners join in five minutes and choose how often they chat.",
     "waitlistRecruitCta": "Share the practitioner page",
     "waitlistAlso": "Meanwhile",
@@ -205,7 +205,7 @@
     "notFoundBody": "It may belong to a different account, or the link is incomplete.",
     "otherPersona": "This chat belongs to your {persona} view.",
     "switchPersona": "Switch to {persona}",
-    "toRequests": "Go to my requests",
+    "toRequests": "Go to my coffee chats",
     "toDesk": "Go to my desk",
     "status": {
       "waiting": "Waiting for a reply",
@@ -392,9 +392,9 @@
     "rulesLink": "No-show rules"
   },
   "Requests": {
-    "metaTitle": "My requests",
+    "metaTitle": "My coffee chats",
     "kicker": "Coffee chats",
-    "title": "My requests",
+    "title": "My coffee chats",
     "lede": "Everything you’ve asked, in one place. Nothing here is a score.",
     "new": "Start a new chat",
     "needs_you": "Needs you",
