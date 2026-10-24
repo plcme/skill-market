@@ -14,4 +14,4 @@ Wrangler runs the generated OpenNext Worker directly. Cloudflare serves static a
 
 ## Verification
 
-Deployment tests validate scoped upload endpoints, asset routing, required application bindings and authorization failures. After deployment, check that `/` and `/market` return HTTP 200 without a Cookie header, then verify detail pages and filtered navigation in a browser. Existing application authentication remains responsible for private features.
+Deployment tests validate scoped upload endpoints, asset routing, required application bindings and authorization failures. After deployment, follow the `/` redirect and check that `/market` returns HTTP 200 without a Cookie header, then verify detail pages and filtered navigation in a browser. Existing application authentication remains responsible for private features.
