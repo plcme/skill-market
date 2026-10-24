@@ -240,6 +240,7 @@
     "signInBody": "It’s free. Your filter is saved with each item.",
     "signIn": "Sign in",
     "added": "Now tracking {name}",
+    "viewWatchlist": "View watchlist",
     "heldAdded": "{name} added to skills you have",
     "worked": "Worked in this role",
     "iWorkedHere": "I’ve worked in this role",
