@@ -62,6 +62,33 @@ export async function addWatchlistItem(input: AddWatchlistInput): Promise<Result
   });
 }
 
+/** Add the whole collection atomically, preserving existing statuses and baselines. */
+export async function watchAllItems(input: { slugs: string[]; filter: FilterSpec }): Promise<Result<{ added: number }>> {
+  await latency();
+  const parsed = z.object({ slugs: z.array(z.string().min(1)).min(1), filter: filterSpecSchema }).safeParse(input);
+  if (!parsed.success) return fail('validation', 'validation');
+  const instruments = [...new Set(parsed.data.slugs)].map(getInstrument);
+  if (instruments.some(inst => !inst)) return fail('not_found', 'instrumentNotFound');
+  const filter = normaliseFilter(parsed.data.filter as FilterSpec);
+  return transact((d, now) => {
+    const denied = guard(d, 'student');
+    if (denied) return { ok: false, error: denied };
+    const missing = instruments.filter(inst => inst && !findWatchItem(d, inst.slug, filter));
+    if (d.watchlist.length + missing.length > MAX_WATCHLIST_ITEMS) return fail('validation', 'watchlistFull');
+    const iso = new Date(now).toISOString();
+    const items: WatchlistItem[] = missing.map(inst => {
+      const metric = defaultMetric(inst!.type);
+      return {
+        id: uid('w'), instrument_slug: inst!.slug, status: 'watching', filter, metric,
+        baseline_value: computeMetric(inst!.slug, metric, filter).value,
+        baseline_at: iso, created_at: iso,
+      };
+    });
+    d.watchlist.unshift(...items);
+    return ok({ added: items.length });
+  });
+}
+
 export async function updateWatchlistItem(input: UpdateWatchlistInput): Promise<Result<WatchlistItem>> {
   await latency();
   const parsed = updateWatchlistInput.safeParse(input);

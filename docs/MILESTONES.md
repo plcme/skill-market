@@ -6,7 +6,7 @@
 | 依据 | `docs/PRD.md` §5 范围、§7 FR、`docs/ARCHITECTURE.md` |
 | 维护方 | 主会话 |
 
-> 每个里程碑都产出可运行、可演示的增量，且验收命令能在本地一条命令跑通。规模：S ≈ 半天、M ≈ 1–2 天、L ≈ 2–4 天（以 implementer 子 agent 的连续工作计）。里程碑分支 `m{n}-<slug>`，从 `dev` 切出。**MVP 上线点在 M8 之后。**
+> 每个里程碑都产出可运行、可演示的增量，且验收命令能在本地一条命令跑通。规模：S ≈ 半天、M ≈ 1–2 天、L ≈ 2–4 天（以 implementer 子 agent 的连续工作计）。里程碑分支 `m{n}-<slug>`，从 `main` 切出，经 PR 合入 `main`（仅集成；经用户授权推送 `v*` tag 才上线）。**MVP 上线点在 M8 之后。**
 
 ## 总览
 
@@ -36,13 +36,13 @@
 
 **范围内**
 - Next.js 16 + TypeScript strict + pnpm + Tailwind v4 + shadcn/ui 初始化；`output: 'standalone'`
-- `src/config/app.ts` 导出 `APP_NAME`（读 `NEXT_PUBLIC_APP_NAME`，缺省 `skill-market`）；ESLint 规则禁止在 `src/` 出现字面量产品名
+- `src/config/app.ts` 导出 `APP_NAME`（读 `APP_NAME`，缺省 `skill-market`；`brewdex.app` 发布配置为 `Brewdex`）；ESLint 规则禁止在 `src/` 出现字面量产品名
 - `next-intl` 单 locale；`messages/en.json`；ESLint 规则禁止 JSX 中裸英文文案（`react/jsx-no-literals` 限定范围）
 - `src/env.ts` Zod 环境变量校验（server / client 分组）
 - Supabase CLI：`supabase init`、本地 `supabase start`、第一条 migration（`profiles` 表 + `handle_new_user` trigger + RLS + `is_admin()`）、`supabase gen types` 脚本
 - 测试骨架：Vitest（1 个示例）、pgTAP（`profiles` RLS 正反例）、Playwright（首页可访问 + axe）
 - `pnpm verify`、`pnpm test:db`、`pnpm test:e2e`、`pnpm db:reset`、`pnpm types:gen` 脚本
-- GitHub Actions：`ci.yml`、`migrate.yml`（dev → 项目 2；main → production environment 审批）
+- GitHub Actions：`ci.yml`、`migrate.yml`（手动：PR 分支 → 项目 2；main → production environment 审批）
 - 首页 `/` 显示 `APP_NAME` 与 "coming soon"；`/api/health`
 - `README.md`：本地启动步骤
 
@@ -61,11 +61,11 @@
 **验收标准**
 - `pnpm verify` 本地零错误通过（lint、typecheck、unit、pgTAP、build）
 - `pnpm test:e2e` 通过：首页 200、页面标题包含 `APP_NAME`、axe 无 serious/critical
-- 推送到 `dev` 后 GitHub Actions `ci.yml` 绿；Vercel preview URL 可打开首页
+- PR 上 GitHub Actions `ci.yml` 绿；Vercel preview URL 可打开首页
 - `grep -rn "skill-market" src/` 只命中 `src/config/app.ts` 的缺省值
 - `supabase db reset` 后 `supabase test db` 通过
 
-**需要人类完成**：SETUP §1 GitHub、§2 Supabase（两个项目：`skill-market`、`skill-market-dev`，均 Sydney）、§3 Vercel；把 §2 的变量填入 `.env.local` 与 Vercel 环境；新增 `NEXT_PUBLIC_APP_NAME`、`NEXT_PUBLIC_APP_URL`、`JOBS_SECRET` 到 `.env.example`（见 PROGRESS.md）。
+**需要人类完成**：SETUP §1 GitHub、§2 Supabase（两个项目：`skill-market`、`skill-market-dev`，均 Sydney）、§3 Vercel；把 §2 的变量填入 `.env.local` 与 Vercel 环境；新增 `APP_NAME`、`NEXT_PUBLIC_APP_URL`、`JOBS_SECRET` 到 `.env.example`（见 PROGRESS.md）。
 
 ---
 

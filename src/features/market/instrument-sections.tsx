@@ -11,6 +11,7 @@ import type { CompositionEntry, InstrumentDetail } from '@/lib/queries/market';
 import { ChangeBadge } from '@/components/market/change-badge';
 import { MetricInfo, MetricLabel } from '@/components/market/metric-info';
 import { MetricValue } from '@/components/market/metric-value';
+import { WatchButton } from '@/components/market/watch-button';
 import { SourceBadge } from '@/components/market/source-badge';
 import { Notice } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
@@ -162,7 +163,7 @@ export function CompositionList({ entries, parent, filter, mode }: {
         const skillName = skillsOfParent ? e.instrument.name : parent.name;
         return (
           <li key={e.instrument.id} className="relative py-3 hover:bg-surface">
-            <div className="flex items-baseline justify-between gap-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
               <p className="min-w-0 truncate">
                 <Link href={instrumentPath(e.instrument.type, e.instrument.slug, filter)} className="font-medium after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent">
                   {e.instrument.name}
@@ -170,6 +171,11 @@ export function CompositionList({ entries, parent, filter, mode }: {
                 <span className="ml-2 text-[12px] text-muted">{e.instrument.category}</span>
               </p>
               <span className="num shrink-0 text-sm font-medium">{skillsOfParent ? t('holdingPct', { pct }) : pct}</span>
+              {mode !== 'skillsOfIndustry' ? (
+                <div className="relative z-10 col-span-2 justify-self-end sm:col-span-1">
+                  <WatchButton slug={e.instrument.slug} filter={filter} compact />
+                </div>
+              ) : null}
             </div>
             <span className="relative mt-2 block h-1.5 overflow-hidden rounded-full bg-sunken" aria-hidden>
               <span className="absolute inset-y-0 left-0 rounded-full bg-ink/70" style={{ width: `${barPercent(e.weight, max)}%` }} />

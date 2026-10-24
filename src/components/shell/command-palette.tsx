@@ -1,5 +1,8 @@
 'use client';
 
+import { useSearchAliases } from '@/lib/search/use-search-aliases';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { instrumentPath } from '@/lib/links';
 import { useRouter } from 'next/navigation';
@@ -31,16 +34,19 @@ export function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
+  const aliases = useSearchAliases();
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const onOpen = () => { returnFocus.current = document.activeElement as HTMLElement; setOpen(true); };
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) {
         e.preventDefault();
+        if (!open) returnFocus.current = document.activeElement as HTMLElement;
         setOpen(o => !o);
       }
     };
@@ -50,7 +56,7 @@ export function CommandPalette() {
       window.removeEventListener(OPEN_SEARCH_EVENT, onOpen);
       window.removeEventListener('keydown', onKey);
     };
-  }, []);
+  }, [open]);
 
   // Core competencies (ASC) are explained, not tracked: they link to the explainer.
   // Same ordering as /search: an exact alias match ("communication") leads; prefix matches follow the instruments.
@@ -59,9 +65,9 @@ export function CommandPalette() {
     const competencies = searchCompetencies(q, 2).map(hit => ({ kind: 'competency' as const, id: `competency-${hit.slug}`, hit }));
     const exact = competencies.filter(c => isExactCompetencyHit(c.hit, q));
     const rest = competencies.filter(c => !isExactCompetencyHit(c.hit, q));
-    const instruments = searchInstruments(q, 8).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit }));
+    const instruments = searchInstruments(q, 8, { aliases }).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit }));
     return [...exact, ...instruments, ...rest].slice(0, 8);
-  }, [q]);
+  }, [q, aliases]);
   const suggestions = useMemo<PaletteItem[]>(() => SUGGESTED.flatMap(s => searchInstruments(s, 1)).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit })), []);
   const list = q.trim() ? hits : suggestions;
 
@@ -75,6 +81,7 @@ export function CommandPalette() {
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(list.length, a + 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(0, a - 1)); }
     else if (e.key === 'Enter') { e.preventDefault(); if (active === list.length && q.trim()) { setOpen(false); router.push(`/search?q=${encodeURIComponent(q.trim())}`); setQ(''); } else go(active); }
@@ -84,12 +91,16 @@ export function CommandPalette() {
     <RDialog.Root open={open} onOpenChange={o => { setOpen(o); if (!o) setQ(''); setActive(0); }}>
       <RDialog.Portal>
         <RDialog.Overlay className="fixed inset-0 z-50 bg-overlay animate-fade" />
-        <RDialog.Content className="fixed left-1/2 top-[10vh] z-50 w-[calc(100vw-24px)] max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border border-rule bg-surface shadow-float animate-rise" aria-describedby={undefined}>
+        <RDialog.Content onCloseAutoFocus={e => { e.preventDefault(); returnFocus.current?.focus(); }} className="fixed left-1/2 top-[10vh] z-50 w-[calc(100vw-24px)] max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border border-rule bg-surface shadow-float animate-rise" aria-describedby={undefined}>
           <RDialog.Title className="sr-only">{t('dialogLabel')}</RDialog.Title>
           <div className="flex items-center gap-3 border-b border-rule px-4">
             <Search className="size-4 shrink-0 text-muted" aria-hidden />
             <input
               autoFocus
+              maxLength={MAX_SEARCH_LENGTH}
+              role="combobox"
+              aria-expanded={open}
+              aria-autocomplete="list"
               value={q}
               onChange={e => { setQ(e.target.value); setActive(0); }}
               onKeyDown={onKeyDown}
