@@ -29,7 +29,7 @@ export function WatchAllButton({ slugs, filter }: { slugs: string[]; filter: Fil
         return;
       }
       const result = await add({ slugs, filter });
-      if (result?.ok) toast({ tone: 'success', title: t('allAdded', { count: result.data.added }), body: t('filterIncluded') });
+      if (result?.ok) toast({ tone: 'success', title: t('allAdded', { count: result.data.added }), body: t('filterIncluded'), action: { label: t('viewWatchlist'), onClick: () => router.push('/me#watchlist') } });
       else if (result && !result.ok) toast({ tone: 'warn', title: te.has(result.error.message) ? te(result.error.message) : te('generic') });
     }}>
       {!state.pending ? <Icon aria-hidden /> : null}{t(allWatched ? 'allWatching' : 'watchAll')}
