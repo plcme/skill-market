@@ -4,7 +4,7 @@ The existing Next.js application uses OpenNext on Workers. This configuration ne
 
 ## Releases
 
-Production deploys only when a `v*` tag is pushed, for example `git tag v0.1.9 && git push origin v0.1.9`. The tag must point at a commit on `main`; any other tag fails before deployment. The release run builds that exact revision (lint, type checking, unit tests, the OpenNext build and a Wrangler dry run) and then deploys it. Pushes to `main` or `dev` never deploy; CI still checks them. Manual workflow runs validate only. A failed deployment can be retried from Actions by re-running the tag's workflow.
+Production deploys only when a `v*` tag is pushed, for example `git tag v0.1.9 && git push origin v0.1.9`. The tag must point at a commit on `main`; any other tag fails before deployment. The release run builds that exact revision (lint, type checking, unit tests, the OpenNext build and a Wrangler dry run) and then deploys it. Pushes to `main` never deploy; CI still checks main and pull requests. Manual workflow runs validate only. A failed deployment can be retried from Actions by re-running the tag's workflow.
 
 Deployment requires the GitHub Actions repository secret `CLOUDFLARE_API_TOKEN`, scoped to Individual Workers Editor for the `brewdex` Worker. The direct-upload adapter uses the official Cloudflare asset and script upload APIs, preserves runtime secrets, and does not list other Workers or alter domains. The existing custom domain is configured once in the dashboard. Wrangler produces the multipart bundle offline; this avoids its dashboard-config comparison requesting account-wide route metadata. Domain changes require a separate reviewed operation. The account ID in wrangler.jsonc is public configuration. Never commit tokens. Existing Supabase migration workflows remain unchanged.
 
@@ -15,3 +15,7 @@ Wrangler runs the generated OpenNext Worker directly. Cloudflare serves static a
 ## Verification
 
 Deployment tests validate scoped upload endpoints, asset routing, required application bindings and authorization failures. After deployment, follow the `/` redirect and check that `/market` returns HTTP 200 without a Cookie header, then verify detail pages and filtered navigation in a browser. Existing application authentication remains responsible for private features.
+
+## Product name
+
+The repository, local development and ordinary previews default to `skill-market`. The release build and the Brewdex Worker set `APP_NAME=Brewdex` for `brewdex.app`; components continue to read the shared app-name configuration.

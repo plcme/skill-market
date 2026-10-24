@@ -55,12 +55,12 @@
 - `boardAnchor()` 用 `document.querySelector('header')` 取第一个 `header`，目前确实是 `SiteHeader`。但这依赖 DOM 顺序，以后在它前面插入任何 `<header>` 都会算错。建议给站点 header 加一个 id 或 data 属性，再按它来取。
 
 
-## Integration recheck — 2026-10-24
+## 整合复查 — 2026-10-24
 
-- Scope: all seven original FE-R8 commits, including `18c5eb2`, plus synchronization with main. The original Round 1 findings above are historical.
-- Keyboard quiet time and focused-element visibility now prevent snap from hiding keyboard focus; the board anchor receives focus after the CTA.
-- On narrow or short screens the industry link becomes visible on focus; source text remains in the accessible table caption.
-- Resize and orientation listeners use the dedicated site-header marker.
-- The halfway snap rule remains the documented product choice; small mouse-wheel steps can still return to the intro. It is recorded for user review rather than silently changed.
-- Release smoke checks now follow the root redirect introduced by FE-R8.
-- Local checks and PR CI results are recorded in the final handoff; this note does not claim browser coverage before CI finishes.
+- 范围为原七个 FE-R8 提交（含 `18c5eb2`）与 main 累计功能；上面的 Round 1 是历史发现。
+- 键盘输入静默期、焦点可见性检查、CTA 后转移焦点已实现，避免吸附把键盘焦点移出视口。
+- 窄屏和矮屏的行业链接聚焦后可见，来源信息保留在读屏表格标题里；resize / orientationchange 监听使用专用站点 header 标记。
+- 过半才翻页仍是现有产品规则，慢拨滚轮可能回到开场区块；保留供用户体验后决定，不擅自改交互。
+- 发布健康检查已跟随 FE-R8 新增的根路径重定向；模糊搜索的 SearchableBoard 与首访开场区块同时保留。
+- 原型 cookie 只用于开场展示，不是认证边界。真实 Supabase 会话读取仍待接入。
+- 本地与 PR CI 结果在交接时记录；尚未完成的浏览器检查不记为通过。

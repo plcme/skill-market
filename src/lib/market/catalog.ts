@@ -1,4 +1,5 @@
 import type { ActiveInstrumentType, IndustryComponent, Instrument, LearningEffort, RoleComponent, SkillLayer, Transferability } from './types';
+import { createSearch } from '@/lib/search/matcher';
 
 // Illustrative catalogue for the launch vertical (software / data, PRD §12.2).
 // Profile numbers are synthetic parameters for the fixture engine, not real data.
@@ -316,36 +317,41 @@ export function premiumOf(slug: string): number | undefined {
 }
 
 /** FR-D6 alias normalisation: "JS" → JavaScript, "k8s" → Kubernetes. */
-export function normaliseQuery(q: string): string {
-  return q.trim().toLowerCase().replace(/\s+/g, ' ');
-}
+export { normalizeSearch as normaliseQuery } from '@/lib/search/matcher';
 
 export interface SearchHit {
   instrument: Instrument;
   matched: string;
-  via: 'name' | 'alias' | 'symbol' | 'prefix';
+  via: 'name' | 'alias' | 'symbol' | 'prefix' | 'fuzzy';
 }
 
-export function searchInstruments(q: string, limit = 12): SearchHit[] {
-  const needle = normaliseQuery(q);
-  if (!needle) return [];
-  const hits: Array<SearchHit & { score: number }> = [];
-  for (const inst of INSTRUMENTS) {
-    const name = inst.name.toLowerCase();
-    const alias = inst.aliases.find(a => a === needle);
-    let hit: (SearchHit & { score: number }) | null = null;
-    if (name === needle) hit = { instrument: inst, matched: inst.name, via: 'name', score: 100 };
-    else if (inst.symbol.toLowerCase() === needle) hit = { instrument: inst, matched: inst.symbol, via: 'symbol', score: 95 };
-    else if (alias) hit = { instrument: inst, matched: alias, via: 'alias', score: 90 };
-    else if (name.startsWith(needle)) hit = { instrument: inst, matched: inst.name, via: 'prefix', score: 70 };
-    else {
-      const prefixAlias = inst.aliases.find(a => a.startsWith(needle));
-      if (prefixAlias) hit = { instrument: inst, matched: prefixAlias, via: 'alias', score: 60 };
-      else if (name.includes(needle)) hit = { instrument: inst, matched: inst.name, via: 'prefix', score: 40 };
-    }
-    if (hit) hits.push(hit);
+export interface SearchAlias { alias: string; instrument_slug: string }
+export interface InstrumentSearchOptions {
+  type?: Instrument['type'];
+  layer?: Instrument['skill_layer'];
+  exclude?: ReadonlySet<string>;
+  aliases?: readonly SearchAlias[];
+}
+
+const catalogueSearch = buildCatalogueSearch([]);
+const aliasSearches = new WeakMap<readonly SearchAlias[], ReturnType<typeof buildCatalogueSearch>>();
+function buildCatalogueSearch(aliases: readonly SearchAlias[]) {
+  return createSearch([...INSTRUMENTS].sort((a, b) => a.name.localeCompare(b.name)), i => [
+    { text: i.name, kind: 'name' }, { text: i.symbol, kind: 'symbol', fuzzy: false },
+    ...[...i.aliases, ...aliases.filter(a => a.instrument_slug === i.slug).map(a => a.alias)].map(text => ({ text, kind: 'alias' as const })),
+  ]);
+}
+
+export function searchInstruments(q: string, limit = 12, options: InstrumentSearchOptions = {}): SearchHit[] {
+  const aliases = options.aliases;
+  let search = catalogueSearch;
+  if (aliases?.length) {
+    const cached = aliasSearches.get(aliases);
+    search = cached ?? buildCatalogueSearch(aliases);
+    if (!cached) aliasSearches.set(aliases, search);
   }
-  return hits.sort((a, b) => b.score - a.score || a.instrument.name.localeCompare(b.instrument.name)).slice(0, limit).map(({ score: _score, ...h }) => h);
+  return search(q, { limit, accept: i => (!options.type || i.type === options.type) && (!options.layer || i.skill_layer === options.layer) && !options.exclude?.has(i.slug) })
+    .map(h => ({ instrument: h.item, matched: h.matched, via: h.kind === 'fuzzy' ? 'fuzzy' : h.field === 'alias' ? 'alias' : h.field === 'symbol' ? 'symbol' : h.kind === 'exact' ? 'name' : 'prefix' }));
 }
 
 /** Roles that ask for a skill, strongest first. */

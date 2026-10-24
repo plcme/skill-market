@@ -2,17 +2,15 @@ import type { Metadata } from 'next';
 import { instrumentPath } from '@/lib/links';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { ArrowRight, Search, SearchX } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { decodeFilter, encodeFilter, isDefaultFilter } from '@/lib/filters/spec';
 import { getInstrument } from '@/lib/market/catalog';
-import { competencyHref, isExactCompetencyHit, type CompetencyHit } from '@/lib/market/competencies';
-import { defaultMetric } from '@/lib/metrics/registry';
-import { searchWithSnapshots, type SearchResult } from '@/lib/queries/market';
-import type { ActiveInstrumentType, FilterSpec } from '@/lib/market/types';
+import { searchWithSnapshots } from '@/lib/queries/market';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/form';
-import { Container, EmptyState, PageHeader, SectionHeader } from '@/components/ui/primitives';
-import { BoardColumnHeader, BoardRows } from '@/features/market/board';
+import { Container, PageHeader, SectionHeader } from '@/components/ui/primitives';
+import { SearchResults } from '@/features/market/search-results';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
 import { firstParam, hrefWith, marketHref } from '@/features/market/logic';
 import { InstrumentMark } from '@/components/market/instrument-mark';
 
@@ -25,44 +23,6 @@ export async function generateMetadata({ searchParams }: PageProps<'/search'>): 
 const QUERY_SUGGESTIONS = ['JS', 'k8s', 'data analyst', 'Postgres', 'ML', 'cloud', 'Xero', 'health'];
 const BROWSE = ['python', 'sql', 'react', 'software-engineer', 'data-analyst', 'cyber-security-analyst'];
 
-async function ResultGroup({ type, results, filter, q }: { type: ActiveInstrumentType; results: SearchResult[]; filter: FilterSpec; q: string }) {
-  const t = await getTranslations('SearchPage');
-  // FR-D6: say which alias matched, so "JS → JavaScript" never looks like a wrong result.
-  const notes = Object.fromEntries(results
-    .filter(r => r.hit.via === 'alias' || r.hit.via === 'symbol')
-    .map(r => [r.hit.instrument.slug, t('aliasNote', { q, matched: r.hit.matched, name: r.hit.instrument.name })]));
-  return (
-    <section aria-labelledby={`results-${type}`} className="mt-10">
-      <SectionHeader id={`results-${type}`} kicker={t(`count.${type}`, { n: results.length })} title={t(`group.${type}`)} />
-      <BoardColumnHeader type={type} metric={defaultMetric(type)} filter={filter} sample={results[0]?.snapshot} />
-      <BoardRows rows={results.map(r => r.snapshot)} filter={filter} metric={defaultMetric(type)} notes={notes} />
-    </section>
-  );
-}
-
-/** ASC core competencies: explained, never tickers (no demand metrics). */
-async function CompetencyGroup({ hits }: { hits: CompetencyHit[] }) {
-  const t = await getTranslations('SearchPage');
-  const tc = await getTranslations('Competencies');
-  return (
-    <section aria-labelledby="results-competency" className="mt-10">
-      <SectionHeader id="results-competency" kicker={tc('count', { n: hits.length })} title={t('group.competency')} />
-      <ul className="divide-y divide-rule border-b border-rule">
-        {hits.map(h => (
-          <li key={h.slug} className="relative py-3 hover:bg-surface">
-            <Link href={competencyHref(h.slug)} className="font-medium after:absolute after:inset-0">{tc(`items.${h.slug}.name`)}</Link>
-            <span className="kicker ml-3">{tc('type')}</span>
-            <p className="mt-0.5 text-[13.5px] text-ink-2">{tc(`items.${h.slug}.blurb`)}</p>
-            <p className="mt-0.5 text-[12.5px] text-muted">{tc('matched', { matched: h.matched })}</p>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-3 max-w-3xl text-[13px] text-muted">{tc('searchNote')}</p>
-      <p className="mt-1 text-[12.5px] text-muted">{tc('attribution')}{' · '}<Link href="/metrics#core-competencies" className="link">{tc('explainerLink')}</Link></p>
-    </section>
-  );
-}
-
 export default async function SearchPage({ searchParams }: PageProps<'/search'>) {
   const t = await getTranslations('SearchPage');
   const tt = await getTranslations('Ticker');
@@ -71,9 +31,6 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
   const filter = decodeFilter(firstParam(sp.f));
   const f = isDefaultFilter(filter) ? undefined : encodeFilter(filter);
   const results = q ? searchWithSnapshots(q, filter) : { skills: [], roles: [], industries: [], competencies: [] };
-  const total = results.skills.length + results.roles.length + results.industries.length + results.competencies.length;
-  // "communication" is a core competency first and foremost: lead with it on an exact alias match.
-  const competencyFirst = results.competencies.some(c => isExactCompetencyHit(c, q));
 
   const suggestions = (
     <div className="mt-10 grid gap-10 md:grid-cols-2">
@@ -109,41 +66,14 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
         <label htmlFor="search-q" className="sr-only">{t('inputLabel')}</label>
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-          <Input id="search-q" name="q" type="search" defaultValue={q} placeholder={t('placeholder')} autoComplete="off" className="h-11 pl-9" />
+          <Input maxLength={MAX_SEARCH_LENGTH} id="search-q" name="q" type="search" defaultValue={q} placeholder={t('placeholder')} autoComplete="off" className="h-11 pl-9" />
         </div>
         {f ? <input type="hidden" name="f" value={f} /> : null}
         <Button type="submit" size="md" className="h-11">{t('submit')}</Button>
       </form>
 
-      {q ? (
-        <p className="num mt-4 text-[13px] text-muted" aria-live="polite">{t('summary', { n: total, q })}</p>
-      ) : null}
+      <SearchResults q={q} filter={filter} initial={results} suggestions={suggestions} />
 
-      {!q ? suggestions : total === 0 ? (
-        <>
-          <EmptyState
-            icon={SearchX}
-            className="mt-8"
-            title={t('emptyTitle', { q })}
-            action={<Button asChild variant="outline" size="sm"><Link href={marketHref()}>{t('emptyBrowse')}<ArrowRight aria-hidden /></Link></Button>}
-          >
-            {t('emptyBody')}
-          </EmptyState>
-          {suggestions}
-        </>
-      ) : (
-        <>
-          {competencyFirst ? <CompetencyGroup hits={results.competencies} /> : null}
-          {results.skills.length ? <ResultGroup type="skill" results={results.skills} filter={filter} q={q} /> : null}
-          {results.roles.length ? <ResultGroup type="role" results={results.roles} filter={filter} q={q} /> : null}
-          {results.industries.length ? <ResultGroup type="industry" results={results.industries} filter={filter} q={q} /> : null}
-          {!competencyFirst && results.competencies.length ? <CompetencyGroup hits={results.competencies} /> : null}
-          <p className="mt-8 text-[13px] text-muted">
-            {t('missing')}{' '}
-            <Link href={marketHref()} className="link">{t('browseAll')}</Link>
-          </p>
-        </>
-      )}
     </Container>
   );
 }

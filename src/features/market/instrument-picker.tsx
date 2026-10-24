@@ -1,5 +1,8 @@
 'use client';
 
+import { useSearchAliases } from '@/lib/search/use-search-aliases';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
+
 import { useId, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ArrowLeftRight, ChevronDown, Search, X } from 'lucide-react';
@@ -26,14 +29,15 @@ export function InstrumentPicker({ param, slug, restrictType, excludeSlug, label
   const { set, pending } = useSetParams();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
+  const aliases = useSearchAliases();
   const [active, setActive] = useState(0);
   const listId = useId();
   const current = slug ? INSTRUMENTS.find(i => i.slug === slug) : undefined;
 
   const options = useMemo<Instrument[]>(() => {
-    const pool = q.trim() ? searchInstruments(q, 40).map(h => h.instrument) : INSTRUMENTS;
-    return pool.filter(i => (!restrictType || i.type === restrictType) && i.slug !== excludeSlug).slice(0, q.trim() ? 12 : 40);
-  }, [q, restrictType, excludeSlug]);
+    if (q.trim()) return searchInstruments(q, 12, { type: restrictType, exclude: new Set(excludeSlug ? [excludeSlug] : []), aliases }).map(h => h.instrument);
+    return INSTRUMENTS.filter(i => (!restrictType || i.type === restrictType) && i.slug !== excludeSlug).slice(0, 40);
+  }, [q, restrictType, excludeSlug, aliases]);
 
   const choose = (inst: Instrument) => {
     set({ [param]: inst.slug });
@@ -41,6 +45,7 @@ export function InstrumentPicker({ param, slug, restrictType, excludeSlug, label
     setQ('');
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(options.length - 1, a + 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(0, a - 1)); }
     else if (e.key === 'Enter') { e.preventDefault(); const o = options[active]; if (o) choose(o); }
@@ -75,6 +80,7 @@ export function InstrumentPicker({ param, slug, restrictType, excludeSlug, label
             <Search className="size-4 shrink-0 text-muted" aria-hidden />
             <input
               autoFocus
+              maxLength={MAX_SEARCH_LENGTH}
               role="combobox"
               aria-expanded
               aria-controls={listId}
