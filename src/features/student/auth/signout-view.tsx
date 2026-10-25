@@ -10,6 +10,7 @@ import { useDB } from '@/lib/demo/store';
 import { formatDate } from '@/lib/time';
 import { Button } from '@/components/ui/button';
 import { Container, EmptyState, PageSkeleton } from '@/components/ui/primitives';
+import { ReviewText } from '@/features/dev/copy-review';
 
 /** `/auth/signout`: ends the session and says so calmly, with somewhere to go next. */
 export function SignOutView() {
@@ -42,7 +43,7 @@ export function SignOutView() {
         }
       >
         <p role="status">
-          {deleted && db.deletion ? t('deletedBody', { date: formatDate(db.deletion.purge_after) }) : t('signedOutBody')}
+          {deleted && db.deletion ? <ReviewText id="auth.signout.deletedBody">{t('deletedBody', { date: formatDate(db.deletion.purge_after) })}</ReviewText> : <ReviewText id="auth.signout.signedOutBody">{t('signedOutBody')}</ReviewText>}
         </p>
       </EmptyState>
     </Container>

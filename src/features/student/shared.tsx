@@ -6,8 +6,9 @@ import type { ApiError, StudentSkill } from '@/lib/api/types';
 import { describeReason } from '@/lib/demo/education';
 import type { LearningEffort, Transferability } from '@/lib/market/types';
 import { useUiMode } from '@/lib/demo/ui-mode';
-import { ANON_ONBOARDING_EVENT, ANON_ONBOARDING_KEY, EMPTY_ONBOARDING, type AnonymousOnboarding } from '@/lib/api/onboarding';
+import { ANON_ONBOARDING_EVENT, ANON_ONBOARDING_KEY, parseAnonymousOnboarding, type AnonymousOnboarding } from '@/lib/api/onboarding';
 import { Badge } from '@/components/ui/primitives';
+import { ReviewText } from '@/features/dev/copy-review';
 import { cn } from '@/lib/utils';
 
 /** Maps an action error to copy: student-area keys first, then the shared `Errors`. */
@@ -42,13 +43,19 @@ export function confidenceBand(c: number): ConfidenceBand {
 }
 
 /** Inferred ≠ known: always "Suggestion" + confidence in words and numbers (FR-O4). */
-export function SuggestionMeta({ confidence, reason, className }: { confidence: number | null; reason: string | null; className?: string }) {
+export function SuggestionMeta({ confidence, reason, className, reviewId }: {
+  confidence: number | null;
+  reason: string | null;
+  className?: string;
+  /** Dev copy review only: wraps the reason text (the badge and confidence are required by FR-O4). */
+  reviewId?: string;
+}) {
   const t = useTranslations('StudentShared');
   return (
     <span className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted', className)}>
       <Badge tone="outline">{t('suggestion')}</Badge>
       {confidence !== null ? <span className="num">{t('confidence', { band: t(`bands.${confidenceBand(confidence)}`), pct: Math.round(confidence * 100) })}</span> : null}
-      {reason ? <ReasonText reason={reason} /> : null}
+      {reason ? (reviewId ? <ReviewText id={reviewId}><ReasonText reason={reason} /></ReviewText> : <ReasonText reason={reason} />) : null}
     </span>
   );
 }
@@ -101,11 +108,5 @@ function readRaw(): string | null {
 export function useAnonymousOnboarding(): AnonymousOnboarding | null | undefined {
   const raw = useSyncExternalStore(subscribeAnon, readRaw, () => undefined);
   if (raw === undefined) return undefined;
-  if (raw === null) return null;
-  try {
-    const parsed = JSON.parse(raw) as Partial<AnonymousOnboarding>;
-    return { ...EMPTY_ONBOARDING, ...parsed, unit_codes: Array.isArray(parsed.unit_codes) ? parsed.unit_codes : [] };
-  } catch {
-    return null;
-  }
+  return parseAnonymousOnboarding(raw);
 }

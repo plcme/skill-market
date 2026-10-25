@@ -27,10 +27,31 @@ export interface AnonymousOnboarding {
   unit_codes: string[];
   tier0: TierStatus;
   tier1: TierStatus;
+  /**
+   * Suggested skills the visitor removed on this device. They stay hidden here
+   * and are not added as suggestions when the answers merge into a profile.
+   * Missing in values stored before FE-R9.
+   */
+  removed_skills: string[];
   updated_at: string;
 }
 
-export const EMPTY_ONBOARDING: AnonymousOnboarding = { university_id: null, degree_id: null, year: null, unit_codes: [], tier0: 'pending', tier1: 'pending', updated_at: '' };
+export const EMPTY_ONBOARDING: AnonymousOnboarding = { university_id: null, degree_id: null, year: null, unit_codes: [], tier0: 'pending', tier1: 'pending', removed_skills: [], updated_at: '' };
+
+const stringList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+/** Parses a stored value; tolerates older shapes (no `removed_skills`). Null when absent or unreadable. */
+export function parseAnonymousOnboarding(raw: string | null): AnonymousOnboarding | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const p = parsed as Partial<Record<keyof AnonymousOnboarding, unknown>>;
+    return { ...EMPTY_ONBOARDING, ...(parsed as Partial<AnonymousOnboarding>), unit_codes: stringList(p.unit_codes), removed_skills: stringList(p.removed_skills) };
+  } catch {
+    return null;
+  }
+}
 
 // In-memory fallback when localStorage is unavailable (tests, blocked storage).
 let memoryAnon: AnonymousOnboarding | null = null;
@@ -47,14 +68,14 @@ function storage(): Storage | null {
 export function readAnonymousOnboarding(): AnonymousOnboarding | null {
   const s = storage();
   if (!s) return memoryAnon;
+  let raw: string | null;
   try {
-    const raw = s.getItem(ANON_ONBOARDING_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<AnonymousOnboarding>;
-    return { ...EMPTY_ONBOARDING, ...parsed, unit_codes: Array.isArray(parsed.unit_codes) ? parsed.unit_codes : [] };
+    raw = s.getItem(ANON_ONBOARDING_KEY);
   } catch {
     return memoryAnon;
   }
+  if (!raw) return null;
+  return parseAnonymousOnboarding(raw) ?? memoryAnon;
 }
 
 export function writeAnonymousOnboarding(next: AnonymousOnboarding) {
@@ -78,6 +99,20 @@ export function clearAnonymousOnboarding() {
   notifyAnon();
 }
 
+/** Hide a suggested skill on this device (signed out). Kept until the visitor undoes it. */
+export function hideAnonymousSuggestion(skill_slug: string, now = Date.now()) {
+  const prev = readAnonymousOnboarding() ?? EMPTY_ONBOARDING;
+  if (prev.removed_skills.includes(skill_slug)) return;
+  writeAnonymousOnboarding({ ...prev, removed_skills: [...prev.removed_skills, skill_slug], updated_at: new Date(now).toISOString() });
+}
+
+/** Undo `hideAnonymousSuggestion`. */
+export function unhideAnonymousSuggestion(skill_slug: string, now = Date.now()) {
+  const prev = readAnonymousOnboarding();
+  if (!prev?.removed_skills.includes(skill_slug)) return;
+  writeAnonymousOnboarding({ ...prev, removed_skills: prev.removed_skills.filter(s => s !== skill_slug), updated_at: new Date(now).toISOString() });
+}
+
 /** Replace the inferred rows with a fresh inference; held skills are never touched (FR-O4). */
 export function applyInference(d: DemoDB, inferred: InferredSkill[], now: number) {
   const iso = new Date(now).toISOString();
@@ -98,15 +133,16 @@ export function applyInference(d: DemoDB, inferred: InferredSkill[], now: number
   d.skills = next;
 }
 
-function reinfer(d: DemoDB, profile: StudentProfile, now: number): InferredSkill[] {
-  const inferred = inferSkillProfile({ degree_id: profile.degree_id, year: profile.year, unit_codes: profile.unit_codes });
+function reinfer(d: DemoDB, profile: StudentProfile, now: number, exclude: readonly string[] = []): InferredSkill[] {
+  const inferred = inferSkillProfile({ degree_id: profile.degree_id, year: profile.year, unit_codes: profile.unit_codes }).filter(s => !exclude.includes(s.skill_slug));
   applyInference(d, inferred, now);
   return inferred;
 }
 
 /**
  * Merge a visitor's onboarding answers into a freshly signed-in profile.
- * Answers the profile already has win; unit lists are unioned.
+ * Answers the profile already has win; unit lists are unioned. Suggestions the
+ * visitor removed on the device are not added back as inferred rows.
  */
 export function mergeAnonymousOnboarding(d: DemoDB, anon: AnonymousOnboarding | null, now: number): boolean {
   if (!d.student || !anon) return false;
@@ -120,7 +156,7 @@ export function mergeAnonymousOnboarding(d: DemoDB, anon: AnonymousOnboarding | 
   const rank: Record<TierStatus, number> = { pending: 0, skipped: 1, done: 2 };
   if (rank[anon.tier0] > rank[p.onboarding.tier0]) p.onboarding.tier0 = anon.tier0;
   if (rank[anon.tier1] > rank[p.onboarding.tier1]) p.onboarding.tier1 = anon.tier1;
-  reinfer(d, p, now);
+  reinfer(d, p, now, anon.removed_skills);
   return true;
 }
 
@@ -220,13 +256,14 @@ export async function skipOnboarding(input: SkipInput): Promise<Result<{ tier0: 
 }
 
 export interface OnboardingState extends Omit<AnonymousOnboarding, 'updated_at'> {
+  /** Signed in: always empty (removing a suggestion deletes the row). */
   signed_in: boolean;
 }
 
 /** Current answers: the profile's when signed in as a student, else this device's. */
 export function selectOnboarding(d: DemoDB, anon: AnonymousOnboarding | null): OnboardingState {
   const p = signedInStudent(d);
-  if (p) return { signed_in: true, university_id: p.university_id, degree_id: p.degree_id, year: p.year, unit_codes: p.unit_codes, tier0: p.onboarding.tier0, tier1: p.onboarding.tier1 };
+  if (p) return { signed_in: true, university_id: p.university_id, degree_id: p.degree_id, year: p.year, unit_codes: p.unit_codes, tier0: p.onboarding.tier0, tier1: p.onboarding.tier1, removed_skills: [] };
   const a = anon ?? EMPTY_ONBOARDING;
-  return { signed_in: false, university_id: a.university_id, degree_id: a.degree_id, year: a.year, unit_codes: a.unit_codes, tier0: a.tier0, tier1: a.tier1 };
+  return { signed_in: false, university_id: a.university_id, degree_id: a.degree_id, year: a.year, unit_codes: a.unit_codes, tier0: a.tier0, tier1: a.tier1, removed_skills: a.removed_skills };
 }

@@ -71,7 +71,7 @@ test('comparison searches only eligible candidates and selects a typo match', as
   await expect(page).toHaveURL(/b=javascript/);
 });
 
-test('student skill and university course searches support typos and protect course numbers', async ({ page }) => {
+test('student skill search supports typos and excludes held skills', async ({ page }) => {
   await sampleStudent(page);
   await page.goto('/me/skills');
   await page.getByRole('button', { name: 'Add a skill', exact: true }).click();
@@ -81,14 +81,7 @@ test('student skill and university course searches support typos and protect cou
   await input.fill('pyhton');
   await expect(page.getByRole('option')).toHaveCount(0); // Already held.
   await page.keyboard.press('Escape');
-  await page.goto('/onboarding?step=units');
-  const course = page.getByLabel('Search by code or name');
-  await course.fill('progamming');
-  await expect(page.getByRole('checkbox', { name: /INFO1110/ })).toBeVisible();
-  await course.fill('DATA 2002');
-  await expect(page.getByRole('checkbox', { name: /DATA2002/ })).toBeVisible();
-  await course.fill('DATA2003');
-  await expect(page.getByRole('checkbox')).toHaveCount(0);
+
 });
 
 test('place picker finds a misspelling and retains the selected location', async ({ page }) => {

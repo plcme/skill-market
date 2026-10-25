@@ -9,6 +9,7 @@ import type { Persona } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
 import { Container, Kbd, Avatar } from '@/components/ui/primitives';
 import { Dialog, DialogTrigger, SheetContent, Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from '@/components/ui/overlay';
+import { loginHref } from '@/lib/links';
 import { cn } from '@/lib/utils';
 import { useAppName } from './app-provider';
 import { openSearch } from './command-palette';
@@ -99,7 +100,7 @@ export function SiteHeader() {
           ) : (
             <>
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link href="/auth/login">{t('signIn')}</Link></Button>
-              <Button asChild variant="primary" size="sm" className="hidden sm:inline-flex"><Link href="/onboarding">{t('getStarted')}</Link></Button>
+              <Button asChild variant="primary" size="sm" className="hidden sm:inline-flex"><Link href={loginHref('/onboarding')}>{t('getStarted')}</Link></Button>
             </>
           )}
           <Dialog>
@@ -117,7 +118,7 @@ export function SiteHeader() {
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 {session ? null : (
                   <>
-                    <Button asChild><Link href="/onboarding">{t('getStarted')}</Link></Button>
+                    <Button asChild><Link href={loginHref('/onboarding')}>{t('getStarted')}</Link></Button>
                     <Button asChild variant="outline"><Link href="/auth/login">{t('signIn')}</Link></Button>
                   </>
                 )}

@@ -1,20 +1,27 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, X } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
-import { computeMetric } from '@/lib/market/engine';
 import { getInstrument, rolesForSkill } from '@/lib/market/catalog';
 import type { Instrument } from '@/lib/market/types';
-import type { InferredSkill } from '@/lib/demo/education';
-import { suggestNextSteps } from '@/lib/api/skills';
+import { isHeld, removeSkill, restoreSkill, suggestNextSteps } from '@/lib/api/skills';
+import { hideAnonymousSuggestion, unhideAnonymousSuggestion } from '@/lib/api/onboarding';
+import { useAction } from '@/lib/api/client';
 import { instrumentPath } from '@/lib/links';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/toast';
+import { WatchAllButton } from '@/components/market/watch-all-button';
+import { WatchButton } from '@/components/market/watch-button';
 
-import { MetricValue } from '@/components/market/metric-value';
-import { MetricLabel } from '@/components/market/metric-info';
-import { EffortText, SuggestionMeta } from '../shared';
+import { EffortText, SuggestionMeta, useErrorText } from '../shared';
 import { InstrumentMark } from '@/components/market/instrument-mark';
+import { ReviewText } from '@/features/dev/copy-review';
+import { removalFocus, resolveRemovalFocus, startColumn, type BoardSkills, type BoardSuggestion, type RemovalFocus } from './board-skills';
+
+export type { BoardSuggestion };
 
 /** Roles the suggested skills point to, strongest overlap first (not a fit score — just "where these lead"). */
 export function rolesFromSkills(skills: Array<{ skill_slug: string; confidence: number }>, limit = 3): Array<{ role: Instrument; via: Instrument[] }> {
@@ -32,83 +39,153 @@ export function rolesFromSkills(skills: Array<{ skill_slug: string; confidence: 
   return [...acc.values()].sort((a, b) => b.weight - a.weight).slice(0, limit).map(({ role, via }) => ({ role, via: via.slice(0, 3) }));
 }
 
+/** `onStart` records where focus goes next and returns a cancel for a failed removal. */
+function RemoveSuggestion({ s, name, onStart }: { s: BoardSuggestion; name: string; onStart: () => () => void }) {
+  const t = useTranslations('Onboarding');
+  const errorText = useErrorText();
+  const { toast } = useToast();
+  const [remove, state] = useAction(removeSkill);
+  const onClick = async () => {
+    const cancelFocus = onStart();
+    if (!s.row) {
+      hideAnonymousSuggestion(s.skill_slug);
+      toast({ title: t('board.removed', { name }), action: { label: t('board.undo'), onClick: () => unhideAnonymousSuggestion(s.skill_slug) } });
+      return;
+    }
+    const r = await remove(s.row.id);
+    if (r?.ok) {
+      const undo = () => {
+        void restoreSkill(r.data).then(u => { if (!u.ok) toast({ tone: 'warn', title: errorText(u.error) }); });
+      };
+      toast({ title: t('board.removed', { name }), action: { label: t('board.undo'), onClick: undo } });
+    } else {
+      cancelFocus();
+      if (r) toast({ tone: 'warn', title: errorText(r.error) });
+    }
+  };
+  return (
+    <Button variant="danger" size="icon-sm" loading={state.pending} onClick={onClick} data-remove={s.skill_slug} aria-label={t('board.removeName', { name })} className="border-danger text-danger">
+      {!state.pending ? <X aria-hidden /> : null}
+    </Button>
+  );
+}
+
 /** Personalised mini-board after Tier 0/1: starting point + where it leads + next steps (FR-O1, FR-O6). */
-export function MiniBoard({ suggestions, limit = 6 }: { suggestions: InferredSkill[]; limit?: number }) {
+export function MiniBoard({ skills: { answered, suggestions, anchors }, view, limit = 6 }: { skills: BoardSkills; view: 'skills' | 'recommendations'; limit?: number }) {
   const t = useTranslations('Onboarding');
   const top = suggestions.slice(0, limit);
-  const roles = rolesFromSkills(suggestions);
-  const steps = suggestNextSteps(suggestions.map(s => ({ skill_slug: s.skill_slug, source: 'inferred' as const, confidence: s.confidence })), 3);
+  const column = startColumn(answered, top.length);
+  const roles = rolesFromSkills(anchors.map(a => ({ skill_slug: a.skill_slug, confidence: isHeld(a) ? 1 : (a.confidence ?? 0.5) })));
+  const steps = suggestNextSteps(anchors, 3);
+
+  // After a removal, focus the next row's remove button, or the heading when none is left.
+  const listRef = useRef<HTMLUListElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const nextHeadingRef = useRef<HTMLHeadingElement>(null);
+  const pendingFocus = useRef<RemovalFocus | null>(null);
+  const rowKeys = top.map(s => s.skill_slug).join(' ');
+  // Set synchronously before the removal starts, so the re-render that drops
+  // the row (which may run before the awaited action resolves) can consume it.
+  const startRemoval = (slug: string) => () => {
+    const pending = removalFocus(top.map(s => s.skill_slug), slug);
+    pendingFocus.current = pending;
+    return () => { if (pendingFocus.current === pending) pendingFocus.current = null; };
+  };
+  useEffect(() => {
+    const target = resolveRemovalFocus(pendingFocus.current, rowKeys ? rowKeys.split(' ') : []);
+    if (target === undefined) return;
+    pendingFocus.current = null;
+    const next = target ? listRef.current?.querySelector<HTMLElement>(`[data-remove="${CSS.escape(target)}"]`) : null;
+    (next ?? headingRef.current ?? nextHeadingRef.current)?.focus();
+  }, [rowKeys]);
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
+    <div className="grid gap-10">
+      {view === 'skills' ? (
       <section aria-labelledby="mb-start">
-        <div className="flex items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
           <div>
             <p className="kicker">{t('board.startKicker')}</p>
-            <h2 id="mb-start" className="font-serif text-[24px] leading-tight">{top.length ? t('board.startTitle') : t('board.firstTitle')}</h2>
+            <h2 id="mb-start" ref={headingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{column === 'first' ? t('board.firstTitle') : t('board.startTitle')}</h2>
           </div>
-          {top.length ? <MetricLabel metric="ad_count" type="skill" short filter={DEFAULT_FILTER} className="shrink-0" /> : null}
+          <WatchAllButton slugs={top.map(s => s.skill_slug)} filter={DEFAULT_FILTER} />
         </div>
-        {top.length ? (
-          <ul className="divide-y divide-rule border-b border-rule">
+        {column === 'list' ? (
+          <ul ref={listRef} className="divide-y divide-rule border-b border-rule">
             {top.map(s => {
               const inst = getInstrument(s.skill_slug);
               if (!inst) return null;
-              const reading = computeMetric(inst.slug, 'ad_count', DEFAULT_FILTER);
               return (
-                <li key={s.skill_slug} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3">
+                <li key={s.skill_slug} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
                   <InstrumentMark size="sm" slug={inst.slug} symbol={inst.symbol} />
                   <div className="min-w-0">
                     <Link href={instrumentPath('skill', inst.slug)} className="font-medium hover:underline">{inst.name}</Link>
-                    <SuggestionMeta confidence={s.confidence} reason={s.reason} className="mt-0.5" />
+                    <SuggestionMeta confidence={s.confidence} reason={s.reason} className="mt-0.5" reviewId="onboarding.board.suggestionReason" />
                   </div>
-                  <MetricValue reading={reading} size="sm" className="items-end text-right" />
+                  <div className="col-start-2 flex items-center justify-end gap-2 sm:col-start-auto">
+                    <WatchButton slug={inst.slug} filter={DEFAULT_FILTER} metric="ad_count" bookmarkOnly />
+                    <RemoveSuggestion s={s} name={inst.name} onStart={startRemoval(s.skill_slug)} />
+                  </div>
                 </li>
               );
             })}
           </ul>
-        ) : (
-          <p className="border-b border-rule pb-4 text-[15px] text-ink-2">{t('board.firstBody')}</p>
+        ) : column === 'none' ? <p className="border-b border-rule pb-4 text-sm text-muted">{t('board.reviewedEmpty')}</p> : (
+          <p className="border-b border-rule pb-4 text-[15px] text-ink-2"><ReviewText id="onboarding.board.firstBody">{t('board.firstBody')}</ReviewText></p>
         )}
-        {top.length ? <p className="mt-3 text-[13px] text-muted">{t('board.suggestionNote')}</p> : null}
       </section>
+      ) : null}
 
-      <div className="flex flex-col gap-10">
+      {view === 'recommendations' ? (
+      <div className="grid items-start gap-10 lg:grid-cols-2">
         {roles.length ? (
           <section aria-labelledby="mb-roles">
-            <div className="border-t-2 border-rule-strong pb-3 pt-3">
-              <p className="kicker">{t('board.rolesKicker')}</p>
-              <h2 id="mb-roles" className="font-serif text-[24px] leading-tight">{t('board.rolesTitle')}</h2>
+            <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
+              <div>
+                <p className="kicker">{t('board.rolesKicker')}</p>
+                <h2 id="mb-roles" className="font-serif text-[24px] leading-tight">{t('board.rolesTitle')}</h2>
+              </div>
+              <WatchAllButton slugs={roles.map(({ role }) => role.slug)} filter={DEFAULT_FILTER} />
             </div>
-            <ul className="divide-y divide-rule border-b border-rule">
+            <ul className="@container divide-y divide-rule border-b border-rule">
               {roles.map(({ role, via }) => (
-                <li key={role.slug} className="py-3">
-                  <Link href={instrumentPath('role', role.slug)} className="inline-flex items-center gap-1 font-medium hover:underline">{role.name}<ArrowUpRight className="size-3.5 text-muted" aria-hidden /></Link>
-                  <p className="text-[13px] text-muted">{t('board.rolesVia', { skills: via.map(v => v.name).join(', ') })}</p>
+                <li key={role.slug} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <Link href={instrumentPath('role', role.slug)} className="inline-flex items-center gap-1 font-medium hover:underline">{role.name}<ArrowUpRight className="size-3.5 shrink-0 text-muted" aria-hidden /></Link>
+                    <p className="text-[13px] text-muted"><ReviewText id="onboarding.board.rolesVia">{t('board.rolesVia', { skills: via.map(v => v.name).join(', ') })}</ReviewText></p>
+                  </div>
+                  <WatchButton slug={role.slug} filter={DEFAULT_FILTER} bookmarkOnly className="shrink-0" />
                 </li>
               ))}
             </ul>
           </section>
         ) : null}
         <section aria-labelledby="mb-next">
-          <div className="border-t-2 border-rule-strong pb-3 pt-3">
-            <p className="kicker">{t('board.nextKicker')}</p>
-            <h2 id="mb-next" className="font-serif text-[24px] leading-tight">{t('board.nextTitle')}</h2>
+          <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
+            <div>
+              <p className="kicker">{t('board.nextKicker')}</p>
+              <h2 id="mb-next" ref={nextHeadingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{t('board.nextTitle')}</h2>
+            </div>
+            <WatchAllButton slugs={steps.map(step => step.skill.slug)} filter={DEFAULT_FILTER} />
           </div>
-          <ul className="divide-y divide-rule border-b border-rule">
+          <ul className="@container divide-y divide-rule border-b border-rule">
             {steps.map(step => (
-              <li key={step.skill.slug} className="py-3">
-                <Link href={instrumentPath('skill', step.skill.slug)} className="font-medium hover:underline">{step.skill.name}</Link>
-                <p className="text-[13px] text-muted">
-                  {step.because ? t('board.nextBecause', { skill: step.because.name }) : t('board.nextFirst')}
-                  {' · '}
-                  <EffortText effort={step.effort} />
-                </p>
+              <li key={step.skill.slug} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <Link href={instrumentPath('skill', step.skill.slug)} className="font-medium hover:underline">{step.skill.name}</Link>
+                  <p className="text-[13px] text-muted">
+                    {step.because ? <ReviewText id="onboarding.board.nextBecause">{t('board.nextBecause', { skill: step.because.name })}</ReviewText> : <ReviewText id="onboarding.board.nextFirst">{t('board.nextFirst')}</ReviewText>}
+                    {' · '}
+                    <EffortText effort={step.effort} />
+                  </p>
+                </div>
+                <WatchButton slug={step.skill.slug} filter={DEFAULT_FILTER} metric="ad_count" bookmarkOnly className="shrink-0" />
               </li>
             ))}
           </ul>
         </section>
       </div>
+      ) : null}
     </div>
   );
 }

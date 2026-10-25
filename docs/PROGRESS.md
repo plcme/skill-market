@@ -3,6 +3,22 @@
 > 进度账本。会话中断或上下文被压缩后，从这里恢复。由主会话维护。
 > 结构：当前状态 → 里程碑 → 待拍板（只列还开着的）→ 上 main 前必须做 → 前端反馈轮次 → 日志。
 
+## Onboarding 继续调整：注册前置与分步内容（2026-10-25，fe-r9）
+
+- 用户明确要求注册在个性化之前：未登录的 Get started 进入 `/auth/login?next=%2Fonboarding`；直接访问 onboarding 也先转登录。完成现有预览邮箱链接流程后才进入 Basics → Skills → Your board，保留三步可点击导航。这覆盖此前“无需账户”的界面方向；当前仍是浏览器演示账户，不声称已接真实邮箱或 Supabase。
+- 第 2 步仅展示 Skills you probably have；每行使用书签图标关注与红框删除，板块标题旁复用 WatchAllButton。第 3 步仅展示 Roles that ask for these 和 Close to what you have，两块各有自己的 Watch all；大标题右侧直接进入 Market，移除末尾注册/保存卡。
+- 357 个单元测试、静态/类型检查、生产编译通过。新 8 项手机/平板测试验证注册前置、真实预览注册回跳、步骤往返、三个批量关注分别变为 All watched、删除焦点与 Undo、内容隔离、横向溢出和 axe。初次手机 axe 报告发生于入场动画半透明帧；改为等待有限时长动画完成后审计，8 项全过。
+- 独立桌面测试验证 Market 按钮在标题右侧且链接可用，无页面运行错误；截图在 `/private/tmp/onboarding-skills-separated.png` 与 `/private/tmp/onboarding-recommendations-separated.png`。用户侧浏览器控制当前被设置禁用，未声称成功刷新用户标签页；3019 服务已切换到最新构建。
+- 自 `869621a` 以来的流程修改尚未额外提交、推送或合并。
+
+## Onboarding 流程更新（2026-10-25，fe-r9）
+
+- 按用户预览反馈，改为三步：Basics → Skills → Your board。技能检查页独立为第 2 步，标题显示所选学位；顶部步骤可点击，尚无基础答案时 Skills 暂不可用。
+- 移除 onboarding 的 units 页面、入口和专用说明；技能列表不再显示 Job ads 标题与招聘广告数量，改用现有 WatchButton 和红色边框删除按钮。/me/skills 的旧 units 入口同步指回基础答案页。
+- 用户本轮已明确取消课程勾选页，因此当前界面不再执行 PRD FR-O2；PRD 由用户维护，未擅自改写。底层课程数据、已有画像中的 unit_codes 和相关契约操作保留，契约 UI 映射已标明无当前入口。
+- 本轮静态/类型检查、357 个单元测试、6 项手机/平板 onboarding 浏览器检查通过；隔离生产构建退出码 0。同一 3019 预览已更新并目视核对。上一轮 50 项响应式结果对应上一提交，本轮只重跑与变化相关的 6 项。
+- 本轮变更尚未提交、推送或合并；前一次文案删减已提交为 `869621a`。
+
 ## 当前状态（2026-10-24）
 
 - 模糊搜索整合分支已同步菜单、Watch all 与主干规则；等待 PR CI 全绿后合并，尚未发布。原分支验证记录见 `docs/FUZZY_SEARCH_IMPLEMENTATION.md`。
@@ -42,6 +58,7 @@
 | 11 | watchlist "加入以来变化"改用 Demand 原始计数后会混入全市场涨落；旧 `share_of_ads` watch 条目需迁移并重置 baseline | 接后端时处理 | M3 |
 | 12 | 细分行业颗粒度：ANZSIC Subdivision 还是 Group | — | 前端下一轮 |
 | 13 | 未排期的产品想法：开场动画；LinkedIn 证书导入；Twitter 书签式交互；对比页超过 2 个标的 | — | 用户提出时 |
+| 18 | 已登录学生在 mini-board 删掉的建议技能，改了学位 / units 重新推断后会再出现：契约规定删除建议是硬删除、不留拒绝记录（`removeSkill`），所以没有地方记住“不是我的” | 二选一：① 接受现状（只在本次页面会话内有效）；② 在契约里加一张 `student_skill_dismissals`（只存 slug，用户可在设置里清空），重新推断时跳过。未登录时已在本机记 `removed_skills`，登录合并时不加回 | 接后端（M3）前 |
 
 | 14 | 开场区块只在不带参数的入口显示（深链接直接看结果） | FE-R8 已按此做 | 用户看过后 |
 | 15 | 首页 movers 已从界面去掉，`getMovers` / `pickMovers` 与测试保留在数据层 | 保留，以后可能放进盘面 | 前端下一轮 |
@@ -72,7 +89,8 @@
 | R5 | 10-22 | `fe-r5` | `?metric=` 同时驱动 Right now 与大图；Statistics；单色技能 logo；头像与 My desk 合并；"Worked in this role"；文案批注 11 条 | 3 轮（R3 后一行修复未复审） |
 | R6 | 10-22 | `fe-r6` | 详情页默认不拆分；No PR stated 时 Work rights 置灰；Watching 标签 | 一轮过 |
 | R7 | 10-22 | `fe-r7` | 行情表去掉 Filter 与 `?f=`；去掉 "MEASURE" 字样 | 退回 1 次（面包屑与搜索页链接带 `f`）后过 |
-| R8 | 10-25 | `fe-r8` | 去掉首页：`/` → `/market`；首访开场区块（标语 + 热力图，cookie 30 天，深链接不显示）；开场 ↔ 盘面翻页吸附；文档里 `APP_NAME` 统一 | 退回 2 次后过；用户试用后的追加改动（一动就翻、开场常驻、wordmark 回开场、Market → `#board`、去掉度量下拉与计数行）退回 2 次后过 |
+| R8 | 10-25 | `fe-r8` | 去掉首页：`/` → `/market`；开场区块（标语 + 热力图，进入时决定、深链接不显示、wordmark 回开场）；开场 ↔ 盘面一动就翻；文档里 `APP_NAME` 统一 | 退回 2 次后过；用户试用后的追加改动（一动就翻、开场常驻、wordmark 回开场、Market → `#board`、去掉度量下拉与计数行）退回 2 次后过 |
+| R9 | 10-25 | `fe-r9` | 已登录 "Saved to your profile" 卡只留 Go to my desk；恢复 dev-only 文案批注（`?review=copy`，新 key `copy-review-v2`，43 条覆盖 onboarding 全部步骤与登录页）；mini-board 建议可删（带 Undo，未登录记在本机 `removed_skills`），Next steps 与 Roles 每行加 WatchButton | 待审 |
 
 每轮的细节见 `docs/reviews/FE-R*.md` 与 git log。
 

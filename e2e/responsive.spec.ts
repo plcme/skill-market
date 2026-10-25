@@ -4,6 +4,10 @@ import AxeBuilder from '@axe-core/playwright';
 /** Assertion-only responsive checks: runs in the `mobile` (375×812) and `tablet` (768×1024) projects. */
 
 async function noSeriousAxe(page: Page) {
+  // Audit the settled UI, not partially transparent sheet/toast entry frames.
+  await page.evaluate(async () => {
+    await Promise.all(document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime)).map(a => a.finished.catch(() => {})));
+  });
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter(v => ['serious', 'critical'].includes(v.impact ?? '')).map(v => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
 }
@@ -42,7 +46,7 @@ const PUBLIC = [
 
 const SIGNED_IN = [
   '/me', '/me/skills', '/me/gap?role=data-engineer', '/me/requests', '/me/settings',
-  '/onboarding?step=start', '/onboarding?step=units', '/onboarding?step=done', '/chat/new?instrument=terraform&signal=rise', '/people',
+  '/onboarding?step=start', '/onboarding?step=done', '/chat/new?instrument=terraform&signal=rise', '/people',
 ];
 
 for (const path of PUBLIC) {
@@ -102,9 +106,7 @@ for (const role of ['Practitioner', 'Admin'] as const) {
 }
 
 test('onboarding basics: one question per bottom sheet on phones, inline fields otherwise', async ({ page }, info) => {
-  await page.goto('/market');
-  await page.evaluate(() => localStorage.clear());
-  await page.goto('/onboarding');
+  await signInForOnboarding(page);
   if (info.project.name !== 'mobile') {
     await expect(page.getByLabel('University')).toBeVisible();
     return;
@@ -125,4 +127,70 @@ test('onboarding basics: one question per bottom sheet on phones, inline fields 
   await expect(sheet).toBeHidden();
   await page.getByRole('button', { name: /Show my starting point/ }).click();
   await page.waitForURL(/step=start/);
+});
+
+
+test('onboarding review: degree heading, skill actions and clickable steps', async ({ page }) => {
+  await loadSampleStudent(page);
+  await page.goto('/onboarding?step=start');
+  await expect(page.getByRole('heading', { level: 1, name: 'Bachelor of Advanced Computing', exact: true })).toBeVisible();
+  const progress = page.getByRole('navigation', { name: 'Setup progress' });
+  await expect(progress.getByRole('button', { name: '2 Skills', exact: true })).toHaveAttribute('aria-current', 'step');
+  const skills = page.locator('section[aria-labelledby="mb-start"]');
+  await expect(skills.getByText('Job ads', { exact: true })).toHaveCount(0);
+  await expect(skills.getByText(/job ads in/)).toHaveCount(0);
+  await expect(skills.getByRole('button', { name: /^Watch (?!all$)/ }).first()).toBeVisible();
+  await expect(skills.getByRole('button', { name: 'Watch all', exact: true })).toBeVisible();
+  await expect(page.locator('#mb-roles, #mb-next')).toHaveCount(0);
+  const remove = skills.locator('[data-remove]').first();
+  await expect(remove).toHaveClass(/border-danger/);
+  const slug = await remove.getAttribute('data-remove');
+  await remove.focus();
+  await page.keyboard.press('Enter');
+  await expect(skills.locator(`[data-remove="${slug}"]`)).toHaveCount(0);
+  await expect(skills.locator('[data-remove]').first()).toBeFocused();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(skills.locator(`[data-remove="${slug}"]`)).toBeVisible();
+  await skills.getByRole('button', { name: 'Watch all', exact: true }).click();
+  await expect(skills.getByRole('button', { name: 'All watched', exact: true })).toBeDisabled();
+  await progress.getByRole('button', { name: '1 Basics', exact: true }).click();
+  await expect(progress.getByRole('button', { name: '1 Basics', exact: true })).toHaveAttribute('aria-current', 'step');
+  await progress.getByRole('button', { name: '2 Skills', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Bachelor of Advanced Computing', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'See my board', exact: true }).click();
+  await expect(progress.getByRole('button', { name: '3 Your board', exact: true })).toHaveAttribute('aria-current', 'step');
+  await expect(page.locator('#mb-start')).toHaveCount(0);
+  for (const section of ['mb-roles', 'mb-next']) {
+    const group = page.locator(`section[aria-labelledby="${section}"]`);
+    await expect(group.getByRole('button', { name: 'Watch all', exact: true })).toBeVisible();
+    await group.getByRole('button', { name: 'Watch all', exact: true }).click();
+    await expect(group.getByRole('button', { name: 'All watched', exact: true })).toBeDisabled();
+  }
+  await expect(page.locator('main header').getByRole('link', { name: 'Explore the market', exact: true })).toHaveAttribute('href', '/market');
+  await noHorizontalOverflow(page);
+  await noSeriousAxe(page);
+
+  await progress.getByRole('button', { name: '2 Skills', exact: true }).click();
+  await expect(page).toHaveURL(/step=start/);
+  await noHorizontalOverflow(page);
+  await noSeriousAxe(page);
+});
+
+
+async function signInForOnboarding(page: Page) {
+  await page.goto('/onboarding');
+  await expect(page).toHaveURL(/auth\/login\?next=%2Fonboarding/);
+  await page.getByLabel('Email', { exact: true }).fill('onboarding.test@example.com');
+  await page.getByRole('checkbox', { name: 'I’m 18 or older', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'I’ve read the privacy notice', exact: true }).check();
+  await page.getByRole('button', { name: 'Email me a sign-in link', exact: true }).click();
+  await page.getByRole('link', { name: 'Open the link from the preview outbox', exact: true }).click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await expect(page.getByRole('navigation', { name: 'Setup progress' })).toBeVisible();
+  await noHorizontalOverflow(page);
+  await noSeriousAxe(page);
+}
+
+test('get started requires email sign-in before personalising', async ({ page }) => {
+  await signInForOnboarding(page);
 });
