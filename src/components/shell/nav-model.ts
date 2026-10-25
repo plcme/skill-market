@@ -2,15 +2,20 @@ import type { Session } from '@/lib/api/types';
 
 export interface NavLink {
   href: string;
+  /** The path the link is current on, when `href` points into a page (`/market#board` → `/market`). */
+  match?: string;
   key: 'market' | 'compare' | 'people' | 'sources' | 'desk' | 'practitionerDesk' | 'admin' | 'skills' | 'watchlist' | 'requests' | 'settings';
 }
+
+/** The board itself, below the landing band on `/market`. The wordmark links to the bare `/market`, the landing. */
+export const MARKET_BOARD_HREF = '/market#board';
 
 /**
  * Market and People only. Compare lives on the market board (row selection);
  * Sources lives in the footer under "Data & safety".
  */
 export const PRIMARY_NAV: NavLink[] = [
-  { href: '/market', key: 'market' },
+  { href: MARKET_BOARD_HREF, match: '/market', key: 'market' },
   { href: '/people', key: 'people' },
 ];
 
@@ -51,6 +56,11 @@ export function accountMenuLinks(session: Session | null): NavLink[] {
  */
 export function mobileMenuLinks(_session: Session | null): NavLink[] {
   return [...PRIMARY_NAV];
+}
+
+/** Whether a nav link is the current section. */
+export function isCurrent(pathname: string, link: NavLink): boolean {
+  return isActive(pathname, link.match ?? link.href);
 }
 
 export function isActive(pathname: string, href: string): boolean {

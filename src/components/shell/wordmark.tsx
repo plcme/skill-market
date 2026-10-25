@@ -1,5 +1,12 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { flipToTop } from '@/features/market/intro-pager';
 import { cn } from '@/lib/utils';
+
+/** The landing: the band on top of the bare board. */
+const LANDING_HREF = '/market';
 
 /** Monochrome mark: an ink tile with a paper trend line (no brand hue). */
 export function LogoMark({ className }: { className?: string }) {
@@ -12,9 +19,23 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Always back to the top of the landing. Already on /market (scrolled into
+ * the board, or on a board tab), the router keeps the scroll position, so the
+ * page goes up itself: the band's flip when it is there, a jump otherwise.
+ */
 export function Wordmark({ name, className }: { name: string; className?: string }) {
+  const onMarket = usePathname() === LANDING_HREF;
   return (
-    <Link href="/market" className={cn('group inline-flex items-center gap-2.5 rounded-[4px]', className)}>
+    <Link
+      href={LANDING_HREF}
+      scroll={!onMarket}
+      onClick={e => {
+        if (!onMarket || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        flipToTop();
+      }}
+      className={cn('group inline-flex items-center gap-2.5 rounded-[4px]', className)}
+    >
       <LogoMark />
       <span className="font-serif text-[21px] italic leading-none tracking-[-0.02em] text-ink">{name}</span>
     </Link>

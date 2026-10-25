@@ -7,7 +7,7 @@ import { Coffee, LayoutDashboard, LineChart, LogIn, Search } from 'lucide-react'
 import { useDB } from '@/lib/demo/store';
 import { cn } from '@/lib/utils';
 import { openSearch } from './command-palette';
-import { deskFor, isActive } from './nav-model';
+import { deskFor, isActive, MARKET_BOARD_HREF } from './nav-model';
 
 /** Thumb-reach navigation for the 375px core flows (NFR-2). */
 export function MobileTabBar() {
@@ -19,7 +19,7 @@ export function MobileTabBar() {
   return (
     <nav aria-label={t('primary')} className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       <div className="flex h-16">
-        <Link href="/market" className={item} aria-current={isActive(pathname, '/market') || pathname === '/' ? 'page' : undefined}>
+        <Link href={MARKET_BOARD_HREF} className={item} aria-current={isActive(pathname, '/market') || pathname === '/' ? 'page' : undefined}>
           <LineChart className="size-5" aria-hidden />{t('market')}
         </Link>
         <button type="button" onClick={openSearch} className={item}>

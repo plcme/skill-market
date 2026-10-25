@@ -12,7 +12,7 @@ import { Dialog, DialogTrigger, SheetContent, Menu, MenuContent, MenuItem, MenuL
 import { cn } from '@/lib/utils';
 import { useAppName } from './app-provider';
 import { openSearch } from './command-palette';
-import { accountMenuLinks, deskFor, isActive, mobileMenuLinks, PRIMARY_NAV } from './nav-model';
+import { accountMenuLinks, deskFor, isActive, isCurrent, mobileMenuLinks, PRIMARY_NAV } from './nav-model';
 import { ThemeToggle } from './theme-toggle';
 import { Wordmark } from './wordmark';
 
@@ -41,7 +41,7 @@ export function SiteHeader() {
               <li key={l.href}>
                 <Link
                   href={l.href}
-                  aria-current={isActive(pathname, l.href) ? 'page' : undefined}
+                  aria-current={isCurrent(pathname, l) ? 'page' : undefined}
                   className="relative rounded-[4px] px-3 py-2 text-[14px] text-ink-2 transition-colors hover:text-ink aria-[current=page]:text-ink aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-3 aria-[current=page]:after:-bottom-[13px] aria-[current=page]:after:h-0.5 aria-[current=page]:after:bg-ink"
                 >
                   {t(l.key)}
@@ -85,7 +85,7 @@ export function SiteHeader() {
                 {links.length ? <MenuSeparator /> : null}
                 {links.map(l => (
                   <MenuItem key={l.href} asChild className={cn(l.href === desk?.href && 'font-medium text-ink')}>
-                    <Link href={l.href} aria-current={isActive(pathname, l.href) ? 'page' : undefined}>{t(l.key)}</Link>
+                    <Link href={l.href} aria-current={isCurrent(pathname, l) ? 'page' : undefined}>{t(l.key)}</Link>
                   </MenuItem>
                 ))}
                 {otherPersonas.length ? <MenuSeparator /> : null}
@@ -109,7 +109,7 @@ export function SiteHeader() {
             <SheetContent title={appName} closeLabel={tc('close')}>
               <nav aria-label={t('primary')} className="flex flex-col">
                 {mobileMenuLinks(session).map(l => (
-                  <Link key={l.href} href={l.href} aria-current={isActive(pathname, l.href) ? 'page' : undefined} className={cn('border-b border-rule py-3.5 font-serif text-[22px] aria-[current=page]:italic')}>
+                  <Link key={l.href} href={l.href} aria-current={isCurrent(pathname, l) ? 'page' : undefined} className={cn('border-b border-rule py-3.5 font-serif text-[22px] aria-[current=page]:italic')}>
                     {t(l.key)}
                   </Link>
                 ))}
