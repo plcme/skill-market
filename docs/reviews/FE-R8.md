@@ -222,3 +222,58 @@ Attempt 1 各项核对：
   - 减少动态时直接跳到目标，不锁 overflow。
 - Watching tab 与其他 tab 共用 `TAB`、`TAB_CURRENT`、`TAB_OTHER` 三个常量，实测一致。
 - 新增逻辑（`wheelPixels`、`wheelFlipTarget`、`wheelStep`、`touchTarget`、`tweenAt`、`isCurrent`、`isBareEntry`）都有单测。
+
+### Attempt 2 — 退回（RETURN）
+
+范围：`git diff e8ab671..fe-r8 -- . ':!docs'`（`3a0b49c`、`8ceb7ac`、`b3b9252`）。
+
+验收命令结果：
+- `pnpm lint`：通过（exit 0）
+- `pnpm typecheck`：通过（exit 0）
+- `pnpm exec vitest run --maxWorkers=2`：32 个文件，380 passed / 13 todo，0 失败
+- e2e 未跑。改用只读探针，在 scratchpad 里用 `git archive` 导出 `fe-r8` 与 `bec4f18`，各起一个 dev server（3028 / 3018），没有改动 worktree。
+
+#### 上轮阻断项核对
+1. 缩放：已修。`isZoomed` 由滚轮和触摸共用，放大时 `wheelStep` 不论是否在锁期内都返回 native，有单测。
+2. 不可取消的事件：已修。`cancelable: false` 返回 native，不翻页也不上锁，有单测。
+3. 在 band 下方改动 board：landing 场景已修。翻到 board 后输入搜索词，band 保持显示，`scrollY` 保持 643，搜索框仍在 168。新增的 e2e 断言覆盖了这一场景。但同一类问题在反方向仍然存在，见下面的阻断 2。
+
+#### 必须修复（阻断）
+1. [src/app/market/layout.tsx:13-15] band 被 Suspense 推到文档末尾才流式输出，导致无 JS 时看不到 band，有 JS 时 band 晚到并把 board 往下推。
+   - 现象：
+     - `IntroBand` 是 async server component，现在包在 `<Suspense fallback={null}>` 里，SSR 先输出 `<!--$?--><template id="B:0">` 占位，band 本体出现在 `<div hidden id="S:0">` 中。
+     - 实测 bare `/market` 的 HTML 中，`id="board"` 在 17830 字节处，`id="intro"` 在 374853 字节处，前面是约 357KB 的 board；`bec4f18` 中 band 在 17629 字节处，按正常顺序输出。
+   - 为什么是问题：
+     - 禁用 JS 时 band 一直隐藏，探针结果为 `#intro` 不可见，`bec4f18` 为可见。这破坏了"无 JS 也是普通锚点页面"的既有设计。
+     - 有 JS 时，board 先绘制在顶部，band 等末尾的数据块到达后才插到它上方。弱网环境下这一屏的位移更明显；本地节流探针里也录到 1 帧"有 board、无 band"（board 顶部在 97px），之后 band 才出现。
+     - layout 注释写的"band never flashes"与实际不符。
+   - 建议：
+     - 让 Suspense 边界内不再有会挂起的内容。在 layout 里先 `await` band 需要的翻译和数据，传给一个同步渲染的 band；`StickyBand` 只用 `useSearchParams` 控制显隐，动态渲染下它不会挂起。
+     - 或者换一种不依赖 Suspense 流式输出的结构。
+     - 修完后核对两点：HTML 中 `id="intro"` 在 `id="board"` 之前，且外面没有 `hidden` 包裹；无 JS 时 band 可见。
+     - 补一个 e2e：`javaScriptEnabled: false` 时 band 可见。
+2. [src/features/market/intro.ts `keepBand` 与 src/features/market/sticky-band.tsx] "query 一旦重新变成 bare，band 就回来"会在用户操作时，把 band 插到 board 上方。
+   - 现象：在 Chromium 中直接打开 `/market?q=data`，此时没有 band，`scrollY` 为 0，搜索框在 200。清空搜索框后，URL 变成 `/market`，band 插入，搜索框被推到 811，超出 800 高的视口，tab 被推到 756。
+   - 为什么是问题：
+     - 页面在顶部（y=0）时，浏览器的 scroll anchoring 不起作用，所以 Chrome 也会跳，Safari 更不用说。
+     - 这和上轮阻断 3 是同一类问题，只是方向相反：用户正在操作的控件被推出屏幕。
+     - 清空搜索、把 sort / view / layer 切回默认值，都会让一个 deep link 变成 bare，从而触发。
+   - 建议（二选一）：
+     - (a) band 只在"进入 `/market`"时决定是否显示：首次加载、从其他页面导航进来、或点 wordmark。页面内的 query 变化既不移除 band，也不插入 band。wordmark 可以显式请求显示 band，例如带一个一次性的客户端标记，`flipToTop` 已经在负责回顶部。
+     - (b) 页面内变化导致 band 插入时，在 layout effect 里按 band 高度补偿滚动，让 board 留在原位，band 留在上方，用滚轮往上就能翻回去。
+     - 补对应的单测或 e2e：deep link 清空搜索后，搜索框仍在视口内。
+
+#### 其余核对
+- 只有 `/market` 一个路由使用这个 layout，没有其他路由会意外带上 h1 或 band。page 里的 h1 已删除，探针中每个状态下 h1 都只有 1 个。
+- `keepBand` 的重置：
+  - 离开 `/market` 时 layout 会卸载。从 `/people` 客户端导航到 `/market?type=role`，不显示 band，正确。
+  - 浏览器后退回到之前显示过 band 的 `/market?type=role` 时，band 不再出现，因为 layout 重新挂载、状态重置。这个结果可以接受。
+- `#board` 与 pager：
+  - 从 `/people` 点 Market，落到 `/market#board`，`scrollY` 为 643，tab 在 header 正下方（113）。
+  - 在 landing 上切到 Roles，band 保持显示，`scrollY` 为 643；在 `?type=role` 的 board 顶部往上滚一格，翻回到 0。pager 在 layout 中工作正常。
+- footer 的 Market 链接已改为 `#board`；anchor 每帧缓存一次；`behavior` 已改为 `'auto'`；锁期内落在对话框里的滚轮事件放行。这几项都没有问题。
+- "Maximum update depth exceeded"不是这次 follow-up 引入的：
+  - `bec4f18` 的 bare `/market` 上同样出现，每次加载 1 次，调用栈也相同，都是 `updateDehydratedSuspenseComponent` → `enqueueConcurrentRenderForLane`。
+  - 在 `bec4f18` 带上 `intro_seen` cookie、不显示 band 时也会出现；`?type=role` 和 `/people` 上不出现。
+  - 所以它与 band 无关，来源是 bare All board 上某个 dehydrated Suspense 边界在 hydration 期间收到更新。当前分支出现的次数和调用栈与 `bec4f18` 一致，没有变严重。
+  - 不作为本轮阻断，建议单独开一个 fix 排查。
