@@ -1,0 +1,48 @@
+# FE-R9 审查
+
+审查范围：`git diff main...fe-r9`（7 个 commit，bae3d5c 到 1dfef5d）。依据：本轮任务说明（A：已登录 "Saved to your profile" 卡只留一个按钮；B：恢复 dev-only 文案批注，`?review=copy`，新 key `copy-review-v2`，只包 onboarding 与登录页的说明性文字；C：mini-board 可删建议、Next steps 与 Roles 行复用 `WatchButton`）、PRD FR-O4 与 §10、CLAUDE.md 质量底线。按用户偏好，本轮不跑 e2e。
+
+## Round 1 — 退回
+
+验收命令结果：`pnpm lint && pnpm typecheck` 通过，lint 0 错误，tsc 0 错误。`pnpm exec vitest run --maxWorkers=2` 通过：33 个文件，348 个测试通过，13 个 todo。生产构建检查用的是工作区里现成的 `.next`（13:50 构建，已包含 365cacf 的修复，因为目录树里找不到 catalogue 字符串）：
+- `.next/static` 里没有 `copy-review-v2`、`Copy decisions`、`Not seen yet`、`Onboarding · Basics`、`data-review-id`、`sessionStorage`，overlay 和 catalogue 都已被摇掉
+- 留下的只有调用处传给透传 `ReviewText` 的 id 字面量（如 `"onboarding.basics.universityHint"`），以及 server RSC manifest 里的文件路径，可以接受
+
+已确认没问题的部分：
+- A：卡片只剩标题和 Go to my desk。`savedBody`、`reviewSkills` 两个键已删，src、tests、e2e 里都没有残留引用。
+- 本机存储：`removed_skills` 的读取兼容旧格式。`parseAnonymousOnboarding` 对缺字段、非数组、混入非字符串、非对象 JSON 都有容错，`readAnonymousOnboarding` 和 `useAnonymousOnboarding` 共用这个函数，并有测试覆盖。
+- 未登录删除和 Undo：`hide` / `unhide` 是幂等的，会写 localStorage 并通知订阅者。改 Tier 0 答案后 `removed_skills` 仍然保留。
+- 登录合并：`reinfer(..., anon.removed_skills)` 不会把已删的技能加回成 inferred 行，已有的同名 inferred 行会被去掉，held 行不动（`applyInference` 只处理 `source === 'inferred'`）。合并后会清空本机存储，有测试。
+- 已登录删除：调用 `removeSkill`，Undo 调用 `restoreSkill(r.data)`，原行原 id 放回。行的 key 是 `skill_slug`，删除后行卸载，不会有过期状态。
+- 文案：新增的 `removeName`、`removed`、`undo` 都放在 messages 里。overlay 的英文硬编码只出现在 `src/features/dev` 内，符合"dev-only、整目录删除"的约定。登录页的 `lede` 用 `useAppName()`，没有写死产品名。
+- SSR 与 hydration：`OnboardingFlow` 在 `db` 和 `anon` 就绪前渲染骨架。`ReviewText` 的 server snapshot 是 `false`，生产环境下直接返回 children，不会出现 hydration 不一致。
+- 覆盖面：逐个核对了 onboarding 四个步骤（含手机端 sheet 里的 hint）以及 login、callback、signout 上的说明性段落、hint、description、Notice body，都已包上。catalogue 与源码里的 id 由测试做一一对应检查。
+
+### 必须修复（阻断）
+
+1. [src/features/student/onboarding/mini-board.tsx:88、108-112；src/features/student/onboarding/onboarding-flow.tsx:310] 已经回答过问题的学生，把建议全部删掉（已登录和未登录都会）或全部确认（只有已登录会）之后，界面显示的文案与事实不符。
+   - 板块标题会变成 "Good first steps"，正文是 "Tell us your degree and we'll suggest where you already are…"。done 步骤的大标题变成 "You can start anywhere"，lede 是 "No answers, no problem."。但学生其实已经填过学位，问题是本轮新增的删除功能让这个状态可以走到。已登录时还有一条更常见的路径：在 `/me/skills` 确认了建议之后回到 `/onboarding?step=done`，因为现在只读 `source === 'inferred'` 的行。
+   - 为什么是问题：界面对用户说了假话（PRD §10）。主会话问这一点算不算阻断，我的判断是算。
+   - 怎么改：把"有没有回答"（`hasBasics || unit_codes.length`）和"还剩几条建议"分开判断。done 的标题和 lede 只按"有没有回答"决定。如果回答过但列表为空，不要显示 `firstBody`：要么只隐藏 "Skills you probably have" 列表，保留 Next steps；要么新增一条简短文案（新 key）。补一个覆盖这个状态的测试。
+
+2. [src/features/student/onboarding/onboarding-flow.tsx:292；src/features/student/onboarding/mini-board.tsx:79-80] 已登录时，`suggestions` 只包含 inferred 行，而 `suggestNextSteps` 和 `rolesFromSkills` 也只用这份列表做 anchor 和 `owned`。
+   - 结果是学生已经 held（confirmed 或 self_reported）的技能不在 `owned` 里，"Close to what you have" 可能推荐学生已经有的技能，而且还带着 Watch / "I have this skill" 按钮。roles 也少算了 held 技能。main 上用的是完整推断，至少 confirmed 过的技能会算在 owned 里，所以这一点是本轮引入的回退。
+   - 为什么是问题：在推断结果之上又给出了错误的下一步建议（FR-O6），是正确性问题。
+   - 怎么改：给 `MiniBoard` 再传一份 held 行，或者直接传 `db.skills`。"Skills you probably have" 只列 inferred 行；`suggestNextSteps` 和 `rolesFromSkills` 用 held 加 inferred，并保留 `source`，这样 `isHeld` 的权重 1 能生效。建议把 onboarding-flow 第 291-296 行的选取逻辑抽成一个纯函数（如 `boardSkills(db, state)`），并补测试：已登录、held 技能不出现在 next steps 里。
+
+3. [src/features/student/onboarding/mini-board.tsx:103、150；src/features/student/onboarding/onboarding-flow.tsx:335；src/features/dev/copy-review-store.ts:49、53、54、60] 本轮说明要求只包说明性文字，标题、标签、数据值不要包。下面几处违反了这一点：
+   - `onboarding.board.suggestionBadge`：这是 "Suggestion" 徽章，是标签，也是 FR-O4 规定"推断必须标为 Suggestion"的载体。
+   - `onboarding.board.suggestionConfidence`：这是 `{band} · {pct}%`，属于数据值，FR-O4 要求"文字加数字"都显示。
+   - `onboarding.board.nextEffort`：这是 `learning_effort` 字段的值，属于数据值。
+   - `onboarding.start.nextUnitsTitle`：这是卡片标题，同类的 `savedTitle`、`saveTitle` 都没有包。
+   - 为什么是问题：批注面板会给这些项提供 Delete，可能产出与 PRD 冲突的决定（例如删掉 Suggestion 标记或置信度），之后再按决定实施时会违反 FR-O4。
+   - 怎么改：`SuggestionMeta` 只保留 `Reason` 一项，或者把 `reviewId` 改成只包 reason。去掉 nextEffort 和 nextUnitsTitle 的 `ReviewText`。同步删除这 4 条 catalogue，并调整 `tests/copy-review.test.ts:64` 里固定展开 `Badge` / `Confidence` / `Reason` 的逻辑。
+
+### 建议（不阻断）
+
+- **删除后焦点丢失**：键盘用户点 X 之后，按钮随行一起卸载，焦点落回 `body`，toast 里的 Undo 很难够到。仓库里其他删除列表（如 `/me/skills`）也没有处理这一点，所以不阻断。建议删除后把焦点移到下一行的 X；如果是最后一行，就移到 `#mb-start` 标题（加 `tabIndex={-1}`）。
+- **已登录 Undo 失败时没有提示**：mini-board.tsx:65 的 `void restoreSkill(r.data)` 会吞掉 `conflict` 等错误，建议失败时给一个 warn toast。
+- **单元数量包含已删的技能**：onboarding-flow.tsx:200 的 `added` 是用未过滤的推断结果算的，未登录时可能把已删除的技能算进 "adds N suggestions"。建议两边都按 `removed_skills` 过滤。
+- **未登录删除后只能靠 toast 里的 Undo 恢复**：toast 消失后没有入口可以撤回。目前可以接受，等 #14 有结论后一并考虑。
+- **Watch 按钮的可访问名称不带技能名**：Roles 和 Next steps 行里的 Watch 按钮只显示图标时，可访问名称只有 "Watch"，未登录时也一样，一列里会读出好几个相同的 "Watch"。这是 `WatchButton` 原有的问题，可以以后给它加 `aria-label`（带 `{name}`）。
+- **375px 布局未实测**：本轮没跑 e2e，也没有实际看页面。按代码推算，`grid-cols-[auto_minmax(0,1fr)_auto_auto]` 加上 `@container` 和 `@max-4xl:sr-only` 不会横向溢出，合并 main 前跑 `e2e/responsive.spec.ts` 时确认一下。
