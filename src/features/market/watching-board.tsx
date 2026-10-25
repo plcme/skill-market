@@ -69,13 +69,11 @@ export function WatchingBoard({ rows, filter, metric, view, q, allHref, resetHre
   const firstChangeOk = list.find(r => r.change.status === 'ok') ?? list[0];
   return (
     <>
-      <p className="num mt-5 text-[13px] text-muted" aria-live="polite">
+      <p className="sr-only" aria-live="polite">
         {t('count.all', { n: list.length })}
-        {' · '}
-        {t('signalCount', { n: list.filter(r => r.signal).length })}
         {q ? <>{' · '}{t('matching', { q })}</> : null}
       </p>
-      <div className="mt-2">
+      <div className="mt-5">
         {list.length === 0 ? (
           <EmptyState
             icon={SearchX}

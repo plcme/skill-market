@@ -53,13 +53,6 @@
     "simpleBack": "Back to simple controls"
   },
   "Metrics": {
-    "switcher": "Measure",
-    "switcherHint": "Only measures that make sense for this type are listed.",
-    "groupDefault": "Default",
-    "groupCommon": "Common",
-    "groupAdvanced": "Advanced",
-    "showAdvanced": "More measures",
-    "hideAdvanced": "Fewer measures",
     "info": "What does {metric} mean?",
     "fields": {
       "definition": "Definition",

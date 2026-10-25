@@ -47,7 +47,6 @@
       "industry": "{n, plural, one {# industry} other {# industries}}",
       "all": "{n, plural, one {# skill, role or industry} other {# skills, roles and industries}}"
     },
-    "signalCount": "{n, plural, =0 {no signals} one {# with a signal} other {# with signals}}",
     "matching": "matching “{q}”",
     "emptyTitle": "Nothing on the board matches",
     "emptyBody": "Nothing on this board right now.",

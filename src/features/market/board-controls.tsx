@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { LayoutGrid, List, Search, X } from 'lucide-react';
-import { sharedMetrics } from '@/lib/metrics/registry';
-import type { MetricKey, SkillLayer } from '@/lib/market/types';
+import type { SkillLayer } from '@/lib/market/types';
 import type { BoardSort } from '@/lib/queries/market';
-import { Input, Segmented, Select } from '@/components/ui/form';
+import { Input, Segmented } from '@/components/ui/form';
 import { useSetParams } from '@/components/market/use-url-state';
 import { cn } from '@/lib/utils';
 import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
@@ -93,22 +92,6 @@ export function BoardTextFilter({ initial, className }: { initial: string; class
         </button>
       ) : null}
     </div>
-  );
-}
-
-/** For the mixed board only measures valid for both skills and roles are offered (FR-M4). */
-export function SharedMetricSelect({ value, className }: { value: MetricKey; className?: string }) {
-  const tm = useTranslations('Metrics');
-  const { set } = useSetParams();
-  return (
-    <Select
-      value={value}
-      onChange={e => set({ metric: e.target.value === 'ad_count' ? null : e.target.value })}
-      aria-label={tm('switcher')}
-      className={cn('h-8 w-auto py-0 pl-2.5 text-[13.5px] font-medium', className)}
-    >
-      {sharedMetrics().map(m => <option key={m} value={m}>{tm(`${m}.label`)}</option>)}
-    </Select>
   );
 }
 
