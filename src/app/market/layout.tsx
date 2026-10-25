@@ -1,18 +1,26 @@
-import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { IntroBand } from '@/features/market/intro-band';
 import { StickyBand } from '@/features/market/sticky-band';
 
-/** The landing band sits here, above the board page, so board query changes never unmount it. */
+/**
+ * Rendered per request (the board reads the query anyway). Said here so the
+ * build never tries to prerender the layout, whose band reads the query with
+ * useSearchParams and so would need a Suspense boundary.
+ */
+export const dynamic = 'force-dynamic';
+
+/**
+ * The landing band sits here, above the board page, so in-place board query
+ * changes never unmount it. No Suspense boundary: the query is known on the
+ * server, so the band is in the HTML in document order, before the board
+ * (visible without JS, no late pop-in).
+ */
 export default async function MarketLayout({ children }: LayoutProps<'/market'>) {
   const t = await getTranslations('MarketPage');
   return (
     <>
       <h1 className="sr-only">{t('title')}</h1>
-      {/* The route renders per request, so the query is known on the server and the band never flashes; the boundary is what useSearchParams asks for. */}
-      <Suspense fallback={null}>
-        <StickyBand><IntroBand /></StickyBand>
-      </Suspense>
+      <StickyBand><IntroBand /></StickyBand>
       {children}
     </>
   );

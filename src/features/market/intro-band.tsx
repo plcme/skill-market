@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { ArrowDown } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getIndustryHeatmap } from '@/lib/queries/market';
@@ -24,10 +24,14 @@ const HEAT_SR_FOCUSABLE = cn(HEAT_SR, '[@media(max-width:39.99rem),(max-height:3
 const HEAT_WIDTH = '[@media(min-width:40rem)_and_(min-height:32rem)]:w-[var(--heat-w)]';
 const HEAT_CHROME = '6rem';
 
-/** The landing band on top of the board: what the market is, today's industries, and the way in. */
-export async function IntroBand() {
-  const t = await getTranslations('Home');
-  const tt = await getTranslations('Ticker');
+/**
+ * The landing band on top of the board: what the market is, today's
+ * industries, and the way in. Synchronous on purpose: nothing in it may
+ * suspend, so it streams in document order, ahead of the board.
+ */
+export function IntroBand() {
+  const t = useTranslations('Home');
+  const tt = useTranslations('Ticker');
   const heat = getIndustryHeatmap(DEFAULT_FILTER);
 
   return (
