@@ -146,3 +146,13 @@ Attempt 1 各项核对：
 
 - [src/features/market/intro-pager.tsx:57、156] cleanup 里无条件执行 `registerFlip = null`。目前只有一个 pager，所以没有问题。如果以后可能同时挂多个 pager，建议改成只在 `registerFlip` 仍是本实例的回调时才清空。
 - [src/features/market/intro-pager.tsx:68] 如果点击 CTA 时页面已经在 anchor，`scrollTo` 不会产生滚动，`pending` 会一直留到下一次 settle。影响只有一次：下一次判断按"过半"规则，而不是按方向规则。可以在 `registerFlip` 之前判断 `Math.abs(window.scrollY - anchor) > 2`。
+
+## 整合复查 — 2026-10-24
+
+- 范围为原七个 FE-R8 提交（含 `18c5eb2`）与 main 累计功能；上面的 Round 1 是历史发现。
+- 键盘输入静默期、焦点可见性检查、CTA 后转移焦点已实现，避免吸附把键盘焦点移出视口。
+- 窄屏和矮屏的行业链接聚焦后可见，来源信息保留在读屏表格标题里；resize / orientationchange 监听使用专用站点 header 标记。
+- 过半才翻页仍是现有产品规则，慢拨滚轮可能回到开场区块；保留供用户体验后决定，不擅自改交互。
+- 发布健康检查已跟随 FE-R8 新增的根路径重定向；模糊搜索的 SearchableBoard 与首访开场区块同时保留。
+- 原型 cookie 只用于开场展示，不是认证边界。真实 Supabase 会话读取仍待接入。
+- 本地与 PR CI 结果在交接时记录；尚未完成的浏览器检查不记为通过。
