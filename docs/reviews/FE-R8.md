@@ -277,3 +277,52 @@ Attempt 1 各项核对：
   - 在 `bec4f18` 带上 `intro_seen` cookie、不显示 band 时也会出现；`?type=role` 和 `/people` 上不出现。
   - 所以它与 band 无关，来源是 bare All board 上某个 dehydrated Suspense 边界在 hydration 期间收到更新。当前分支出现的次数和调用栈与 `bec4f18` 一致，没有变严重。
   - 不作为本轮阻断，建议单独开一个 fix 排查。
+
+### Attempt 3 — 通过（PASS）
+
+范围：`git diff 880a62b..fe-r8 -- . ':!docs'`（`3949bb5`、`a0d705a`）。
+
+验收命令结果：
+- `pnpm lint`：通过（exit 0）
+- `pnpm typecheck`：通过（exit 0）
+- `pnpm exec vitest run --maxWorkers=2`：32 个文件，382 passed / 13 todo，0 失败
+- 浏览器探针：用 `git archive fe-r8` 导出到 scratchpad，起 dev server（3038 端口）做只读探针，用完已关闭。
+- 未跑 e2e 和 `pnpm build`；build 通过是 implementer 报告的结果。
+
+#### Attempt 2 阻断项核对
+1. band 被 Suspense 推到文档末尾流式输出：**已修**。
+   - 原始 HTML 中 `id="intro"` 在 17711 字节处，`id="board"` 在 39170 字节处，与 `bec4f18` 相同；band 没有被 `<div hidden id="S:…">` 包裹。
+   - deep link 的 HTML 里没有 band。
+   - 禁用 JS 时 band 可见。
+   - 节流加载时，没有出现"有 board、没有 band"的帧。
+2. 在 deep link 上清空搜索后插入 band：**已修**。
+   - `/market?q=data` 清空搜索后，URL 变成 `/market`，不插入 band，`scrollY` 保持 0，搜索框仍在 200。
+   - landing 上搜索再清空，band 一直保留，`scrollY` 和搜索框位置都不变（643 / 168）。
+
+#### 其余核对
+- `force-dynamic`：
+  - 只作用于 `/market` 这个 segment，下面只有一个 page。
+  - page 本来就读 `searchParams`，原本就是按请求渲染，所以缓存行为不变。
+  - 查询层不用 `fetch`，不涉及 fetch cache。
+  - OpenNext / Cloudflare 本来就按请求运行动态路由；仓库里 `api/health` 已经用过 `force-dynamic`，是先例。
+  - 写法上可以换成在 layout 里 `await connection()`，效果相同，但没有必要改。
+- `showLanding()`：
+  - listener 集合是模块级状态，只在客户端的 `useEffect` 里注册，卸载时注销。StrictMode 的双次 effect 会先加、再删、再加，最后只剩一个 listener。服务端不会注册 listener，所以不会在请求之间泄漏。
+  - 不在 `/market` 时，wordmark 的 `onClick` 会提前返回，不调用 `showLanding()`；导航到 `/market` 后，新挂载的 layout 按 bare 入口显示 band。
+  - 实测：从 deep link 进入后点 wordmark，band 出现且回到顶部，再往下滚一格翻到 643；从 `/people` 点 wordmark，band 出现，`scrollY` 为 0。
+- 前两轮的结论没有回退：
+  - 从 `/people` 点 Market，落到 `/market#board`，`scrollY` 为 643。
+  - 在 landing 上切到 Roles，band 保留；在 Roles 上往上滚一格，翻回 0。
+  - 从 deep link 进入后点 Market，落到 `#board`，不显示 band，tab 紧贴在 header 下方。
+  - 每个状态下 h1 都只有 1 个。
+  - 缩放和不可取消事件这两项的修复与单测都还在。
+- "Maximum update depth exceeded"：bare `/market` 上仍然每次加载出现 1 次，和 `bec4f18` 相同，不是本轮引入的（见 Attempt 2 的记录）。
+
+#### 必须修复（阻断）
+无。
+
+#### 建议（不阻断）
+- [src/styles/theme.css:1] Tailwind v4 会自动扫描仓库里所有没被 gitignore 的文件，包括 `docs/`。
+  - `docs/reviews/FE-R8.md` 第 69 行引用的 `[@media…]:focus:not-sr-only` 被当成了 class，生成了非法的 `@media…` 规则。dev server 每次编译都会报 "Parsing CSS source code failed"。
+  - 文档内容不应该影响产品 CSS，而且审查记录还会继续引用 class 名。
+  - 建议在 `@import "tailwindcss";` 后面加 `@source not "../../docs";`，本轮或单独开一个 `chore/` 分支修都可以。不要靠改审查记录来规避。

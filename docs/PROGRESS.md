@@ -9,7 +9,7 @@
 
 - M0 本地完成（云端接入未完成，见 `docs/SETUP.md`）。之后一直在做前端原型迭代：FE-R1 到 FE-R7 已全部进入 `main` 并上线（`brewdex.app`，Cloudflare）。
 - **Git 流程（2026-10-23 起）**：只有 `main` 一条长期分支，短分支 → PR → 用户授权合并（仅集成）→ 另经发布授权推送 `v*` tag 才上线；`dev` 停用（其内容 `main` 已全部包含）。
-- FE-R8（分支 `fe-r8`，PR #20，未合并）：去掉首页，`/` → `/market`，开场区块常驻 + 一动就翻的翻页；用户试用后的追加改动审查中。
+- FE-R8（分支 `fe-r8`，PR #20，未合并）：去掉首页，`/` → `/market`，开场区块（进入时决定，点 wordmark 回到开场）+ 一动就翻的翻页；用户试用后的追加改动退回 2 次后审查通过。
 - 前端是完整可交互原型：市场数字来自合成引擎，用户数据存浏览器 localStorage，**没有接 Supabase**。
 - **数据来源已定（2026-10-23）**：第一版技能级只用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与覆盖率校准用 JSA IVI；不接 Adzuna、Workday。三家接口和 IVI 都**没有明文许可**，商业化前要拿到书面答复并请律师看（`docs/SETUP.md` §6）。
 - 采集节奏：指标每天结算；每小时轻量检查新职位，按雇主活跃度（泊松速率 λ）调频；盘中喂行情条与"今日新增"；每个数据面标出 "Updated today, 2:14 am"（架构 §6.7、`DESIGN.md` §8）。
@@ -72,12 +72,13 @@
 | R5 | 10-22 | `fe-r5` | `?metric=` 同时驱动 Right now 与大图；Statistics；单色技能 logo；头像与 My desk 合并；"Worked in this role"；文案批注 11 条 | 3 轮（R3 后一行修复未复审） |
 | R6 | 10-22 | `fe-r6` | 详情页默认不拆分；No PR stated 时 Work rights 置灰；Watching 标签 | 一轮过 |
 | R7 | 10-22 | `fe-r7` | 行情表去掉 Filter 与 `?f=`；去掉 "MEASURE" 字样 | 退回 1 次（面包屑与搜索页链接带 `f`）后过 |
-| R8 | 10-25 | `fe-r8` | 去掉首页：`/` → `/market`；首访开场区块（标语 + 热力图，cookie 30 天，深链接不显示）；开场 ↔ 盘面翻页吸附；文档里 `APP_NAME` 统一 | 退回 2 次（键盘焦点与隐形链接；停在两页之间时起点过期）后过 |
+| R8 | 10-25 | `fe-r8` | 去掉首页：`/` → `/market`；首访开场区块（标语 + 热力图，cookie 30 天，深链接不显示）；开场 ↔ 盘面翻页吸附；文档里 `APP_NAME` 统一 | 退回 2 次后过；用户试用后的追加改动（一动就翻、开场常驻、wordmark 回开场、Market → `#board`、去掉度量下拉与计数行）退回 2 次后过 |
 
 每轮的细节见 `docs/reviews/FE-R*.md` 与 git log。
 
 ## 日志（新的在上）
 
+- 2026-10-25：FE-R8 追加改动审查通过（退回 2 次：缩放 / 不可取消滚轮 / 页内改参数时开场消失；开场流式晚到 / 清空搜索时开场插回）。`/market` 新增 `layout.tsx`（`force-dynamic`）承载开场；Tailwind 不再扫描 `docs/`。lint / typecheck / 382 单测 / build 通过，未跑 e2e。
 - 2026-10-25：FE-R8 审查通过（退回 2 次）。期间合入最新 `main`（模糊搜索、watch-all、contract-v1），发布检查改为 `/` 必须 307 → `/market`。lint / typecheck / 362 单测通过，按用户偏好未跑 e2e。
 - 2026-10-23：FE-R8。用户反馈大家在首页往下滑就迷路了，"今日信号"抢注意力，Market 在 nav 里像条岔路，没人点进去。去掉首页各区块，`/` 直接进盘面，首访才显示开场区块，并加翻页吸附。文档里 `NEXT_PUBLIC_APP_NAME` 统一为 `APP_NAME`（只在服务端读，经 `AppProvider` 下发）。
 - 2026-10-23：去掉 `dev`，改为单主干（分支 → PR → `main` 仅集成，推送 `v*` tag 才上线）。同步 CLAUDE.md、架构 §3.3 / §10、里程碑、implementer / reviewer 定义；`ci.yml` 去掉 `dev`，`dependabot.yml` 改指 `main`，`migrate.yml` 改为只手动触发。
