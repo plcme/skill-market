@@ -10,7 +10,7 @@ import { useDB } from '@/lib/demo/store';
 import { useAction } from '@/lib/api/client';
 import { completeTier0, completeTier1, selectOnboarding, skipOnboarding, type OnboardingState } from '@/lib/api/onboarding';
 import type { StudyYear } from '@/lib/api/types';
-import { DEGREES, getDegree, getUniversity, searchUnits, STUDY_YEARS, UNIVERSITIES, unitsFor } from '@/lib/demo/education';
+import { DEGREES, getDegree, getUniversity, searchUnits, STUDY_YEARS, UNIVERSITIES } from '@/lib/demo/education';
 import { getInstrument } from '@/lib/market/catalog';
 import { loginHref } from '@/lib/links';
 import { Button } from '@/components/ui/button';
@@ -63,10 +63,10 @@ const BASICS: BasicsKey[] = ['university_id', 'degree_id', 'year'];
 function useBasicsQuestions() {
   const t = useTranslations('Onboarding');
   return {
-    university_id: { label: t('university'), hint: <ReviewText id="onboarding.basics.universityHint">{t('universityHint')}</ReviewText>, options: UNIVERSITIES.map(u => ({ value: u.id, label: u.name })) },
-    degree_id: { label: t('degree'), hint: <ReviewText id="onboarding.basics.degreeHint">{t('degreeHint')}</ReviewText>, options: DEGREES.map(d => ({ value: d.id, label: d.name })) },
-    year: { label: t('year'), hint: <ReviewText id="onboarding.basics.yearHint">{t('yearHint')}</ReviewText>, options: STUDY_YEARS.map(y => ({ value: y, label: t(`years.${y}`) })) },
-  } satisfies Record<BasicsKey, { label: string; hint: React.ReactNode; options: { value: string; label: string }[] }>;
+    university_id: { label: t('university'), options: UNIVERSITIES.map(u => ({ value: u.id, label: u.name })) },
+    degree_id: { label: t('degree'), options: DEGREES.map(d => ({ value: d.id, label: d.name })) },
+    year: { label: t('year'), options: STUDY_YEARS.map(y => ({ value: y, label: t(`years.${y}`) })) },
+  } satisfies Record<BasicsKey, { label: string; options: { value: string; label: string }[] }>;
 }
 
 function BasicsSelect({ name, value, onChange, describedBy, invalid, id, autoFocus }: {
@@ -129,7 +129,7 @@ function BasicsSheets({ values, setValue, fields }: {
             closeLabel={tc('close')}
             footer={<Button onClick={() => setOpen(next)} disabled={!values[open]}>{next ? <>{t('sheet.next')}<ArrowRight aria-hidden /></> : t('sheet.done')}</Button>}
           >
-            <Field label={questions[open].label} hint={questions[open].hint}>
+            <Field label={questions[open].label}>
               {({ id, describedBy }) => <BasicsSelect id={id} name={open} value={values[open]} onChange={v => setValue(open, v)} describedBy={describedBy} autoFocus />}
             </Field>
           </SheetContent>
@@ -169,7 +169,7 @@ function BasicsForm({ state, onDone, onSkip, skipping }: {
         <BasicsSheets values={values} setValue={setValue} fields={fields} />
       ) : (
         BASICS.map((k, i) => (
-          <Field key={k} label={questions[k].label} hint={questions[k].hint} error={fields[k] ? errorText(fields[k]) : undefined}>
+          <Field key={k} label={questions[k].label} error={fields[k] ? errorText(fields[k]) : undefined}>
             {({ id, describedBy, invalid }) => <BasicsSelect id={id} name={k} value={values[k]} onChange={v => setValue(k, v)} describedBy={describedBy} invalid={invalid} autoFocus={i === 0} />}
           </Field>
         ))
@@ -219,7 +219,6 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
           <Input maxLength={MAX_SEARCH_LENGTH} value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchUnits')} aria-label={t('searchUnits')} className="pl-9" />
         </div>
-        <p className="mt-2 text-[13px] text-muted"><ReviewText id="onboarding.units.unitsFrom">{t('unitsFrom', { university: uni.name, n: unitsFor(uni.id).length })}</ReviewText></p>
         <fieldset className="mt-4">
           <legend className="sr-only">{t('unitsLegend')}</legend>
           {units.length === 0 ? <p className="rounded-md border border-dashed border-rule px-4 py-6 text-sm text-muted"><ReviewText id="onboarding.units.noUnitMatch">{t('noUnitMatch', { q })}</ReviewText></p> : null}
@@ -244,7 +243,7 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
         <Card className="p-5">
           <p className="kicker">{t('selected')}</p>
           <p className="serif-num mt-1 text-[40px] leading-none">{picked.length}</p>
-          <p aria-live="polite" className="mt-2 text-[13px] text-ink-2">{picked.length ? <ReviewText id="onboarding.units.unitsAdd">{t('unitsAdd', { n: added })}</ReviewText> : <ReviewText id="onboarding.units.unitsNone">{t('unitsNone')}</ReviewText>}</p>
+          <p aria-live="polite" className="mt-2 text-[13px] text-ink-2">{picked.length ? <ReviewText id="onboarding.units.unitsAdd">{t('unitsAdd', { n: added })}</ReviewText> : null}</p>
           {picked.length ? (
             <ul className="mt-3 flex flex-wrap gap-1.5">
               {picked.map(code => (
@@ -301,7 +300,7 @@ export function OnboardingFlow() {
     basics: { kicker: t('basicsKicker'), title: t('basicsTitle'), lede: lede('onboarding.basics.lede', t('basicsLede')) },
     start: { kicker: t('startKicker'), title: t('startTitle'), lede: lede('onboarding.start.lede', context) },
     units: { kicker: t('unitsKicker'), title: t('unitsTitle'), lede: lede('onboarding.units.lede', t('unitsLede')) },
-    done: { kicker: t('doneKicker'), title: board.answered ? t('doneTitle') : t('doneEmptyTitle'), lede: board.answered ? lede('onboarding.done.lede', context) : lede('onboarding.done.emptyLede', t('doneEmptyLede')) },
+    done: { kicker: t('doneKicker'), title: board.answered ? t('doneTitle') : t('doneEmptyTitle'), lede: board.answered ? lede('onboarding.done.lede', context) : null },
   };
   const head = titles[step];
 
@@ -355,7 +354,6 @@ export function OnboardingFlow() {
                 <div>
                   <p className="kicker text-night-ink/60">{t('saveKicker')}</p>
                   <h2 id="save-h" className="mt-2 font-serif text-[28px] leading-tight sm:text-[34px]">{t('saveTitle')}</h2>
-                  <p className="mt-2 max-w-xl text-night-ink/80"><ReviewText id="onboarding.done.saveBody">{t('saveBody')}</ReviewText></p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild size="lg" variant="signal"><Link href={loginHref('/me')}>{t('signUp')}</Link></Button>

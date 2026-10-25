@@ -136,7 +136,6 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, limit = 
         ) : (
           <p className="border-b border-rule pb-4 text-[15px] text-ink-2"><ReviewText id="onboarding.board.firstBody">{t('board.firstBody')}</ReviewText></p>
         )}
-        {column === 'list' ? <p className="mt-3 text-[13px] text-muted"><ReviewText id="onboarding.board.suggestionNote">{t('board.suggestionNote')}</ReviewText></p> : null}
       </section>
       )}
 

@@ -112,3 +112,25 @@
   - 未登录时删掉的建议只能靠 toast 里的 Undo 撤回，toast 消失后就没有入口了。等待拍板 #14 定下来后一起考虑。
   - 只显示图标的 Watch 按钮，可访问名称里不带技能名。
   - 合并 main 前要跑 `e2e/responsive.spec.ts`，确认 375px 下没有溢出。
+
+
+## 用户批注落实与合并前验证 — 2026-10-25
+
+范围：在原工作树 `skill-market-fe-r9`、原分支 `fe-r9`（HEAD `3e40e74`）落实用户导出的 onboarding / sign-in 文案笔记。修改前工作区干净。未批复且无备注指示的内容保留原样；保留现有开发批注功能。
+
+- 删除 12 项：Basics 的 universityHint / degreeHint / yearHint，mini-board 的 suggestionNote，Units 的 unitsFrom / unitsNone，Your board 的 emptyLede / saveBody，Sign in 的 benefit2 / free / emailHint / googleNote。组件、对应 messages 键、批注目录同步移除，原批注目录测试改用仍存在的条目。
+- 缩短 2 项：`Onboarding.basicsLede` 仅保留 “We use your degree to suggest skills you probably have.”；`Auth.lede` 仅保留 “{app} is free for students.”，产品名继续读取配置。
+- 对比修改前后的 messages：正好删除 12 个键，仅上述 2 个保留键的值发生变化，新增键为 0。
+
+验证结果：
+
+- `git diff --check`、ESLint、Next 路由类型生成与 TypeScript 检查通过。
+- Vitest：34 个文件通过，357 个测试通过，13 个原有 todo。
+- 将本次工作区复制到临时目录（不复制环境密钥）后运行生产构建与 `prepare-standalone.mjs`，退出码 0。临时副本的 node_modules 指向原工作树，因此构建有 tracingRoot 之外依赖的警告；此项验证确认编译通过，不代表已验证部署包。生产静态脚本不含 `copy-review-v2`、`Copy decisions` 或批注分组字符串。
+- 在该构建的独立生产预览上执行原 `e2e/responsive.spec.ts`：375×812 手机与 768×1024 平板共 50 项全部通过，覆盖横向溢出、axe 严重问题、登录后页面与手机分步表单。
+- 独立浏览器逐步核对 onboarding 四步和登录页：删除项不再显示，缩短内容正确，未批复内容保留，没有页面运行错误或缺失翻译错误。已检查桌面截图与 375px mini-board 截图。
+- 375px 已登录示例学生：键盘删除第一行后焦点移至下一行删除按钮；Undo 恢复原行，数量恢复。
+
+证据边界：原 3009 开发预览的热更新 WebSocket 握手失败，onboarding / login 停在 Loading；对该实例的初次响应式测试未通过，随后中止。上述 50 项通过结果来自独立 3019 生产预览，不能据此声称已修复原开发进程。原进程未停止或重启。
+
+合并判断：本次变更及原 FE-R9 范围未发现新的阻断项；原 Round 3 的两项产品/可访问性建议仍保留。远端 main 核对为 `2eb904e96b5a08afefea673fe63afe7427a71747`，与本地 main 一致，且为 fe-r9 的祖先，具备无冲突集成条件。远端目前没有 fe-r9 分支；本次修改尚未提交或推送，因此还没有覆盖本次修改的 PR/CI 结果。建议提交本次修改后经 PR/CI 合入 main；此次只完成修改和判断，没有执行合并或发布。

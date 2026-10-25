@@ -40,9 +40,6 @@ export interface ReviewItem {
 /** This round's candidates (FE-R9): every explanatory text on the onboarding and sign-in pages. */
 export const REVIEW_ITEMS: readonly ReviewItem[] = [
   { id: 'onboarding.basics.lede', group: 'Onboarding · Basics', source: 'Onboarding.basicsLede' },
-  { id: 'onboarding.basics.universityHint', group: 'Onboarding · Basics', source: 'Onboarding.universityHint' },
-  { id: 'onboarding.basics.degreeHint', group: 'Onboarding · Basics', source: 'Onboarding.degreeHint' },
-  { id: 'onboarding.basics.yearHint', group: 'Onboarding · Basics', source: 'Onboarding.yearHint' },
   { id: 'onboarding.basics.privacyNote', group: 'Onboarding · Basics', source: 'Onboarding.privacyNote' },
 
   { id: 'onboarding.start.lede', group: 'Onboarding · Starting point', source: 'Onboarding.context' },
@@ -50,32 +47,23 @@ export const REVIEW_ITEMS: readonly ReviewItem[] = [
 
   { id: 'onboarding.board.firstBody', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.firstBody' },
   { id: 'onboarding.board.suggestionReason', group: 'Onboarding · Mini-board (starting point and board)', source: 'StudentShared.fromDegree' },
-  { id: 'onboarding.board.suggestionNote', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.suggestionNote' },
   { id: 'onboarding.board.rolesVia', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.rolesVia' },
   { id: 'onboarding.board.nextBecause', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.nextBecause' },
   { id: 'onboarding.board.nextFirst', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.nextFirst' },
 
   { id: 'onboarding.units.lede', group: 'Onboarding · Units', source: 'Onboarding.unitsLede' },
-  { id: 'onboarding.units.unitsFrom', group: 'Onboarding · Units', source: 'Onboarding.unitsFrom' },
   { id: 'onboarding.units.unitTeaches', group: 'Onboarding · Units', source: 'Onboarding.unitTeaches' },
   { id: 'onboarding.units.noUnitMatch', group: 'Onboarding · Units', source: 'Onboarding.noUnitMatch' },
   { id: 'onboarding.units.unitsAdd', group: 'Onboarding · Units', source: 'Onboarding.unitsAdd' },
-  { id: 'onboarding.units.unitsNone', group: 'Onboarding · Units', source: 'Onboarding.unitsNone' },
   { id: 'onboarding.units.noUnitsBody', group: 'Onboarding · Units', source: 'Onboarding.noUnitsBody' },
 
   { id: 'onboarding.done.lede', group: 'Onboarding · Your board', source: 'Onboarding.context' },
-  { id: 'onboarding.done.emptyLede', group: 'Onboarding · Your board', source: 'Onboarding.doneEmptyLede' },
-  { id: 'onboarding.done.saveBody', group: 'Onboarding · Your board', source: 'Onboarding.saveBody' },
 
   { id: 'auth.login.lede', group: 'Sign in', source: 'Auth.lede' },
   { id: 'auth.login.benefit1', group: 'Sign in', source: 'Auth.benefits.b1' },
-  { id: 'auth.login.benefit2', group: 'Sign in', source: 'Auth.benefits.b2' },
   { id: 'auth.login.benefit3', group: 'Sign in', source: 'Auth.benefits.b3' },
-  { id: 'auth.login.free', group: 'Sign in', source: 'Auth.free' },
-  { id: 'auth.login.emailHint', group: 'Sign in', source: 'Auth.emailHint' },
   { id: 'auth.login.ageHint', group: 'Sign in', source: 'Auth.ageHint' },
   { id: 'auth.login.privacyHint', group: 'Sign in', source: 'Auth.privacyHint' },
-  { id: 'auth.login.googleNote', group: 'Sign in', source: 'Auth.googleNote' },
   { id: 'auth.login.alreadyBody', group: 'Sign in', source: 'Auth.alreadyBody' },
   { id: 'auth.login.sentBody', group: 'Sign in', source: 'Auth.sentBody' },
   { id: 'auth.login.sentHint', group: 'Sign in', source: 'Auth.sentHint' },

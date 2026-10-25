@@ -28,7 +28,7 @@ function GoogleMark() {
 
 type Sent = { email: string; token: string };
 
-const BENEFIT_REVIEW_ID = { b1: 'auth.login.benefit1', b2: 'auth.login.benefit2', b3: 'auth.login.benefit3' } as const;
+const BENEFIT_REVIEW_ID = { b1: 'auth.login.benefit1', b3: 'auth.login.benefit3' } as const;
 
 /** `/auth/login`: magic link or (simulated) Google, 18+ and privacy notice first (FR-A1, FR-A2, FR-A6). */
 export function LoginView() {
@@ -87,14 +87,13 @@ export function LoginView() {
         <h1 className="display mt-3 text-[40px] sm:text-[56px]">{t('title')}</h1>
         <p className="mt-4 text-[17px] leading-relaxed text-ink-2"><ReviewText id="auth.login.lede">{t('lede', { app: appName })}</ReviewText></p>
         <ul className="mt-8 flex flex-col gap-4 border-t border-rule pt-6">
-          {(['b1', 'b2', 'b3'] as const).map(k => (
+          {(['b1', 'b3'] as const).map(k => (
             <li key={k} className="flex gap-3 text-[15px] text-ink-2">
               <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
               <span><ReviewText id={BENEFIT_REVIEW_ID[k]}>{t(`benefits.${k}`)}</ReviewText></span>
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-[13px] text-muted"><ReviewText id="auth.login.free">{t('free')}</ReviewText></p>
       </div>
 
       <Card className="h-fit p-5 sm:p-7">
@@ -130,7 +129,7 @@ export function LoginView() {
         ) : (
           <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
             <h2 className="font-serif text-[26px] leading-tight">{t('formTitle')}</h2>
-            <Field label={t('email')} hint={<ReviewText id="auth.login.emailHint">{t('emailHint')}</ReviewText>} error={fields.email ? errorText(fields.email) : undefined}>
+            <Field label={t('email')} error={fields.email ? errorText(fields.email) : undefined}>
               {({ id, describedBy, invalid }) => (
                 <Input id={id} type="email" autoComplete="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} placeholder={t('emailPlaceholder')} />
               )}
@@ -161,7 +160,6 @@ export function LoginView() {
             <Button variant="subtle" size="lg" loading={googleState.pending} onClick={onGoogle}>
               {!googleState.pending ? <GoogleMark /> : null}{t('google')}
             </Button>
-            <p className="text-[12.5px] text-muted"><ReviewText id="auth.login.googleNote">{t('googleNote')}</ReviewText></p>
           </form>
         )}
       </Card>

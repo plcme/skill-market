@@ -90,9 +90,9 @@ describe('copy review catalogue (FE-R9)', () => {
     const groups = groupItems(REVIEW_ITEMS);
     expect(groups[0].group).toBe('Onboarding · Basics');
     expect(groups.flatMap(g => g.items)).toHaveLength(REVIEW_ITEMS.length);
-    const all = withDecision(withDecision({}, 'auth.login.free', { decision: 'delete' }), 'onboarding.basics.lede', { decision: 'info' });
-    expect(Object.keys(exportDecisions(all))).toEqual(['onboarding.basics.lede', 'auth.login.free']);
-    expect(exportDecisions(all)['auth.login.free'].group).toBe('Sign in');
+    const all = withDecision(withDecision({}, 'auth.login.benefit1', { decision: 'delete' }), 'onboarding.basics.lede', { decision: 'info' });
+    expect(Object.keys(exportDecisions(all))).toEqual(['onboarding.basics.lede', 'auth.login.benefit1']);
+    expect(exportDecisions(all)['auth.login.benefit1'].group).toBe('Sign in');
   });
 
   it('resolves message templates by path', () => {
