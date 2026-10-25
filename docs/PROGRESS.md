@@ -41,6 +41,7 @@
 | 11 | watchlist "加入以来变化"改用 Demand 原始计数后会混入全市场涨落；旧 `share_of_ads` watch 条目需迁移并重置 baseline | 接后端时处理 | M3 |
 | 12 | 细分行业颗粒度：ANZSIC Subdivision 还是 Group | — | 前端下一轮 |
 | 13 | 未排期的产品想法：首页标语与开场动画；LinkedIn 证书导入；Twitter 书签式交互；对比页超过 2 个标的 | — | 用户提出时 |
+| 14 | 已登录学生在 mini-board 删掉的建议技能，改了学位 / units 重新推断后会再出现：契约规定删除建议是硬删除、不留拒绝记录（`removeSkill`），所以没有地方记住“不是我的” | 二选一：① 接受现状（只在本次页面会话内有效）；② 在契约里加一张 `student_skill_dismissals`（只存 slug，用户可在设置里清空），重新推断时跳过。未登录时已在本机记 `removed_skills`，登录合并时不加回 | 接后端（M3）前 |
 
 已决定、不再列出：产品名 Brewdex（域名 `brewdex.app` 已买，`APP_NAME` 默认值为 `skill-market`，仅 `brewdex.app` 发布配置为 `Brewdex`）；数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
 
@@ -65,6 +66,7 @@
 | R5 | 10-22 | `fe-r5` | `?metric=` 同时驱动 Right now 与大图；Statistics；单色技能 logo；头像与 My desk 合并；"Worked in this role"；文案批注 11 条 | 3 轮（R3 后一行修复未复审） |
 | R6 | 10-22 | `fe-r6` | 详情页默认不拆分；No PR stated 时 Work rights 置灰；Watching 标签 | 一轮过 |
 | R7 | 10-22 | `fe-r7` | 行情表去掉 Filter 与 `?f=`；去掉 "MEASURE" 字样 | 退回 1 次（面包屑与搜索页链接带 `f`）后过 |
+| R9 | 10-25 | `fe-r9` | 已登录 "Saved to your profile" 卡只留 Go to my desk；恢复 dev-only 文案批注（`?review=copy`，新 key `copy-review-v2`，43 条覆盖 onboarding 全部步骤与登录页）；mini-board 建议可删（带 Undo，未登录记在本机 `removed_skills`），Next steps 与 Roles 每行加 WatchButton | 待审 |
 
 每轮的细节见 `docs/reviews/FE-R*.md` 与 git log。
 
