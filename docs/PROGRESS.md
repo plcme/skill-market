@@ -58,12 +58,11 @@
 | 11 | watchlist "加入以来变化"改用 Demand 原始计数后会混入全市场涨落；旧 `share_of_ads` watch 条目需迁移并重置 baseline | 接后端时处理 | M3 |
 | 12 | 细分行业颗粒度：ANZSIC Subdivision 还是 Group | — | 前端下一轮 |
 | 13 | 未排期的产品想法：开场动画；LinkedIn 证书导入；Twitter 书签式交互；对比页超过 2 个标的 | — | 用户提出时 |
-| 18 | 已登录学生在 mini-board 删掉的建议技能，改了学位 / units 重新推断后会再出现：契约规定删除建议是硬删除、不留拒绝记录（`removeSkill`），所以没有地方记住“不是我的” | 二选一：① 接受现状（只在本次页面会话内有效）；② 在契约里加一张 `student_skill_dismissals`（只存 slug，用户可在设置里清空），重新推断时跳过。未登录时已在本机记 `removed_skills`，登录合并时不加回 | 接后端（M3）前 |
-
 | 14 | 开场区块只在不带参数的入口显示（深链接直接看结果） | FE-R8 已按此做 | 用户看过后 |
 | 15 | 首页 movers 已从界面去掉，`getMovers` / `pickMovers` 与测试保留在数据层 | 保留，以后可能放进盘面 | 前端下一轮 |
 | 16 | PRD FR-M4"指标切换器"：用户要求去掉盘面上的度量下拉（固定 Demand），切换只留在详情页图表；旧链接的 `?metric=` 仍生效 | 建议改 PRD：FR-M4 的切换器只放在详情页 | 用户改 PRD 时 |
 | 17 | 打开不带参数的 `/market` 时控制台报 React "Maximum update depth exceeded"（Suspense 边界 hydration），`bec4f18` 就有，非 FE-R8 追加改动引入；Codex 的 `codex/fix-r8-watch-hydration` 可能在修 | 等 Codex 的修复，合并前确认 | 合并 PR #20 前 |
+| 18 | 已登录学生在 mini-board 删掉的建议技能，改了学位 / units 重新推断后会再出现：契约规定删除建议是硬删除、不留拒绝记录（`removeSkill`），所以没有地方记住“不是我的” | 二选一：① 接受现状（只在本次页面会话内有效）；② 在契约里加一张 `student_skill_dismissals`（只存 slug，用户可在设置里清空），重新推断时跳过。未登录时已在本机记 `removed_skills`，登录合并时不加回 | 接后端（M3）前 |
 
 已决定、不再列出：首页去掉，`/` → `/market`；开场区块常驻（不再记"看过"、不分登录），wordmark 回开场顶部、Market 去 `#board`；翻页一动就翻（开场 ↔ 盘面之间允许拦截滚轮，DESIGN §7）；盘面去掉度量下拉与计数行（FE-R8，2026-10-25）；产品名 Brewdex（域名 `brewdex.app` 已买，`APP_NAME` 默认值为 `skill-market`，仅 `brewdex.app` 发布配置为 `Brewdex`）；数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
 
