@@ -82,3 +82,33 @@
 
 - onboarding-flow.tsx:199 的 `useMemo(() => addedByUnits(state, picked), [state, picked])` 不起作用：`state` 每次渲染都是 `selectOnboarding` 返回的新对象。改成依赖 `state.degree_id`、`state.year`、`state.removed_skills`，或者直接去掉 memo。
 - 回答过但列表为空时，done 步骤的大标题仍是 "Your starting point"，下面却没有 starting point 列表，只有 lede 里的答案摘要和 Next steps。内容是真的，可以接受；如果觉得别扭，可以以后换一个更贴切的标题。
+
+## Round 3 — 通过
+
+审查范围：`git diff fddfe98..fe-r9`，只有 f43a5b3 一个提交，对照第 2 轮的阻断项检查。本轮没跑 e2e，也没打开浏览器。主会话已在 3009 端口用已登录的示例学生手动验证过：键盘按 Enter 删除一行后，焦点移到下一行的 ×；点 Undo 后焦点没有跳到任何 ×；鼠标删掉最后一行后，焦点移到上一行。
+
+验收命令结果：
+- `pnpm lint && pnpm typecheck`：通过，lint 0 错误，tsc 0 错误
+- `pnpm exec vitest run --maxWorkers=2`：通过，34 个文件，357 个测试通过，13 个 todo（新增 2 个焦点用例）
+
+第 2 轮阻断项 1 的复核：**已修复**。
+- `onStart()` 现在在发起删除之前同步调用，两种状态都一样，记下 `{ removed, target }`。`resolveRemovalFocus` 只在被删的行已经不在列表里时才返回目标，并且只使用一次，用完就把 `pendingFocus` 清空。
+- 已登录时的顺序：pending 引起的重渲染不改变 `rowKeys`，effect 不会运行；`transact` 去掉这一行后，effect 才运行并把焦点交给下一行的 ×。所以不再依赖 `await` 续体和重渲染谁先执行。
+- Undo 时 `pendingFocus` 已经被清空，`rowKeys` 变化也不会再移动焦点，过期目标的问题已经消失。
+- 删除失败，或 `useAction` 返回 `null` 时，`cancelFocus()` 只清空自己写入的那条记录，不会误清后来的记录。
+- 删掉最后一行后 `column` 变成 `'none'`，`headingRef` 卸载为 null，焦点回退到 `#mb-next`。
+- 未登录时，`top` 是取前 `limit` 条，删掉一行后后面的建议会补进来。这时目标那一行还在列表里，`resolveRemovalFocus` 也能正确处理。
+- 纯函数有测试覆盖：下一行、上一行、标题三种回退，等待被删行消失，目标本身也消失时回退到标题。
+
+第 2 轮建议项：`useMemo` 已去掉，并加了注释说明原因。
+
+### 必须修复（阻断）
+
+无。
+
+### 建议（不阻断）
+
+- 第 1 轮里的这几条留到以后处理，本轮不阻断：
+  - 未登录时删掉的建议只能靠 toast 里的 Undo 撤回，toast 消失后就没有入口了。等待拍板 #14 定下来后一起考虑。
+  - 只显示图标的 Watch 按钮，可访问名称里不带技能名。
+  - 合并 main 前要跑 `e2e/responsive.spec.ts`，确认 375px 下没有溢出。
