@@ -156,3 +156,69 @@ Attempt 1 各项核对：
 - 发布健康检查已跟随 FE-R8 新增的根路径重定向；模糊搜索的 SearchableBoard 与首访开场区块同时保留。
 - 原型 cookie 只用于开场展示，不是认证边界。真实 Supabase 会话读取仍待接入。
 - 本地与 PR CI 结果在交接时记录；尚未完成的浏览器检查不记为通过。
+
+## Follow-up — instant flip & always-on landing — 退回（RETURN）
+
+范围：`git diff bec4f18..fe-r8`（`14c0e48`..`875d5da`，4 个提交）。
+
+验收命令结果：
+- `pnpm lint`：通过（exit 0）
+- `pnpm typecheck`：通过（exit 0）
+- `pnpm exec vitest run --maxWorkers=2`：32 个文件，376 passed / 13 todo，0 失败（一次跑通）
+- e2e 按要求未跑。另用 headless Chromium 对 `localhost:3008` 做了只读探针。注意 `127.0.0.1:3008` 上 dev 资源被拦，页面不 hydrate。
+  - 滚轮：band 上一格滚到 anchor（643），board 内往下为原生滚动，anchor 处往上回到 0，ctrl+滚轮不翻页。
+  - 触摸：拖 80px 后松手，翻到 anchor，期间 root 为 `overflow:hidden`，结束后恢复为 `''`；拖 30px 弹回。翻页中途再按下手指，overflow 立即释放；`touchcancel` 后由 settle 收尾；翻页中途切换路由，overflow 恢复。
+  - 五个 board tab 的字体、字号、颜色、字重一致，底边对齐（1280 / 375 两种宽度都量过）。
+
+### 必须修复（阻断）
+
+1. [src/features/market/intro-pager.tsx:215] 滚轮路径没有判断页面缩放，双指缩放后无法用滚轮平移，用户会被困住。
+   - 为什么：触摸路径会检查 `visualViewport.scale > 1.01`，滚轮路径只排除了 `ctrlKey`（即缩放手势本身）。桌面 Chrome / Safari 在触控板上双指放大后，普通双指滑动用来平移 visual viewport；现在这些滚动被 `preventDefault`，直接翻页。放大阅读 band 的低视力用户无法用触控板看到 band 的下半部分：往下一滑就翻到 board，往上又翻回 band 顶部。
+   - 建议：`onWheel` 里加与触摸相同的缩放判断，放大时一律走原生。最好把 `zoomed` 作为 `wheelStep` 的输入并补单测。
+2. [src/features/market/intro-pager.tsx:218-221] 对不可取消的 wheel 事件仍然启动翻页和锁，tween 会和原生惯性同时滚动。
+   - 为什么：Chrome（WebKit 类似）的规则是，一个滚动序列的第一个 wheel 事件没有被 `preventDefault`，后续事件就以 `cancelable: false` 异步派发，`preventDefault` 无效（控制台会提示 intervention）。典型场景是已知偏差 1：在 board 内（y > anchor+1）开始一次向上的触控板手势，前几个事件走原生；越过 anchor 时调用 `flip(0)`，但这次和锁期内的"吞掉"都不生效。原生惯性和每帧的 `jumpTo` 同时改 `scrollY`；easeOutCubic 末段速度趋近 0 时惯性仍在，页面会逐帧往回跳，落点附近抖动。
+   - 建议：`!e.cancelable` 时不翻页、不上锁，按 native 处理，由 settle fallback 收尾。或者对这类事件像触摸一样在 tween 期间锁住 root 的 overflow，但要注意桌面滚动条消失导致的横向跳动。纯逻辑部分可以把 `cancelable` 传进 `wheelStep` 并补单测。
+3. [src/app/market/page.tsx:50 与 src/components/market/use-url-state.ts 的 `router.replace`] band 现在对所有人常驻，而在 band 下方操作 board（搜索 `?q=`、Sort、List/Cards、Skills 的 layer）会把 URL 变成 deep link，band 在用户操作时被卸掉，内容整体上移约一屏。
+   - 为什么：Chromium 探针里，翻到 board 后在搜索框输入 "dat"，band 消失，`scrollY` 从 643 变为 32。Chrome / Firefox 靠 CSS scroll anchoring 把视口保持住了。Safari / iOS（目标用户主要在手机上）没有可靠的 scroll anchoring：`scrollY` 保持不变，刚点的控件和正在输入的搜索框会被推出屏幕外约 600px；清空搜索时 band 又插回来，再跳一次。
+     - 这个问题以前只在首访出现，cookie 移除后每次访问都会遇到。
+     - 用户要求的"deep link 不显示 band"指的是打开的入口，不是在 landing 上操作控件。
+   - 建议（二选一，或交主会话拍板）：
+     - (a) 同一个页面实例里，band 不因页面内的 `router.replace` 消失。例如由客户端记住"本次进入时是 bare"，或给页面内控件的导航带上保留标记。
+     - (b) band 卸载 / 插入时显式补偿滚动：用 layout effect 记录 `#board` 的视口位置，变化后恢复；浏览器已经做过 anchoring 时，补偿为 no-op。
+     - 无论哪种，都给逻辑部分补单测，e2e 补一个"board 上改 sort 后 tab 仍在视口内"的断言。
+
+### 建议（不阻断）
+
+- [src/components/shell/site-footer.tsx:10] footer 的 Market 链接仍指向 `/market`（landing），header、手机菜单和 tabbar 的 Market 都指向 `/market#board`。如果要统一，改成 `MARKET_BOARD_HREF`；如果有意让 footer 回 landing，可以不改。
+- [src/features/market/intro-pager.tsx:217] 每个 wheel 事件都调用 `boardAnchor()`，会读 `getBoundingClientRect`、`getComputedStyle(header)` 和 `scrollHeight`。而且 window 上挂了 non-passive 监听，整页滚轮都要等主线程。
+  - Lighthouse 的 passive 审计只标记不调用 `preventDefault` 的监听，这里不会被标记。
+  - 优化方向：在 resize / settle 时缓存 anchor；或者在 `y` 远大于 anchor 且 `dy > 0` 时，不读布局就直接走 native。
+- [src/features/market/intro-pager.tsx:34] 项目没有全局 `scroll-behavior: smooth`，`'auto'` 的效果和 `'instant'` 相同。老 WebKit 认识 `behavior` 字典成员但不认识 `'instant'` 时会抛 TypeError；如果不打算支持这些版本，可以不改。
+- [src/features/market/intro-pager.tsx:218] 锁期内的事件不经过 `ownedElsewhere`，打开的对话框或内层滚动区里的滚轮也会被吞掉。锁只有约 570ms 加静默期，实际很难碰到，记录一下。
+- 已知偏差 1（从 board 深处往上滚、越过 anchor 时直接翻到 band）：方向与用户意图一致，可以接受。阻断项 2 修复后，这条路径多数会变成原生滚动加 settle 收尾，行为请在真机触控板上再确认一次。
+- 已知偏差 2（数量保留为 sr-only 的 `aria-live`）：可以接受。搜索结果数量播报对读屏用户有用，视觉上没有多余文字。
+- 移除 board 的 Measure 选择后，FR-M4 的指标切换只在详情页图表中提供（`instrument-chart.tsx`），`?metric=` 深链仍然有效。建议主会话在 PROGRESS 里注明这项需求改由详情页满足。
+
+### 已核对、无问题
+- cookie、30 天、会话门控的代码、`IntroSeenRefresh`、`MetricSwitcher`、`SharedMetricSelect`、`signalCount` 和 Metrics 菜单的文案 key 都已删干净，src / messages / tests / e2e 中没有残留引用。`metricsFor` / `sharedMetrics` 仍被查询层和测试使用，应当保留。
+- Wordmark：
+  - 改为 client 组件；`usePathname` 在 SSR 和客户端一致，不会出现 hydration 差异。
+  - 名称来自 `appName` prop，没有写死产品名。
+  - 修饰键点击、中键点击、`defaultPrevented` 都放行给浏览器。
+  - 不在 `/market` 时交给 Next 默认滚动到顶部；在 `/market` 时：有 pager 就用 tween，没有 pager（board tab）就立即跳到 0。
+  - footer 中的 Wordmark 同样适用。
+- `isCurrent`：
+  - 桌面 nav、手机 sheet、账户菜单统一使用 `isCurrent`，tabbar 继续用 `isActive('/market')`，结果一致。
+  - 不带 `match` 的 hash 链接不会被标为当前，与原来的行为一致；有单测。
+- `#board` 的 `scroll-mt-[65px]` 与 sticky header 高度一致。
+- 触摸路径：
+  - 双指、`touchcancel`、缩放、fixed 或 dialog 目标都排除在外。
+  - 翻页中途按下手指，`stop()` 会释放 overflow。
+  - unmount 和路由切换时，cleanup 调用 `stop()`。
+  - 只有 wheel 监听是 `passive: false`，其余监听都是 passive，cleanup 完整。
+- tween：
+  - `anim !== current` 防止旧帧继续运行。
+  - settle 在 tween 期间直接返回，结束后用 `settle(false)` 记录落点，不会循环。
+  - 减少动态时直接跳到目标，不锁 overflow。
+- Watching tab 与其他 tab 共用 `TAB`、`TAB_CURRENT`、`TAB_OTHER` 三个常量，实测一致。
+- 新增逻辑（`wheelPixels`、`wheelFlipTarget`、`wheelStep`、`touchTarget`、`tweenAt`、`isCurrent`、`isBareEntry`）都有单测。
