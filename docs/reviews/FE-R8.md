@@ -53,3 +53,42 @@
 - 手机上 `HeatmapSource` 被隐藏了，sr-only 表格里的数字在读屏路径上就没有来源和时间窗。可以把 source 文案也做成 sr-only 留着，或者把它放进表格的 caption。
 - `IntroPager` 没有监听 `resize` / `orientationchange`。旋转屏幕后如果正好停在中间位置，要等下一次滚动才会纠正。不影响正确性，可以在 resize 结束后调一次 `settle()`。
 - `boardAnchor()` 用 `document.querySelector('header')` 取第一个 `header`，目前确实是 `SiteHeader`。但这依赖 DOM 顺序，以后在它前面插入任何 `<header>` 都会算错。建议给站点 header 加一个 id 或 data 属性，再按它来取。
+
+## Round 2 (Attempt 2) — 退回
+
+审查范围：`git diff origin/main...fe-r8`（merge-base = `origin/main` = `2eb904e`），只看改动文件。未跑 e2e。
+
+验收命令结果：
+- `pnpm lint`：通过（exit 0，0 error）
+- `pnpm typecheck`（`next typegen && tsc --noEmit`）：通过（exit 0）
+- `pnpm exec vitest run --maxWorkers=2`：32 个文件，354 passed / 13 todo，0 失败
+
+Attempt 1 各项核对：
+- 阻断 1（键盘焦点与吸附）：已修。`skipSnap` 是纯函数，有单测；`keydown`/`focusin` 后 600ms 内不吸附；焦点只认 `:focus-visible`。CTA 滚动后 `#board.focus({ preventScroll: true })`，`#board` 有 `tabIndex={-1}`。自身 flip 到达时先判断 `pending`，再判断 skip，所以 CTA 回车不会被 skip 卡住
+- 阻断 2（方向规则）：已按用户选择的方向规则实现，`flipTarget(y, anchor, restedAt)`、`flipThreshold`、`restingPage` 都有边界单测（阈值、边缘 1px、退化 anchor、null 时过半）。但 `restedAt` 的维护有问题，见下面阻断 1
+- 阻断 3（sr-only 链接可聚焦）：已修。`cn()` 不会把 `[@media…]:sr-only` 和 `[@media…]:focus:not-sr-only` 合并掉（修饰符不同），`:focus` 的优先级更高
+- 建议项：`/` 链接（wordmark、not-found、signout）改为 `/market`；`HeatmapTable withSource` 把来源和时间窗放进 caption（`Sources.kinds.ads` 存在，文案在 `messages/en/market.json`）；resize / orientationchange 结束后会重新 settle；`data-site-header` 已加。都已落实
+
+已核对、没有问题的部分：
+- 合并结果 `src/app/market/page.tsx`：相对 `origin/main` 只多了 `cookies` 导入、intro 两行导入、Fragment、`h1` 上移、`IntroBand`，以及 `#board` 的 `id`、`tabIndex`、`scroll-mt`。`SearchableBoard` 的 props、`CompareSelectionProvider`、`canonicalMarketQuery` 重定向、`WatchingTabCount` 都和 main 一致。`SearchableBoard` 在 `#board` section 里面，band 在 `Container` 外面。没有丢失 main 的导入或逻辑
+- iOS 工具栏收放：band 高度用 `svh`，不随工具栏变化，anchor 不会变，`rest` 不会被误清。`boardAnchor` 的高度判断用 `innerHeight`，工具栏收起后只会更宽松。惯性滚动期间 `touching=false`，`scroll` 事件不断重置 timer，或者等到 `scrollend`；手指按着时 settle 直接返回
+- 自身 flip：到达后 `remember` 先把 `rest` 更新为目标页，再按 `pending` 判断是不是自己触发的。anchor 在滑动途中变了也只会变成 `restedAt=null`，不会死循环
+- workflow：curl 在不加 `-L` 时，`%{redirect_url}` 会按请求 URL 把相对的 `Location: /market` 解析成绝对地址，所以比较 `307 https://brewdex.app/market` 是对的。默认 shell 是 `bash -e`，`root=$(curl …)` 网络失败时 step 直接失败，HTTP 非预期时显式 `exit 1`。引号和 `[ … != … ]` 都正确
+- 文案都在 `messages/en/*`，没有写死产品名；`src/app/page.tsx` 读了 `searchParams`，是动态路由，不会在构建时就固化成重定向
+
+### 必须修复（阻断）
+
+1. [src/features/market/intro-pager.tsx:80-84、94-112] 访客在中间位置停下后，`restedAt` 仍然指向上一次的静止页，方向判断用的是过期的起点，页面会往和用户刚才相反的方向翻。
+   - 为什么是问题：`rest` 只在落到 0 或 anchor 时更新。下面两种情况会在中间位置停下，`rest` 却保持不变：
+     - 我们自己的 flip 被打断。例：anchor=640，停在 band，滚轮下一格到 100，开始 smooth 滚向 640。途中用户反悔，在约 350 处往上滚一格，停在 250。settle 时 `pending` 不匹配，`flipTarget(250, 640, 'band')` → 640，又被送回 board。只要用户不一次退到 48px 以内，往回滚就总是被推回 board。iOS 上手指按住打断滑动、往上拖到 200 再松手，结果也一样
+     - 吸附被 `skipSnap` 跳过。例：用方向键往下走到 200（每一下都在 600ms 内，全部跳过），然后改用滚轮往上一格到 100。`flipTarget(100, 640, 'band')` → 640：用户在往上滚，页面却翻到了 board
+   - 方向规则本来就是为了解决"页面跟用户对着干"，这两种路径又把这个问题带了回来。
+   - 建议：
+     - 只要一次 settle 结束在中间位置并且留在那里（`skip` 为真，或者自己的 flip 被打断），就把 `rest.page` 置为 `null`。下一次判断会退回"过半"规则：上面第一个例子是 250 < 320，回到 band；第二个例子是 100，也回到 band
+     - 这部分状态转移可以抽成纯函数（例如 `nextRest(prev, { y, anchor, outcome })`），补上单测：被打断的 flip 和被跳过的吸附都应该清空 `restedAt`
+
+### 建议（不阻断）
+
+- [src/app/market/page.tsx:59] `#board` 加上 `outline-none`，和 `main#main` 的做法一致。现在用键盘回车点 CTA 时，程序会把焦点移到 `#board`。按 Chrome 的启发式规则，这时会匹配 `:focus-visible`，`theme.css:190` 会给整个 board 画一圈 accent 外框。
+- [src/features/market/intro-pager.tsx:36-41、115] `keyboardFocusRect` 没有排除不随页面滚动的元素。如果焦点停在 sticky header 或固定的手机 tab bar 上（键盘用户第一次按 Tab 通常先落在 header），`skipSnap` 会以为这个元素会被滚出视口，结果往下（header）或往上（tab bar）的 flip 全被跳过，直到焦点离开为止。不会跟用户对着干，但 flip 会失效。建议只对 `main` 内、并且不在 sticky/fixed 祖先里的元素做检查。
+- [src/features/market/intro-pager.tsx:146] `focusin` 也会被鼠标点击触发。`#board` 和 `main` 都是 `tabIndex=-1`，在 board 里任何空白处点一下都会聚焦它们，于是接下来 600ms 内不吸附。影响很小，可以只在 `keydown` 时记录，或者 `focusin` 时检查 `:focus-visible`，并把变量名改得和实际行为一致。
