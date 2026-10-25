@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_QUERY_KEYS, flipTarget, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, KEYBOARD_QUIET_MS, shouldShowIntro, skipSnap } from '@/features/market/intro';
+import { BOARD_QUERY_KEYS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, KEYBOARD_QUIET_MS, restingPage, shouldShowIntro, skipSnap } from '@/features/market/intro';
 import { marketEntryHref } from '@/features/market/logic';
 
 describe('intro band gating', () => {
@@ -49,32 +49,77 @@ describe('intro band gating', () => {
 });
 
 describe('flipTarget', () => {
-  const anchor = 600;
-  it('leaves the band and the board alone', () => {
-    expect(flipTarget(0, anchor)).toBeNull();
-    expect(flipTarget(anchor, anchor)).toBeNull();
-    expect(flipTarget(anchor + 1, anchor)).toBeNull();
-    expect(flipTarget(5000, anchor)).toBeNull();
+  const anchor = 600; // threshold = min(48, 60) = 48
+
+  it('caps the threshold at 48px, or a tenth of short distances', () => {
+    expect(FLIP_THRESHOLD_MAX).toBe(48);
+    expect(flipThreshold(600)).toBe(48);
+    expect(flipThreshold(480)).toBe(48);
+    expect(flipThreshold(300)).toBe(30);
   });
-  it('flips back to the band up to and including half way', () => {
-    expect(flipTarget(10, anchor)).toBe(0);
-    expect(flipTarget(299, anchor)).toBe(0);
-    expect(flipTarget(300, anchor)).toBe(0);
+
+  it('leaves the band and the board alone, whatever was rested on', () => {
+    for (const rested of ['band', 'board', null] as const) {
+      expect(flipTarget(0, anchor, rested)).toBeNull();
+      expect(flipTarget(1, anchor, rested)).toBeNull();
+      expect(flipTarget(anchor - 1, anchor, rested)).toBeNull();
+      expect(flipTarget(anchor - 0.5, anchor, rested)).toBeNull();
+      expect(flipTarget(anchor, anchor, rested)).toBeNull();
+      expect(flipTarget(anchor + 200, anchor, rested)).toBeNull();
+    }
   });
-  it('flips on to the board past half way', () => {
-    expect(flipTarget(301, anchor)).toBe(anchor);
-    expect(flipTarget(590, anchor)).toBe(anchor);
+
+  it('from the band: a threshold or more toward the board flips there, less snaps back', () => {
+    expect(flipTarget(20, anchor, 'band')).toBe(0);
+    expect(flipTarget(47, anchor, 'band')).toBe(0);
+    expect(flipTarget(48, anchor, 'band')).toBe(anchor);
+    expect(flipTarget(60, anchor, 'band')).toBe(anchor);
+    expect(flipTarget(550, anchor, 'band')).toBe(anchor);
   });
-  it('treats a pixel of rounding at either edge as arrived, so a flip never re-triggers', () => {
-    expect(flipTarget(1, anchor)).toBeNull();
-    expect(flipTarget(anchor - 1, anchor)).toBeNull();
-    expect(flipTarget(anchor - 0.5, anchor)).toBeNull();
+
+  it('from the board: a threshold or more toward the band flips there, less snaps back', () => {
+    expect(flipTarget(anchor - 20, anchor, 'board')).toBe(anchor);
+    expect(flipTarget(anchor - 47, anchor, 'board')).toBe(anchor);
+    expect(flipTarget(anchor - 48, anchor, 'board')).toBe(0);
+    expect(flipTarget(anchor - 60, anchor, 'board')).toBe(0);
+    expect(flipTarget(50, anchor, 'board')).toBe(0);
   });
+
+  it('scales the threshold down for a short band', () => {
+    expect(flipTarget(29, 300, 'band')).toBe(0);
+    expect(flipTarget(30, 300, 'band')).toBe(300);
+    expect(flipTarget(271, 300, 'board')).toBe(300);
+    expect(flipTarget(270, 300, 'board')).toBe(0);
+  });
+
+  it('without a known resting page, the nearer page wins (exactly half goes back to the band)', () => {
+    expect(flipTarget(60, anchor, null)).toBe(0);
+    expect(flipTarget(299, anchor, null)).toBe(0);
+    expect(flipTarget(300, anchor, null)).toBe(0);
+    expect(flipTarget(301, anchor, null)).toBe(anchor);
+    expect(flipTarget(540, anchor, null)).toBe(anchor);
+  });
+
   it('does nothing without a band above the board', () => {
-    expect(flipTarget(0, 0)).toBeNull();
-    expect(flipTarget(10, 0)).toBeNull();
-    expect(flipTarget(10, -50)).toBeNull();
-    expect(flipTarget(1, 2)).toBeNull();
+    for (const rested of ['band', 'board', null] as const) {
+      expect(flipTarget(0, 0, rested)).toBeNull();
+      expect(flipTarget(10, 0, rested)).toBeNull();
+      expect(flipTarget(10, -50, rested)).toBeNull();
+      expect(flipTarget(1, 2, rested)).toBeNull();
+    }
+  });
+});
+
+describe('restingPage', () => {
+  it('names the page a settled offset rests on', () => {
+    expect(restingPage(0, 600)).toBe('band');
+    expect(restingPage(1, 600)).toBe('band');
+    expect(restingPage(599, 600)).toBe('board');
+    expect(restingPage(600, 600)).toBe('board');
+    expect(restingPage(2000, 600)).toBe('board');
+    expect(restingPage(2, 600)).toBeNull();
+    expect(restingPage(300, 600)).toBeNull();
+    expect(restingPage(598, 600)).toBeNull();
   });
 });
 

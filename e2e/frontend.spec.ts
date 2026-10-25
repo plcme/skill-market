@@ -205,25 +205,33 @@ test.describe('first visit', () => {
     await expect(page.getByRole('heading', { name: INTRO })).toHaveCount(0);
   });
 
-  test('Explore the market flips to the board; a part-way scroll settles on the nearer page', async ({ page }) => {
+  test('Explore the market flips to the board; a settled scroll flips the way it set off', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/market');
+    const scrollY = () => page.evaluate(() => window.scrollY);
+    const scrollTo = (y: number) => page.evaluate(top => window.scrollTo(0, top), y);
     await page.getByRole('link', { name: 'Explore the market' }).click();
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
-    const anchor = await page.evaluate(() => window.scrollY);
+    await expect.poll(scrollY).toBeGreaterThan(100);
+    const anchor = await scrollY();
     await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
     // Focus follows, like a native in-page anchor.
     await expect(page.locator('#board')).toBeFocused();
     // Snapping stays off for a moment after any focus move or key press.
     await page.waitForTimeout(700);
-    await page.evaluate(y => window.scrollTo(0, y), Math.round(anchor * 0.4));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-    await page.evaluate(y => window.scrollTo(0, y), Math.round(anchor * 0.6));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(anchor);
+    // Resting on the board: 60px up flips to the band, 20px up springs back.
+    await scrollTo(anchor - 20);
+    await expect.poll(scrollY).toBe(anchor);
+    await scrollTo(anchor - 60);
+    await expect.poll(scrollY).toBe(0);
+    // Resting on the band: 20px down springs back, 60px down flips to the board.
+    await scrollTo(20);
+    await expect.poll(scrollY).toBe(0);
+    await scrollTo(60);
+    await expect.poll(scrollY).toBe(anchor);
     // Past the board, scrolling is free.
-    await page.evaluate(y => window.scrollTo(0, y), anchor + 200);
+    await scrollTo(anchor + 200);
     await page.waitForTimeout(400);
-    expect(await page.evaluate(() => window.scrollY)).toBe(anchor + 200);
+    expect(await scrollY()).toBe(anchor + 200);
   });
 
   test('keyboard focus and arrow keys are never snapped away', async ({ page }) => {

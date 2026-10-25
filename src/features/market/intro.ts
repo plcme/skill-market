@@ -59,16 +59,36 @@ export function hasIntroCookie(cookieString: string): boolean {
 /** Positions within this many px of a page edge count as on it (sub-pixel rounding of scroll offsets). */
 const EDGE = 1;
 
+/** The page a visitor last came to rest on, or null when unknown (first settle mid-way, or the anchor has moved since). */
+export type RestedAt = 'band' | 'board' | null;
+
+/** How far (px) a visitor must move off the page they rested on for the flip to carry on to the other page. */
+export const FLIP_THRESHOLD_MAX = 48;
+export function flipThreshold(anchor: number): number {
+  return Math.min(FLIP_THRESHOLD_MAX, 0.1 * anchor);
+}
+
+/** Which page a settled offset rests on: the band at 0, the board at (or past) the anchor; null in between. */
+export function restingPage(y: number, anchor: number): RestedAt {
+  if (y <= EDGE) return 'band';
+  if (y >= anchor - EDGE) return 'board';
+  return null;
+}
+
 /**
  * Where to settle after scrolling stops, or null to leave the page alone.
  * `anchor` is the scroll offset at which the board starts under the sticky
- * header. Only offsets strictly between the band (0) and the board snap:
- * past half flips to the board, otherwise back to the band. Exactly half
- * counts as "not past".
+ * header; only offsets strictly between the band (0) and the board snap.
+ * Direction decides: moving at least `flipThreshold(anchor)` off the page the
+ * visitor rested on flips to the other page; less snaps back to it. With no
+ * known resting page, the nearer page wins (exactly half counts as the band).
  */
-export function flipTarget(y: number, anchor: number): number | null {
+export function flipTarget(y: number, anchor: number, restedAt: RestedAt): number | null {
   if (!(anchor > 2 * EDGE)) return null;
   if (y <= EDGE || y >= anchor - EDGE) return null;
+  const threshold = flipThreshold(anchor);
+  if (restedAt === 'band') return y >= threshold ? anchor : 0;
+  if (restedAt === 'board') return anchor - y >= threshold ? 0 : anchor;
   return y > anchor / 2 ? anchor : 0;
 }
 

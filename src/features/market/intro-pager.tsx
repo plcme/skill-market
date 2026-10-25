@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { prefersReducedMotion } from '@/lib/hooks/use-media-query';
-import { BOARD_ANCHOR_ID, flipTarget, INTRO_ID, markIntroSeen, skipSnap } from './intro';
+import { BOARD_ANCHOR_ID, flipTarget, INTRO_ID, markIntroSeen, restingPage, skipSnap, type RestedAt } from './intro';
 
 /** Without `scrollend`, scrolling counts as settled after this long without a scroll event. */
 const SETTLE_MS = 120;
@@ -61,9 +61,10 @@ export function FlipToBoardLink({ onClick, ...props }: React.ComponentProps<'a'>
 /**
  * Mounted with the intro band. Marks the band as seen, and makes band and
  * board behave like two pages: once scrolling settles anywhere between them,
- * finish the flip to whichever is nearer. Input is never intercepted; only
- * the resting position is corrected, only inside that range, and never right
- * after keyboard use or away from a keyboard-focused element.
+ * finish the flip in the direction the visitor set off (see `flipTarget`).
+ * Input is never intercepted; only the resting position is corrected, only
+ * inside that range, and never right after keyboard use or away from a
+ * keyboard-focused element.
  */
 export function IntroPager() {
   useEffect(() => {
@@ -74,21 +75,29 @@ export function IntroPager() {
     let moving = false;
     let pending: number | null = null;
     let keyboardAt = -Infinity;
+    // The page last rested on, valid only for the anchor it was measured against (a resize that moves the anchor forgets it).
+    let rest: { page: RestedAt; anchor: number } = { page: null, anchor: NaN };
+    const remember = (y: number, anchor: number) => {
+      const page = restingPage(y, anchor);
+      if (page) rest = { page, anchor };
+    };
+    const restedAt = (anchor: number): RestedAt => (rest.anchor === anchor ? rest.page : null);
     let timer: ReturnType<typeof setTimeout> | undefined;
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
 
     const settle = () => {
       if (touching) return;
       const y = window.scrollY;
+      // Measured now rather than cached, so resizes and late layout are always reflected.
+      const anchor = boardAnchor();
+      if (anchor !== null) remember(y, anchor);
       if (pending !== null) {
         const ours = Math.abs(y - pending) <= 2;
         pending = null;
         if (ours) return; // the scroll-end of our own flip
       }
-      // Measured now rather than cached, so resizes and late layout are always reflected.
-      const anchor = boardAnchor();
       if (anchor === null) return;
-      const target = flipTarget(y, anchor);
+      const target = flipTarget(y, anchor, restedAt(anchor));
       if (target === null) return;
       const skip = skipSnap({
         msSinceKeyboard: performance.now() - keyboardAt,
@@ -123,6 +132,9 @@ export function IntroPager() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(later, RESIZE_SETTLE_MS);
     };
+
+    const initial = boardAnchor();
+    if (initial !== null) remember(window.scrollY, initial);
 
     const passive = { passive: true } as const;
     window.addEventListener('scroll', onScroll, passive);
