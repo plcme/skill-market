@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_QUERY_KEYS, easeOutCubic, FLIP_MS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, isBareEntry, KEYBOARD_QUIET_MS, restingPage, settleStep, skipSnap, touchTarget, tweenAt, UNKNOWN_REST, WHEEL_QUIET_MS, wheelFlipTarget, wheelPixels, wheelStep, type PagerState } from '@/features/market/intro';
+import { BOARD_QUERY_KEYS, easeOutCubic, FLIP_MS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, isBareEntry, isBareSearch, isZoomed, keepBand, KEYBOARD_QUIET_MS, restingPage, settleStep, skipSnap, touchTarget, tweenAt, UNKNOWN_REST, WHEEL_QUIET_MS, wheelFlipTarget, wheelPixels, wheelStep, type PagerState } from '@/features/market/intro';
 import { marketEntryHref } from '@/features/market/logic';
 
 describe('landing band', () => {
@@ -11,6 +11,31 @@ describe('landing band', () => {
     expect(isBareEntry({ type: 'role' })).toBe(false);
     expect(isBareEntry({ q: ['', 'js'] })).toBe(false);
     expect(BOARD_QUERY_KEYS).toEqual(['type', 'q', 'sort', 'view', 'layer', 'metric']);
+  });
+
+  it('reads a live query string the same way', () => {
+    expect(isBareSearch(new URLSearchParams(''))).toBe(true);
+    expect(isBareSearch(new URLSearchParams('utm_source=x&q='))).toBe(true);
+    expect(isBareSearch(new URLSearchParams('q=dat'))).toBe(false);
+    expect(isBareSearch(new URLSearchParams('sort=change'))).toBe(false);
+    expect(isBareSearch(new URLSearchParams('q=&q=js'))).toBe(false);
+  });
+
+  it('stays on while the board changes the query in place; only a fresh deep link starts without it', () => {
+    // Bare entry, then search, sort and a tab: the band stays.
+    let shown = isBareSearch(new URLSearchParams(''));
+    for (const qs of ['q=d', 'q=dat', 'q=dat&sort=change', 'type=role&view=cards', '']) {
+      shown = keepBand(shown, isBareSearch(new URLSearchParams(qs)));
+      expect(shown, qs).toBe(true);
+    }
+    // Fresh deep link: no band while the query stays deep, back once it is bare (the wordmark).
+    shown = isBareSearch(new URLSearchParams('type=role'));
+    expect(shown).toBe(false);
+    shown = keepBand(shown, isBareSearch(new URLSearchParams('type=role&sort=change')));
+    expect(shown).toBe(false);
+    shown = keepBand(shown, isBareSearch(new URLSearchParams('')));
+    expect(shown).toBe(true);
+    expect(keepBand(shown, false)).toBe(true);
   });
 });
 
@@ -255,6 +280,25 @@ describe('wheel flip', () => {
 
   it('under reduced motion the lock is only the quiet moment', () => {
     expect(wheelStep({ y: 0, anchor, dy: 6, now: 50, lockUntil: -Infinity, flipMs: 0 }).lockUntil).toBe(50 + WHEEL_QUIET_MS);
+  });
+
+  it('leaves the wheel native while the page is pinch-zoomed, lock or not', () => {
+    expect(isZoomed(undefined)).toBe(false);
+    expect(isZoomed(1)).toBe(false);
+    expect(isZoomed(1.01)).toBe(false);
+    expect(isZoomed(1.5)).toBe(true);
+    expect(wheelStep({ y: 0, anchor, dy: 6, now: 1000, lockUntil: -Infinity, flipMs: FLIP_MS, zoomed: true })).toEqual({ action: 'native', lockUntil: -Infinity });
+    expect(wheelStep({ y: 300, anchor, dy: -6, now: 1000, lockUntil: 1200, flipMs: FLIP_MS, zoomed: true })).toEqual({ action: 'native', lockUntil: 1200 });
+  });
+
+  it('leaves a wheel event the browser will not let us cancel native: no flip, no lock', () => {
+    // Up from deep in the board: the browser already owns this gesture when it crosses into the gap.
+    expect(wheelStep({ y: 630, anchor, dy: -100, now: 1000, lockUntil: -Infinity, flipMs: FLIP_MS, cancelable: false })).toEqual({ action: 'native', lockUntil: -Infinity });
+    expect(wheelStep({ y: 300, anchor, dy: -3, now: 1000, lockUntil: -Infinity, flipMs: FLIP_MS, cancelable: false })).toEqual({ action: 'native', lockUntil: -Infinity });
+    expect(wheelStep({ y: anchor, anchor, dy: 3, now: 1000, lockUntil: 1200, flipMs: FLIP_MS, cancelable: false })).toEqual({ action: 'native', lockUntil: 1200 });
+    // The same events, cancelable, flip or swallow.
+    expect(wheelStep({ y: 630, anchor, dy: -100, now: 1000, lockUntil: -Infinity, flipMs: FLIP_MS, cancelable: true }).action).toBe('flip');
+    expect(wheelStep({ y: anchor, anchor, dy: 3, now: 1000, lockUntil: 1200, flipMs: FLIP_MS }).action).toBe('swallow');
   });
 
   it('native wheel input does not touch the lock', () => {

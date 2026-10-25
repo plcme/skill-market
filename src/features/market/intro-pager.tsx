@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { prefersReducedMotion } from '@/lib/hooks/use-media-query';
-import { BOARD_ANCHOR_ID, FLIP_MS, INTRO_ID, settleStep, skipSnap, touchTarget, tweenAt, UNKNOWN_REST, wheelPixels, wheelStep, type PagerState } from './intro';
+import { BOARD_ANCHOR_ID, FLIP_MS, INTRO_ID, isZoomed, settleStep, skipSnap, touchTarget, tweenAt, UNKNOWN_REST, wheelPixels, wheelStep, type PagerState } from './intro';
 
 /** Without `scrollend`, scrolling counts as settled after this long without a scroll event. */
 const SETTLE_MS = 120;
@@ -30,8 +30,17 @@ function boardAnchor(): number | null {
   return Math.round(Math.min(rect.bottom + window.scrollY - headerHeight, maxScroll));
 }
 
+/** No global smooth scrolling here, so 'auto' is instant (and older WebKit rejects 'instant'). */
 function jumpTo(top: number) {
-  window.scrollTo({ top, behavior: 'instant' });
+  window.scrollTo({ top, behavior: 'auto' });
+}
+
+function zoomed(): boolean {
+  return isZoomed(window.visualViewport?.scale);
+}
+
+function inDialog(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('[role="dialog"], [aria-modal="true"]') !== null;
 }
 
 function flipDuration(): number {
@@ -211,11 +220,31 @@ export function IntroPager() {
       settle();
     };
 
+    /** The anchor, measured at most once per frame: wheel events come faster than layout changes. */
+    let frameAnchor: { value: number | null } | null = null;
+    const wheelAnchor = () => {
+      if (!frameAnchor) {
+        frameAnchor = { value: boardAnchor() };
+        requestAnimationFrame(() => { frameAnchor = null; });
+      }
+      return frameAnchor.value;
+    };
+
     const onWheel = (e: WheelEvent) => {
       if (e.defaultPrevented || e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       const dy = wheelPixels(e.deltaY, e.deltaMode, window.innerHeight);
-      const step = wheelStep({ y: window.scrollY, anchor: boardAnchor(), dy, now: performance.now(), lockUntil, flipMs: flipDuration() });
-      if (step.action === 'native' || (step.action === 'flip' && ownedElsewhere(e.target, dy))) return;
+      const step = wheelStep({
+        y: window.scrollY,
+        anchor: wheelAnchor(),
+        dy,
+        now: performance.now(),
+        lockUntil,
+        flipMs: flipDuration(),
+        zoomed: zoomed(),
+        cancelable: e.cancelable,
+      });
+      if (step.action === 'native') return;
+      if (step.action === 'flip' ? ownedElsewhere(e.target, dy) : inDialog(e.target)) return;
       lockUntil = step.lockUntil;
       e.preventDefault();
       if (step.action === 'flip') flip(step.to);
@@ -237,8 +266,7 @@ export function IntroPager() {
       touching = false;
       const gesture = touch;
       touch = null;
-      const zoomed = (window.visualViewport?.scale ?? 1) > 1.01;
-      const to = gesture && !gesture.multi && !zoomed && e.type === 'touchend' && !ownedElsewhere(e.target, 0)
+      const to = gesture && !gesture.multi && !zoomed() && e.type === 'touchend' && !ownedElsewhere(e.target, 0)
         ? touchTarget({ startY: gesture.startY, y: window.scrollY, anchor: boardAnchor() })
         : null;
       if (to !== null) flip(to, { afterTouch: true });

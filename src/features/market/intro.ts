@@ -17,6 +17,21 @@ export function isBareEntry(sp: Record<string, string | string[] | undefined>): 
   });
 }
 
+/** `isBareEntry` for a live query string (`useSearchParams`). */
+export function isBareSearch(params: { getAll(key: string): string[] }): boolean {
+  return isBareEntry(Object.fromEntries(BOARD_QUERY_KEYS.map(key => [key, params.getAll(key)])));
+}
+
+/**
+ * Whether the band stays on: it shows on a bare entry, stays while the board
+ * changes the query in place (search, sort, layout, tabs), and comes back
+ * whenever the query is bare again. Only a fresh load of a deep link starts
+ * without it.
+ */
+export function keepBand(shownBefore: boolean, bare: boolean): boolean {
+  return shownBefore || bare;
+}
+
 /** Positions within this many px of a page edge count as on it (sub-pixel rounding of scroll offsets). */
 const EDGE = 1;
 
@@ -144,12 +159,32 @@ export type WheelStep = { action: 'native' | 'swallow'; lockUntil: number } | { 
  * `now` and `lockUntil` are ms on one clock; `flipMs` is how long the flip
  * about to start will take (0 under reduced motion). Inside the lock every
  * wheel event is swallowed, wherever the page is, and pushes the lock on.
+ *
+ * Two kinds of wheel event are always left native, lock or not: while the page
+ * is pinch-zoomed (the wheel pans the zoomed view), and when the event cannot
+ * be cancelled (the browser already scrolls this gesture itself, so a flip
+ * would fight its momentum; the settle fallback finishes instead).
  */
-export function wheelStep({ y, anchor, dy, now, lockUntil, flipMs }: { y: number; anchor: number | null; dy: number; now: number; lockUntil: number; flipMs: number }): WheelStep {
+export function wheelStep({ y, anchor, dy, now, lockUntil, flipMs, zoomed = false, cancelable = true }: {
+  y: number;
+  anchor: number | null;
+  dy: number;
+  now: number;
+  lockUntil: number;
+  flipMs: number;
+  zoomed?: boolean;
+  cancelable?: boolean;
+}): WheelStep {
+  if (zoomed || !cancelable) return { action: 'native', lockUntil };
   if (now < lockUntil) return { action: 'swallow', lockUntil: Math.max(lockUntil, now + WHEEL_QUIET_MS) };
   const to = wheelFlipTarget(y, anchor, dy);
   if (to === null) return { action: 'native', lockUntil };
   return { action: 'flip', to, lockUntil: now + flipMs + WHEEL_QUIET_MS };
+}
+
+/** Whether the page counts as pinch-zoomed (`visualViewport.scale`); input then pans the zoomed view and is left alone. */
+export function isZoomed(scale: number | undefined): boolean {
+  return (scale ?? 1) > 1.01;
 }
 
 /**
