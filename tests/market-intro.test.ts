@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_QUERY_KEYS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, KEYBOARD_QUIET_MS, restingPage, shouldShowIntro, skipSnap } from '@/features/market/intro';
+import { BOARD_QUERY_KEYS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, KEYBOARD_QUIET_MS, restingPage, settleStep, shouldShowIntro, skipSnap, UNKNOWN_REST, type PagerState } from '@/features/market/intro';
 import { marketEntryHref } from '@/features/market/logic';
 
 describe('intro band gating', () => {
@@ -120,6 +120,80 @@ describe('restingPage', () => {
     expect(restingPage(2, 600)).toBeNull();
     expect(restingPage(300, 600)).toBeNull();
     expect(restingPage(598, 600)).toBeNull();
+  });
+});
+
+describe('settleStep', () => {
+  const anchor = 640;
+  const never = () => false;
+  const always = () => true;
+  const on = (page: 'band' | 'board'): PagerState => ({ rest: { page, anchor }, pending: null });
+
+  it('records the page a settle lands on, whoever scrolled there', () => {
+    expect(settleStep({ rest: UNKNOWN_REST, pending: null }, { y: 0, anchor, skip: never })).toEqual({ rest: { page: 'band', anchor }, pending: null, scrollTo: null });
+    expect(settleStep(on('band'), { y: 900, anchor, skip: never })).toEqual({ rest: { page: 'board', anchor }, pending: null, scrollTo: null });
+    // Our flip arriving, even a pixel or two short.
+    expect(settleStep({ rest: { page: 'band', anchor }, pending: anchor }, { y: anchor, anchor, skip: never })).toEqual({ rest: { page: 'board', anchor }, pending: null, scrollTo: null });
+    expect(settleStep({ rest: { page: 'band', anchor }, pending: anchor }, { y: anchor - 2, anchor, skip: never })).toEqual({ rest: { page: 'board', anchor }, pending: null, scrollTo: null });
+    expect(settleStep({ rest: { page: 'board', anchor }, pending: 0 }, { y: 2, anchor, skip: never })).toEqual({ rest: { page: 'band', anchor }, pending: null, scrollTo: null });
+  });
+
+  it('flips the way the visitor set off and remembers the flip it started', () => {
+    expect(settleStep(on('band'), { y: 100, anchor, skip: never })).toEqual({ rest: { page: 'band', anchor }, pending: anchor, scrollTo: anchor });
+    expect(settleStep(on('band'), { y: 20, anchor, skip: never })).toEqual({ rest: { page: 'band', anchor }, pending: 0, scrollTo: 0 });
+    expect(settleStep(on('board'), { y: anchor - 60, anchor, skip: never })).toEqual({ rest: { page: 'board', anchor }, pending: 0, scrollTo: 0 });
+    expect(settleStep(on('board'), { y: anchor - 20, anchor, skip: never })).toEqual({ rest: { page: 'board', anchor }, pending: anchor, scrollTo: anchor });
+  });
+
+  it('an interrupted flip forgets where it started, so the nearer page wins', () => {
+    // Band → 100 starts a flip to the board; the visitor scrolls back up and stops at 250.
+    const flipping = settleStep(on('band'), { y: 100, anchor, skip: never });
+    const after = settleStep(flipping, { y: 250, anchor, skip: never });
+    expect(after.scrollTo).toBe(0);
+    expect(after.rest.page).toBeNull();
+    // A finger hold that stops the glide and drags up to 200 does the same.
+    expect(settleStep(flipping, { y: 200, anchor, skip: never }).scrollTo).toBe(0);
+    // Taking over and carrying on past half still reaches the board.
+    expect(settleStep(flipping, { y: 400, anchor, skip: never }).scrollTo).toBe(anchor);
+    // Interrupted on the way back up, too.
+    const back = settleStep(on('board'), { y: anchor - 100, anchor, skip: never });
+    expect(back.scrollTo).toBe(0);
+    expect(settleStep(back, { y: 500, anchor, skip: never }).scrollTo).toBe(anchor);
+  });
+
+  it('a vetoed flip leaves the visitor mid-way and forgets the resting page', () => {
+    // Arrow keys from the band to 40, then 200: every settle is vetoed.
+    let s: PagerState = on('band');
+    for (const y of [40, 200]) {
+      const step = settleStep(s, { y, anchor, skip: always });
+      expect(step.scrollTo).toBeNull();
+      expect(step.rest).toEqual({ page: null, anchor });
+      s = step;
+    }
+    // Then one wheel notch up to 100: nearer page, the band, not a flip to the board.
+    expect(settleStep(s, { y: 100, anchor, skip: never }).scrollTo).toBe(0);
+  });
+
+  it('passes the chosen target to the veto', () => {
+    const seen: number[] = [];
+    settleStep(on('band'), { y: 100, anchor, skip: t => { seen.push(t); return false; } });
+    settleStep(on('band'), { y: 20, anchor, skip: t => { seen.push(t); return false; } });
+    expect(seen).toEqual([anchor, 0]);
+  });
+
+  it('forgets everything while the band cannot act as a page', () => {
+    expect(settleStep({ rest: { page: 'band', anchor }, pending: anchor }, { y: 100, anchor: null, skip: never })).toEqual({ rest: UNKNOWN_REST, pending: null, scrollTo: null });
+    expect(settleStep({ rest: UNKNOWN_REST, pending: null }, { y: 100, anchor, skip: never }).scrollTo).toBe(0);
+  });
+
+  it('does not trust a resting page measured against another anchor', () => {
+    expect(settleStep({ rest: { page: 'board', anchor: 700 }, pending: null }, { y: 600, anchor, skip: never }).scrollTo).toBe(anchor);
+    expect(settleStep({ rest: { page: 'band', anchor: 700 }, pending: null }, { y: 100, anchor, skip: never }).scrollTo).toBe(0);
+  });
+
+  it('records without flipping when every flip is vetoed (the first look on mount)', () => {
+    expect(settleStep({ rest: UNKNOWN_REST, pending: null }, { y: 0, anchor, skip: always })).toEqual({ rest: { page: 'band', anchor }, pending: null, scrollTo: null });
+    expect(settleStep({ rest: UNKNOWN_REST, pending: null }, { y: 300, anchor, skip: always })).toEqual({ rest: { page: null, anchor }, pending: null, scrollTo: null });
   });
 });
 

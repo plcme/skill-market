@@ -56,7 +56,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
       <CompareSelectionProvider key={tab}>
       {/* Scroll margin = sticky header (h-16 + 1px rule), so #board lands just under it; focusable so the intro's link can move focus here. */}
-      <section id={BOARD_ANCHOR_ID} tabIndex={-1} aria-labelledby="board-h" className="scroll-mt-[65px] pt-8 sm:pt-12">
+      <section id={BOARD_ANCHOR_ID} tabIndex={-1} aria-labelledby="board-h" className="scroll-mt-[65px] pt-8 outline-none sm:pt-12">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
         <div className="border-b border-rule">
           {/* Scrolls sideways at narrow widths; the nav (not the tabs) overlaps the rule so nothing overflows vertically. */}

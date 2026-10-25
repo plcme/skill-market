@@ -243,6 +243,9 @@ test.describe('first visit', () => {
     await page.waitForTimeout(800);
     const y = await page.evaluate(() => window.scrollY);
     expect(y).toBeGreaterThan(0);
+    // Left mid-way, the band no longer counts as where the visitor rested: a nudge up goes to the nearer page, not the board.
+    await page.evaluate(top => window.scrollTo(0, top), Math.max(2, y - 10));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     await page.keyboard.press('Tab');
     await page.waitForTimeout(800);
     await expect(page.locator(':focus')).toBeInViewport();

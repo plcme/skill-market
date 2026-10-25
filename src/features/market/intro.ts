@@ -92,6 +92,47 @@ export function flipTarget(y: number, anchor: number, restedAt: RestedAt): numbe
   return y > anchor / 2 ? anchor : 0;
 }
 
+/** The page last rested on, valid only for the anchor it was measured against (a resize that moves the anchor forgets it). */
+export interface Rest {
+  page: RestedAt;
+  anchor: number;
+}
+export const UNKNOWN_REST: Rest = { page: null, anchor: Number.NaN };
+
+/** What the pager remembers between settles: where the visitor last rested, and the page our own flip is heading for. */
+export interface PagerState {
+  rest: Rest;
+  pending: number | null;
+}
+
+/** Our own flip counts as arrived within this many px of its target (smooth scrolling can stop a pixel short). */
+const ARRIVED = 2;
+
+/**
+ * One settled scroll: where to flip (`scrollTo`, or null to leave the page
+ * alone) and the state to carry into the next settle. `anchor` is null when
+ * the band cannot act as a page (fit guard). `skip(target)` vetoes a flip
+ * (keyboard use, focus would be hidden).
+ *
+ * The resting page is only trusted while the visitor is on it or our flip is
+ * carrying them to it. Any settle that ends between the pages and stays
+ * there — a vetoed flip, our own flip interrupted, the fit guard — forgets it,
+ * so the next decision falls back to the nearer page instead of flipping
+ * against the way the visitor just moved.
+ */
+export function settleStep(state: PagerState, { y, anchor, skip }: { y: number; anchor: number | null; skip: (target: number) => boolean }): PagerState & { scrollTo: number | null } {
+  if (anchor === null) return { rest: UNKNOWN_REST, pending: null, scrollTo: null };
+  const { rest, pending } = state;
+  const arrivedAt = pending !== null && Math.abs(y - pending) <= ARRIVED ? pending : y;
+  const page = restingPage(arrivedAt, anchor);
+  if (page) return { rest: { page, anchor }, pending: null, scrollTo: null };
+  // Mid-way. If our flip was under way, the visitor took over: their start page no longer says which way they're heading.
+  const restedAt = pending === null && rest.anchor === anchor ? rest.page : null;
+  const target = flipTarget(y, anchor, restedAt);
+  if (target === null || skip(target)) return { rest: { page: null, anchor }, pending: null, scrollTo: null };
+  return { rest: { page: restedAt, anchor }, pending: target, scrollTo: target };
+}
+
 /** Keyboard input this recent means the scroll was the user's (focus moves, arrow keys): leave it alone. */
 export const KEYBOARD_QUIET_MS = 600;
 

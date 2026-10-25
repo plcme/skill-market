@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { prefersReducedMotion } from '@/lib/hooks/use-media-query';
-import { BOARD_ANCHOR_ID, flipTarget, INTRO_ID, markIntroSeen, restingPage, skipSnap, type RestedAt } from './intro';
+import { BOARD_ANCHOR_ID, INTRO_ID, markIntroSeen, settleStep, skipSnap, UNKNOWN_REST, type PagerState } from './intro';
 
 /** Without `scrollend`, scrolling counts as settled after this long without a scroll event. */
 const SETTLE_MS = 120;
@@ -32,13 +32,27 @@ function scrollToY(top: number) {
   window.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
 }
 
-/** The focused element's viewport rect, when focus came from the keyboard (a mouse click shouldn't pin the page). */
+/**
+ * The keyboard-focused element's viewport rect, or null when there is none to
+ * protect: focus from a mouse click, or focus on something that doesn't move
+ * with the page (outside `main`, like the sticky header and the phone tab bar,
+ * or inside a fixed or sticky layer).
+ */
 function keyboardFocusRect(): { top: number; bottom: number } | null {
   const el = document.activeElement;
-  if (!(el instanceof HTMLElement) || el === document.body || !el.matches(':focus-visible')) return null;
+  if (!(el instanceof HTMLElement) || !el.matches(':focus-visible')) return null;
+  const main = el.closest('main');
+  if (!main) return null;
+  for (let node: HTMLElement | null = el; node && node !== main; node = node.parentElement) {
+    const { position } = getComputedStyle(node);
+    if (position === 'fixed' || position === 'sticky') return null;
+  }
   const { top, bottom } = el.getBoundingClientRect();
   return { top, bottom };
 }
+
+/** Set while a pager is mounted: lets the intro link's glide count as the pager's own flip. */
+let registerFlip: ((target: number) => void) | null = null;
 
 /** In-page link to the board: a plain anchor without JS; with it, glides there and moves focus like the anchor would. */
 export function FlipToBoardLink({ onClick, ...props }: React.ComponentProps<'a'>) {
@@ -51,6 +65,7 @@ export function FlipToBoardLink({ onClick, ...props }: React.ComponentProps<'a'>
         const anchor = boardAnchor();
         if (e.defaultPrevented || anchor === null) return;
         e.preventDefault();
+        registerFlip?.(anchor);
         scrollToY(anchor);
         document.getElementById(BOARD_ANCHOR_ID)?.focus({ preventScroll: true });
       }}
@@ -73,43 +88,30 @@ export function IntroPager() {
     const hasScrollEnd = 'onscrollend' in window;
     let touching = false;
     let moving = false;
-    let pending: number | null = null;
     let keyboardAt = -Infinity;
-    // The page last rested on, valid only for the anchor it was measured against (a resize that moves the anchor forgets it).
-    let rest: { page: RestedAt; anchor: number } = { page: null, anchor: NaN };
-    const remember = (y: number, anchor: number) => {
-      const page = restingPage(y, anchor);
-      if (page) rest = { page, anchor };
-    };
-    const restedAt = (anchor: number): RestedAt => (rest.anchor === anchor ? rest.page : null);
+    let state: PagerState = { rest: UNKNOWN_REST, pending: null };
     let timer: ReturnType<typeof setTimeout> | undefined;
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const settle = () => {
+    /** One settled scroll; `snap: false` only records where the visitor is. */
+    const settle = (snap = true) => {
       if (touching) return;
       const y = window.scrollY;
       // Measured now rather than cached, so resizes and late layout are always reflected.
-      const anchor = boardAnchor();
-      if (anchor !== null) remember(y, anchor);
-      if (pending !== null) {
-        const ours = Math.abs(y - pending) <= 2;
-        pending = null;
-        if (ours) return; // the scroll-end of our own flip
-      }
-      if (anchor === null) return;
-      const target = flipTarget(y, anchor, restedAt(anchor));
-      if (target === null) return;
-      const skip = skipSnap({
-        msSinceKeyboard: performance.now() - keyboardAt,
-        focus: keyboardFocusRect(),
+      const next = settleStep(state, {
         y,
-        target,
-        viewTop: stickyHeaderHeight(),
-        viewBottom: window.innerHeight,
+        anchor: boardAnchor(),
+        skip: target => !snap || skipSnap({
+          msSinceKeyboard: performance.now() - keyboardAt,
+          focus: keyboardFocusRect(),
+          y,
+          target,
+          viewTop: stickyHeaderHeight(),
+          viewBottom: window.innerHeight,
+        }),
       });
-      if (skip) return;
-      pending = target;
-      scrollToY(target);
+      state = { rest: next.rest, pending: next.pending };
+      if (next.scrollTo !== null) scrollToY(next.scrollTo);
     };
 
     const later = () => {
@@ -127,14 +129,18 @@ export function IntroPager() {
     const onTouchStart = () => { touching = true; clearTimeout(timer); };
     // A lift without momentum may end scrolling while the finger was still down.
     const onTouchEnd = () => { touching = false; later(); };
-    const onKeyboard = () => { keyboardAt = performance.now(); };
+    const onKeyDown = () => { keyboardAt = performance.now(); };
+    // Focus moves count only when the browser treats them as keyboard focus; a click on a tabIndex -1 container doesn't.
+    const onFocusIn = (e: FocusEvent) => {
+      if (e.target instanceof Element && e.target.matches(':focus-visible')) keyboardAt = performance.now();
+    };
     const onResize = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(later, RESIZE_SETTLE_MS);
     };
 
-    const initial = boardAnchor();
-    if (initial !== null) remember(window.scrollY, initial);
+    settle(false);
+    registerFlip = target => { state = { ...state, pending: target }; };
 
     const passive = { passive: true } as const;
     window.addEventListener('scroll', onScroll, passive);
@@ -142,11 +148,12 @@ export function IntroPager() {
     window.addEventListener('touchstart', onTouchStart, passive);
     window.addEventListener('touchend', onTouchEnd, passive);
     window.addEventListener('touchcancel', onTouchEnd, passive);
-    window.addEventListener('keydown', onKeyboard, passive);
-    window.addEventListener('focusin', onKeyboard, passive);
+    window.addEventListener('keydown', onKeyDown, passive);
+    window.addEventListener('focusin', onFocusIn, passive);
     window.addEventListener('resize', onResize, passive);
     window.addEventListener('orientationchange', onResize, passive);
     return () => {
+      registerFlip = null;
       clearTimeout(timer);
       clearTimeout(resizeTimer);
       window.removeEventListener('scroll', onScroll);
@@ -154,8 +161,8 @@ export function IntroPager() {
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('touchcancel', onTouchEnd);
-      window.removeEventListener('keydown', onKeyboard);
-      window.removeEventListener('focusin', onKeyboard);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('focusin', onFocusIn);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);
     };
