@@ -345,14 +345,8 @@ export function OnboardingFlow() {
             <MiniBoard suggestions={suggestions} limit={8} />
             {state.signed_in ? (
               <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                <div>
-                  <p className="font-serif text-[22px] leading-snug">{t('savedTitle')}</p>
-                  <p className="mt-1 text-sm text-muted">{t('savedBody')}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button asChild size="lg"><Link href="/me">{t('toDesk')}<ArrowRight aria-hidden /></Link></Button>
-                  <Button asChild size="lg" variant="outline"><Link href="/me/skills">{t('reviewSkills')}</Link></Button>
-                </div>
+                <p className="font-serif text-[22px] leading-snug">{t('savedTitle')}</p>
+                <Button asChild size="lg" className="self-start sm:self-auto"><Link href="/me">{t('toDesk')}<ArrowRight aria-hidden /></Link></Button>
               </Card>
             ) : (
               <section aria-labelledby="save-h" className="grid gap-6 rounded-lg bg-night p-6 text-night-ink sm:p-8 md:grid-cols-[1.4fr_auto] md:items-end">
