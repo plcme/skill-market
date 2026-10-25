@@ -154,7 +154,7 @@ function ActiveReviewText({ id, children }: { id: string; children: React.ReactN
   );
 }
 
-/** Floating review panel; mounted once in the root layout. */
+/** Floating review panel (groups on screen first); mounted once in the root layout. */
 export function CopyReviewPanel() {
   if (!COPY_REVIEW_ENABLED) return null;
   return <CopyReviewPanelDev />;
@@ -193,7 +193,7 @@ function CopyReviewPanelDev() {
     <div className="no-print fixed bottom-[calc(124px+env(safe-area-inset-bottom))] left-3 z-30 flex w-[min(420px,calc(100vw-24px))] flex-col rounded-md border border-ink/15 bg-surface/95 text-[12.5px] shadow-float backdrop-blur md:bottom-5 md:left-16">
       {expanded ? (
         <div className="max-h-[45vh] overflow-y-auto md:max-h-[min(60vh,560px)] border-b border-rule px-3 py-2">
-          {groupItems(REVIEW_ITEMS).map(g => (
+          {groupItems(REVIEW_ITEMS).sort((a, b) => Number(b.items.some(i => onScreen.has(i.id))) - Number(a.items.some(i => onScreen.has(i.id)))).map(g => (
             <section key={g.group} className="py-2">
               <h2 className="kicker mb-1.5">{g.group}</h2>
               <ul className="divide-y divide-rule">
