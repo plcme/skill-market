@@ -43,7 +43,6 @@ export const REVIEW_ITEMS: readonly ReviewItem[] = [
   { id: 'onboarding.basics.privacyNote', group: 'Onboarding · Basics', source: 'Onboarding.privacyNote' },
 
   { id: 'onboarding.start.lede', group: 'Onboarding · Starting point', source: 'Onboarding.context' },
-  { id: 'onboarding.start.nextUnitsBody', group: 'Onboarding · Starting point', source: 'Onboarding.nextUnitsBody' },
 
   { id: 'onboarding.board.firstBody', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.firstBody' },
   { id: 'onboarding.board.suggestionReason', group: 'Onboarding · Mini-board (starting point and board)', source: 'StudentShared.fromDegree' },
@@ -51,11 +50,6 @@ export const REVIEW_ITEMS: readonly ReviewItem[] = [
   { id: 'onboarding.board.nextBecause', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.nextBecause' },
   { id: 'onboarding.board.nextFirst', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.nextFirst' },
 
-  { id: 'onboarding.units.lede', group: 'Onboarding · Units', source: 'Onboarding.unitsLede' },
-  { id: 'onboarding.units.unitTeaches', group: 'Onboarding · Units', source: 'Onboarding.unitTeaches' },
-  { id: 'onboarding.units.noUnitMatch', group: 'Onboarding · Units', source: 'Onboarding.noUnitMatch' },
-  { id: 'onboarding.units.unitsAdd', group: 'Onboarding · Units', source: 'Onboarding.unitsAdd' },
-  { id: 'onboarding.units.noUnitsBody', group: 'Onboarding · Units', source: 'Onboarding.noUnitsBody' },
 
   { id: 'onboarding.done.lede', group: 'Onboarding · Your board', source: 'Onboarding.context' },
 

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ArrowUpRight, X } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
-import { computeMetric } from '@/lib/market/engine';
 import { getInstrument, rolesForSkill } from '@/lib/market/catalog';
 import type { Instrument } from '@/lib/market/types';
 import { isHeld, removeSkill, restoreSkill, suggestNextSteps } from '@/lib/api/skills';
@@ -14,15 +13,12 @@ import { useAction } from '@/lib/api/client';
 import { instrumentPath } from '@/lib/links';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
-import { ROW_WATCH_LABEL } from '@/components/market/ticker';
+import { WatchAllButton } from '@/components/market/watch-all-button';
 import { WatchButton } from '@/components/market/watch-button';
 
-import { MetricValue } from '@/components/market/metric-value';
-import { MetricLabel } from '@/components/market/metric-info';
 import { EffortText, SuggestionMeta, useErrorText } from '../shared';
 import { InstrumentMark } from '@/components/market/instrument-mark';
 import { ReviewText } from '@/features/dev/copy-review';
-import { cn } from '@/lib/utils';
 import { removalFocus, resolveRemovalFocus, startColumn, type BoardSkills, type BoardSuggestion, type RemovalFocus } from './board-skills';
 
 export type { BoardSuggestion };
@@ -68,14 +64,14 @@ function RemoveSuggestion({ s, name, onStart }: { s: BoardSuggestion; name: stri
     }
   };
   return (
-    <Button variant="ghost" size="icon-sm" loading={state.pending} onClick={onClick} data-remove={s.skill_slug} aria-label={t('board.removeName', { name })} className="text-muted hover:text-ink">
+    <Button variant="danger" size="icon-sm" loading={state.pending} onClick={onClick} data-remove={s.skill_slug} aria-label={t('board.removeName', { name })} className="border-danger text-danger">
       {!state.pending ? <X aria-hidden /> : null}
     </Button>
   );
 }
 
 /** Personalised mini-board after Tier 0/1: starting point + where it leads + next steps (FR-O1, FR-O6). */
-export function MiniBoard({ skills: { answered, suggestions, anchors }, limit = 6 }: { skills: BoardSkills; limit?: number }) {
+export function MiniBoard({ skills: { answered, suggestions, anchors }, view, limit = 6 }: { skills: BoardSkills; view: 'skills' | 'recommendations'; limit?: number }) {
   const t = useTranslations('Onboarding');
   const top = suggestions.slice(0, limit);
   const column = startColumn(answered, top.length);
@@ -104,47 +100,52 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, limit = 
   }, [rowKeys]);
 
   return (
-    <div className={cn('grid gap-10', column !== 'none' && 'lg:grid-cols-[1.4fr_1fr]')}>
-      {column === 'none' ? null : (
+    <div className="grid gap-10">
+      {view === 'skills' ? (
       <section aria-labelledby="mb-start">
-        <div className="flex items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
           <div>
             <p className="kicker">{t('board.startKicker')}</p>
-            <h2 id="mb-start" ref={headingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{column === 'list' ? t('board.startTitle') : t('board.firstTitle')}</h2>
+            <h2 id="mb-start" ref={headingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{column === 'first' ? t('board.firstTitle') : t('board.startTitle')}</h2>
           </div>
-          {top.length ? <MetricLabel metric="ad_count" type="skill" short filter={DEFAULT_FILTER} className="shrink-0" /> : null}
+          <WatchAllButton slugs={top.map(s => s.skill_slug)} filter={DEFAULT_FILTER} />
         </div>
         {column === 'list' ? (
           <ul ref={listRef} className="divide-y divide-rule border-b border-rule">
             {top.map(s => {
               const inst = getInstrument(s.skill_slug);
               if (!inst) return null;
-              const reading = computeMetric(inst.slug, 'ad_count', DEFAULT_FILTER);
               return (
-                <li key={s.skill_slug} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 py-3">
+                <li key={s.skill_slug} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
                   <InstrumentMark size="sm" slug={inst.slug} symbol={inst.symbol} />
                   <div className="min-w-0">
                     <Link href={instrumentPath('skill', inst.slug)} className="font-medium hover:underline">{inst.name}</Link>
                     <SuggestionMeta confidence={s.confidence} reason={s.reason} className="mt-0.5" reviewId="onboarding.board.suggestionReason" />
                   </div>
-                  <MetricValue reading={reading} size="sm" className="items-end text-right" />
-                  <RemoveSuggestion s={s} name={inst.name} onStart={startRemoval(s.skill_slug)} />
+                  <div className="col-start-2 flex items-center justify-end gap-2 sm:col-start-auto">
+                    <WatchButton slug={inst.slug} filter={DEFAULT_FILTER} metric="ad_count" bookmarkOnly />
+                    <RemoveSuggestion s={s} name={inst.name} onStart={startRemoval(s.skill_slug)} />
+                  </div>
                 </li>
               );
             })}
           </ul>
-        ) : (
+        ) : column === 'none' ? <p className="border-b border-rule pb-4 text-sm text-muted">{t('board.reviewedEmpty')}</p> : (
           <p className="border-b border-rule pb-4 text-[15px] text-ink-2"><ReviewText id="onboarding.board.firstBody">{t('board.firstBody')}</ReviewText></p>
         )}
       </section>
-      )}
+      ) : null}
 
-      <div className="flex flex-col gap-10">
+      {view === 'recommendations' ? (
+      <div className="grid items-start gap-10 lg:grid-cols-2">
         {roles.length ? (
           <section aria-labelledby="mb-roles">
-            <div className="border-t-2 border-rule-strong pb-3 pt-3">
-              <p className="kicker">{t('board.rolesKicker')}</p>
-              <h2 id="mb-roles" className="font-serif text-[24px] leading-tight">{t('board.rolesTitle')}</h2>
+            <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
+              <div>
+                <p className="kicker">{t('board.rolesKicker')}</p>
+                <h2 id="mb-roles" className="font-serif text-[24px] leading-tight">{t('board.rolesTitle')}</h2>
+              </div>
+              <WatchAllButton slugs={roles.map(({ role }) => role.slug)} filter={DEFAULT_FILTER} />
             </div>
             <ul className="@container divide-y divide-rule border-b border-rule">
               {roles.map(({ role, via }) => (
@@ -153,16 +154,19 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, limit = 
                     <Link href={instrumentPath('role', role.slug)} className="inline-flex items-center gap-1 font-medium hover:underline">{role.name}<ArrowUpRight className="size-3.5 shrink-0 text-muted" aria-hidden /></Link>
                     <p className="text-[13px] text-muted"><ReviewText id="onboarding.board.rolesVia">{t('board.rolesVia', { skills: via.map(v => v.name).join(', ') })}</ReviewText></p>
                   </div>
-                  <WatchButton slug={role.slug} filter={DEFAULT_FILTER} labelClassName={ROW_WATCH_LABEL} className="shrink-0" />
+                  <WatchButton slug={role.slug} filter={DEFAULT_FILTER} bookmarkOnly className="shrink-0" />
                 </li>
               ))}
             </ul>
           </section>
         ) : null}
         <section aria-labelledby="mb-next">
-          <div className="border-t-2 border-rule-strong pb-3 pt-3">
-            <p className="kicker">{t('board.nextKicker')}</p>
-            <h2 id="mb-next" ref={nextHeadingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{t('board.nextTitle')}</h2>
+          <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
+            <div>
+              <p className="kicker">{t('board.nextKicker')}</p>
+              <h2 id="mb-next" ref={nextHeadingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{t('board.nextTitle')}</h2>
+            </div>
+            <WatchAllButton slugs={steps.map(step => step.skill.slug)} filter={DEFAULT_FILTER} />
           </div>
           <ul className="@container divide-y divide-rule border-b border-rule">
             {steps.map(step => (
@@ -175,12 +179,13 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, limit = 
                     <EffortText effort={step.effort} />
                   </p>
                 </div>
-                <WatchButton slug={step.skill.slug} filter={DEFAULT_FILTER} metric="ad_count" labelClassName={ROW_WATCH_LABEL} className="shrink-0" />
+                <WatchButton slug={step.skill.slug} filter={DEFAULT_FILTER} metric="ad_count" bookmarkOnly className="shrink-0" />
               </li>
             ))}
           </ul>
         </section>
       </div>
+      ) : null}
     </div>
   );
 }

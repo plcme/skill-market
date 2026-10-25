@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
  * Held reads "I have this skill" for skills and "I've worked in this role"
  * for roles; industries are only watched.
  */
-export function WatchButton({ slug, filter, metric, size = 'sm', prominent = false, compact = false, className, labelClassName }: {
+export function WatchButton({ slug, filter, metric, size = 'sm', prominent = false, compact = false, bookmarkOnly = false, className, labelClassName }: {
   slug: string;
   filter: FilterSpec;
   metric?: MetricKey;
@@ -31,6 +31,8 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
   prominent?: boolean;
   /** Icon-only row action with the same width before and after watching. */
   compact?: boolean;
+  /** A single bookmark action, with the instrument name available to assistive technology. */
+  bookmarkOnly?: boolean;
   className?: string;
   /**
    * Applied to the visible text. Pass e.g. `@max-4xl:sr-only` to render an
@@ -49,12 +51,12 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
   const [update, updateState] = useAction(updateWatchlistItem);
   const [remove, removeState] = useAction(removeWatchlistItem);
   const busy = addState.pending || updateState.pending || removeState.pending;
-  const labelStyle = compact ? 'sr-only' : labelClassName;
+  const labelStyle = compact || bookmarkOnly ? 'sr-only' : labelClassName;
   const label = (text: string) => (labelStyle ? <span className={labelStyle}>{text}</span> : text);
   className = cn(compact && 'w-16', className);
   // Icon-only buttons need square-ish padding once the label is hidden.
-  const iconPad = compact ? 'px-2' : labelClassName ? '@max-4xl:px-2' : undefined;
-  const sz = prominent ? 'lg' : size;
+  const iconPad = compact || bookmarkOnly ? 'px-2' : labelClassName ? '@max-4xl:px-2' : undefined;
+  const sz = bookmarkOnly ? 'icon-sm' : prominent ? 'lg' : size;
   const wide = prominent ? 'w-full' : undefined;
   const callVariant = prominent ? 'accent' : 'subtle';
   const addVariant = prominent ? 'accent' : 'outline';
@@ -96,7 +98,7 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
           <Button variant={prominent ? 'outline' : 'primary'} size={sz} loading={busy} className={cn(iconPad, wide, className, compact && 'relative grid grid-cols-2 gap-0 px-0 before:pointer-events-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:bg-paper/30 [&>svg]:translate-x-px [&>svg]:justify-self-center')} aria-label={t('manage', { name: inst.name })}>
             {!busy ? <Icon className={compact ? '!size-[18px]' : undefined} aria-hidden /> : null}
             {label(item.status === 'held' ? heldCopy.label : t('watching'))}
-            <ChevronDown className={cn(compact ? '!size-4' : '!size-3.5', 'opacity-70')} aria-hidden />
+            {!bookmarkOnly ? <ChevronDown className={cn(compact ? '!size-4' : '!size-3.5', 'opacity-70')} aria-hidden /> : null}
           </Button>
         </MenuTrigger>
         <MenuContent>
@@ -115,8 +117,8 @@ export function WatchButton({ slug, filter, metric, size = 'sm', prominent = fal
   }
 
   // Industries are only watched.
-  if (!canBeHeld(inst.type)) {
-    return <Button variant={addVariant} size={sz} loading={busy} className={cn(iconPad, wide, className)} onClick={() => doAdd('watching')}>{!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}</Button>;
+  if (!canBeHeld(inst.type) || bookmarkOnly) {
+    return <Button variant={addVariant} size={sz} loading={busy} className={cn(iconPad, wide, className)} aria-label={bookmarkOnly ? t('watchNamed', { name: inst.name }) : undefined} onClick={() => doAdd('watching')}>{!busy ? <Bookmark aria-hidden /> : null}{label(t('watch'))}</Button>;
   }
 
   return (

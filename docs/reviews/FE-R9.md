@@ -134,3 +134,21 @@
 证据边界：原 3009 开发预览的热更新 WebSocket 握手失败，onboarding / login 停在 Loading；对该实例的初次响应式测试未通过，随后中止。上述 50 项通过结果来自独立 3019 生产预览，不能据此声称已修复原开发进程。原进程未停止或重启。
 
 合并判断：本次变更及原 FE-R9 范围未发现新的阻断项；原 Round 3 的两项产品/可访问性建议仍保留。远端 main 核对为 `2eb904e96b5a08afefea673fe63afe7427a71747`，与本地 main 一致，且为 fe-r9 的祖先，具备无冲突集成条件。远端目前没有 fe-r9 分支；本次修改尚未提交或推送，因此还没有覆盖本次修改的 PR/CI 结果。建议提交本次修改后经 PR/CI 合入 main；此次只完成修改和判断，没有执行合并或发布。
+
+
+## 预览反馈落实：三步流程与技能行操作 — 2026-10-25
+
+基线：`869621a`。按用户新指示：将原 starting-point 页提升为第 2 步 Skills，以所选学位作为大标题；移除整个 units 页和对应入口、文案及批注候选；保留 Basics 与最终 Your board。顶部三个步骤改为原生按钮，使用 aria-current 标注当前位置，基础答案未完成时仅 Skills 不可用。保留当前已保存答案以供往返检查。
+
+技能建议列表去掉 Job ads 列头、数量与单位，复用已有 WatchButton，删除按钮使用 danger 样式和完整红色边框。375px 的动作行可换至技能文字下方，避免挤压文本。原删除/撤销及焦点管理逻辑保留。已修正 /me/skills 指向被删除页的链接，相关契约 UI 映射明确标为无当前入口；不删除底层既有课程数据或 API。
+
+验证：ESLint、类型检查、357 个单元测试通过；新构建成功。手机 375×812、平板 768×1024 共 6 项 onboarding 测试通过，包括第 2 步学位标题、无 Job ads 数据、Watch 与红框删除、键盘删除后下一行焦点、Undo、1→2→3→2 步骤导航、横向溢出和 axe 严重问题。已在用户可见的 3019 预览中实际操作基础问题、进入第 2 步并保存截图 `/private/tmp/onboarding-step2-updated.png`。本轮没有重跑无关页面的全套响应式测试，也未验证部署包或线上状态。新修改暂留工作区，未额外提交或合并。
+
+
+## 预览反馈继续落实：注册前置、拆分内容与 Watch all — 2026-10-25
+
+原 fe-r9 工作区继续修改（含上一轮尚未提交的流程调整）。未登录 Get started 及直接访问 onboarding 均先进入带 next=/onboarding 的登录页，复用既有演示邮箱链接及回调。完成登录后才显示 Basics / Skills / Your board。同步改写此前“注册前只保存在设备”的文案，移除第三步末尾注册/保存卡。真实认证后端未在此次接入。
+
+MiniBoard 的 view 明确区分 skills 和 recommendations：第 2 步只列建议技能，第 3 步只列推荐岗位与下一步技能；三个板块分别复用 WatchAllButton，对各自可见列表批量操作。WatchButton 增加可选 bookmarkOnly 模式：单个书签图标、技能名称进入可访问名，已关注时保留管理菜单。其他已有调用保留原样。第 3 步 Market 链接位于大标题右侧，手机窄屏可换行。
+
+验证：357 个单元测试、ESLint、类型检查通过；隔离生产构建退出码 0，依赖软链接导致的 tracingRoot 警告与前轮相同，不将编译结果当作部署包验证。8 项手机/平板 onboarding 检查通过，覆盖注册/回跳、三个批量关注状态、删除焦点与 Undo、步骤往返、内容隔离、溢出和 axe。初次手机 axe 捕获入场动画的半透明帧，测试已等待有限动画结束后检查稳定画面，再次 8 项全过，没有跳过 axe。独立桌面测试确认 Market 按钮在标题右侧、跳转正确，无页面错误，已检查第二/三步截图。截图：`/private/tmp/onboarding-skills-separated.png`、`/private/tmp/onboarding-recommendations-separated.png`，注册页截图 `/private/tmp/onboarding-signup-first.png`。3019 预览已更新；用户侧浏览器控制被设置禁用，无法声称已刷新其现有标签页。尚未额外 commit、push、merge。

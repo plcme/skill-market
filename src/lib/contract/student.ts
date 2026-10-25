@@ -151,7 +151,7 @@ export const studentOps = {
   searchUnits: op({
     kind: 'read', access: 'public', input: z.object({ university_id: z.string(), q: z.string().max(80).default('') }), output: z.array(courseUnitSchema),
     does: 'Units of a university matching a code or title, including conservative typo matching (all units when q is empty).',
-    ui: '/onboarding?step=units search box and list',
+    ui: 'No current UI: the onboarding units step was removed.',
     tables: ['course_units'], fr: ['FR-O2'],
   }),
   getOnboarding: op({
@@ -170,7 +170,7 @@ export const studentOps = {
   completeTier1: op({
     kind: 'action', access: 'public', input: tier1Input, output: onboardingResultSchema,
     does: 'Ticked units → more suggestions. Replaces only inferred rows; confirmed and self-added skills stay.',
-    ui: '/onboarding?step=units "Continue"',
+    ui: 'No current UI: retained for existing education data.',
     errors: ['validation:unit_codes'],
     tables: ['student_profiles', 'student_skills', 'course_unit_skills'], fr: ['FR-O2', 'FR-O4'],
   }),

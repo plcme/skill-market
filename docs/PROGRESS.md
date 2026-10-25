@@ -3,6 +3,22 @@
 > 进度账本。会话中断或上下文被压缩后，从这里恢复。由主会话维护。
 > 结构：当前状态 → 里程碑 → 待拍板（只列还开着的）→ 上 main 前必须做 → 前端反馈轮次 → 日志。
 
+## Onboarding 继续调整：注册前置与分步内容（2026-10-25，fe-r9）
+
+- 用户明确要求注册在个性化之前：未登录的 Get started 进入 `/auth/login?next=%2Fonboarding`；直接访问 onboarding 也先转登录。完成现有预览邮箱链接流程后才进入 Basics → Skills → Your board，保留三步可点击导航。这覆盖此前“无需账户”的界面方向；当前仍是浏览器演示账户，不声称已接真实邮箱或 Supabase。
+- 第 2 步仅展示 Skills you probably have；每行使用书签图标关注与红框删除，板块标题旁复用 WatchAllButton。第 3 步仅展示 Roles that ask for these 和 Close to what you have，两块各有自己的 Watch all；大标题右侧直接进入 Market，移除末尾注册/保存卡。
+- 357 个单元测试、静态/类型检查、生产编译通过。新 8 项手机/平板测试验证注册前置、真实预览注册回跳、步骤往返、三个批量关注分别变为 All watched、删除焦点与 Undo、内容隔离、横向溢出和 axe。初次手机 axe 报告发生于入场动画半透明帧；改为等待有限时长动画完成后审计，8 项全过。
+- 独立桌面测试验证 Market 按钮在标题右侧且链接可用，无页面运行错误；截图在 `/private/tmp/onboarding-skills-separated.png` 与 `/private/tmp/onboarding-recommendations-separated.png`。用户侧浏览器控制当前被设置禁用，未声称成功刷新用户标签页；3019 服务已切换到最新构建。
+- 自 `869621a` 以来的流程修改尚未额外提交、推送或合并。
+
+## Onboarding 流程更新（2026-10-25，fe-r9）
+
+- 按用户预览反馈，改为三步：Basics → Skills → Your board。技能检查页独立为第 2 步，标题显示所选学位；顶部步骤可点击，尚无基础答案时 Skills 暂不可用。
+- 移除 onboarding 的 units 页面、入口和专用说明；技能列表不再显示 Job ads 标题与招聘广告数量，改用现有 WatchButton 和红色边框删除按钮。/me/skills 的旧 units 入口同步指回基础答案页。
+- 用户本轮已明确取消课程勾选页，因此当前界面不再执行 PRD FR-O2；PRD 由用户维护，未擅自改写。底层课程数据、已有画像中的 unit_codes 和相关契约操作保留，契约 UI 映射已标明无当前入口。
+- 本轮静态/类型检查、357 个单元测试、6 项手机/平板 onboarding 浏览器检查通过；隔离生产构建退出码 0。同一 3019 预览已更新并目视核对。上一轮 50 项响应式结果对应上一提交，本轮只重跑与变化相关的 6 项。
+- 本轮变更尚未提交、推送或合并；前一次文案删减已提交为 `869621a`。
+
 ## 当前状态（2026-10-24）
 
 - 模糊搜索整合分支已同步菜单、Watch all 与主干规则；等待 PR CI 全绿后合并，尚未发布。原分支验证记录见 `docs/FUZZY_SEARCH_IMPLEMENTATION.md`。

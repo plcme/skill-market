@@ -150,7 +150,7 @@ function Board({ db }: { db: DemoDB }) {
             </>
           ) : (
             <p className="border-b border-rule pb-4 text-sm text-muted">
-              {t('suggestedEmpty')} <Link href="/onboarding?step=units" className="link">{t('suggestedEmptyCta')}</Link>
+              {t('suggestedEmpty')} <Link href="/onboarding" className="link">{t('suggestedEmptyCta')}</Link>
             </p>
           )}
         </Column>
