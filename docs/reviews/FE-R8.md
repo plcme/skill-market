@@ -92,3 +92,57 @@ Attempt 1 各项核对：
 - [src/app/market/page.tsx:59] `#board` 加上 `outline-none`，和 `main#main` 的做法一致。现在用键盘回车点 CTA 时，程序会把焦点移到 `#board`。按 Chrome 的启发式规则，这时会匹配 `:focus-visible`，`theme.css:190` 会给整个 board 画一圈 accent 外框。
 - [src/features/market/intro-pager.tsx:36-41、115] `keyboardFocusRect` 没有排除不随页面滚动的元素。如果焦点停在 sticky header 或固定的手机 tab bar 上（键盘用户第一次按 Tab 通常先落在 header），`skipSnap` 会以为这个元素会被滚出视口，结果往下（header）或往上（tab bar）的 flip 全被跳过，直到焦点离开为止。不会跟用户对着干，但 flip 会失效。建议只对 `main` 内、并且不在 sticky/fixed 祖先里的元素做检查。
 - [src/features/market/intro-pager.tsx:146] `focusin` 也会被鼠标点击触发。`#board` 和 `main` 都是 `tabIndex=-1`，在 board 里任何空白处点一下都会聚焦它们，于是接下来 600ms 内不吸附。影响很小，可以只在 `keydown` 时记录，或者 `focusin` 时检查 `:focus-visible`，并把变量名改得和实际行为一致。
+
+## Round 3 (Attempt 3) — 通过
+
+审查范围：`git diff 6b01d1a..fe-r8`（`791586a`），只看改动文件。未跑 e2e。
+
+验收命令结果：
+- `pnpm lint`：通过（exit 0）
+- `pnpm typecheck`：通过（exit 0）
+- `pnpm exec vitest run --maxWorkers=2`：32 个文件，362 passed / 13 todo，0 失败（一次跑通）
+
+### Attempt 2 阻断项核对：已修
+
+`settleStep` 是纯函数，逐条核对如下：
+- **自己的 flip 被打断**：`pending` 不为 null，且 y 离目标超过 2px 时，`restedAt` 视为 null，按"过半"判断。
+  - 例 A：band → 100 → 开始 flip，被打断后停在 250，结果回到 band。
+  - iOS 手指按住拖到 200，结果相同。
+  - 继续往下过半（400），结果到 board。
+  - 往上翻的 flip 被打断，对称处理。
+  - 这几种情况都有单测。
+- **吸附被否决**：返回 `rest.page = null`。
+  - 例 C：方向键走到 40、200，再用滚轮往上到 100，结果回到 band。有单测。
+  - e2e 里也补了一步"停在中间后往上一点回到 0"。
+- **其他会留下过期状态的路径**：
+  - fit guard 生效（`anchor === null`）时，`rest` 和 `pending` 全部清空。
+  - anchor 变化后，旧的 `rest` 不再被采信。
+  - 手指按着时 settle 直接返回，状态不变，松手后再 settle。
+- **2px 落点容差**：只在 `pending` 不为 null 时生效，作用是把落点归到目标页。
+  - 最多让页面停在离边缘 2px 以内，看不出来，也不会再次触发 flip。
+  - 如果 `pending` 是旧 anchor，而 anchor 已经变了，落点会被判成中间位置，然后按"过半"吸到新 anchor 一次，之后就收敛了。
+- **mount 时只记录不吸附（`settle(false)`）**：
+  - 停在边缘时，记录对应的页。
+  - 停在中间时，`rest` 为 null，不会滚动。
+  - 之后浏览器恢复滚动位置时会触发 scroll 事件，正常走一次 settle。
+- **`registerFlip`**：
+  - mount 时设置，unmount 时置 null。
+  - React 在同一次 commit 里，会先执行所有 passive unmount，再执行 mount。所以 StrictMode 的双次 effect 和客户端导航换页都不会留下过期回调。
+  - 页面上最多只有一个 `IntroBand`，所以不会同时挂两个 pager。
+  - CTA 回车：到达时按落点判断，在调用 `skip` 之前就返回，不会被键盘静默期卡住。CTA 的滑动被打断时，同样按"过半"判断。
+
+### Attempt 1 修复：无回归
+
+- `skipSnap` 及其单测没有改动。
+- `keyboardFocusRect` 现在排除 `main` 外的元素和位于 fixed/sticky 祖先内的元素，attempt 2 的建议 2 已落实。
+- `focusin` 只在目标匹配 `:focus-visible` 时才记一次键盘操作；Tab 本身仍由 `keydown` 记录，attempt 2 的建议 3 已落实。
+- `#board` 加了 `outline-none`，attempt 2 的建议 1 已落实。
+
+### 必须修复（阻断）
+
+无。
+
+### 建议（不阻断）
+
+- [src/features/market/intro-pager.tsx:57、156] cleanup 里无条件执行 `registerFlip = null`。目前只有一个 pager，所以没有问题。如果以后可能同时挂多个 pager，建议改成只在 `registerFlip` 仍是本实例的回调时才清空。
+- [src/features/market/intro-pager.tsx:68] 如果点击 CTA 时页面已经在 anchor，`scrollTo` 不会产生滚动，`pending` 会一直留到下一次 settle。影响只有一次：下一次判断按"过半"规则，而不是按方向规则。可以在 `registerFlip` 之前判断 `Math.abs(window.scrollY - anchor) > 2`。
