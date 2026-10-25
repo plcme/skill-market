@@ -4,17 +4,16 @@ import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { ArrowRight, Bookmark, SearchX } from 'lucide-react';
+import { ArrowRight, Bookmark } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard } from '@/lib/queries/market';
-import { Button } from '@/components/ui/button';
-import { Container, EmptyState } from '@/components/ui/primitives';
+import { Container } from '@/components/ui/primitives';
 import { MetricSwitcher } from '@/components/market/metric-switcher';
-import { BoardCards, BoardColumnHeader, BoardRows } from '@/features/market/board';
+import { SearchableBoard } from '@/features/market/searchable-board';
 import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitch } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
 import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
-import { WatchingBoard, WatchingTabCount } from '@/features/market/watching-board';
+import { WatchingTabCount } from '@/features/market/watching-board';
 import { IntroBand } from '@/features/market/intro-band';
 import { BOARD_ANCHOR_ID, hasSessionCookie, INTRO_COOKIE, isBareEntry, shouldShowIntro } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
@@ -45,8 +44,6 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
   const keep = { sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
   const typeHref = (next: MarketTab) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
   const resetHref = hrefWith('/market', { type: boardTypeParam(tab), metric: metricParam, layer: layerParam(layer), ...keep });
-  const firstOk = board.rows.find(r => r.metric.status === 'ok') ?? board.rows[0];
-  const firstChangeOk = board.rows.find(r => r.change.status === 'ok') ?? board.rows[0];
   // Decided here, not in the browser, so the band never flashes in or out.
   const jar = await cookies();
   const showIntro = shouldShowIntro({ signedIn: hasSessionCookie(jar.getAll()), cookieValue: jar.get(INTRO_COOKIE)?.value, bareEntry: isBareEntry(sp) });
@@ -110,37 +107,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
           </div>
         </Suspense>
 
-        {tab === 'watching' ? (
-          <WatchingBoard rows={board.rows} filter={filter} metric={board.metric} view={view} q={q} allHref={typeHref('all')} resetHref={resetHref} />
-        ) : (
-          <>
-            <p className="num mt-5 text-[13px] text-muted" aria-live="polite">
-              {t(`count.${type}`, { n: board.rows.length })}
-              {' · '}
-              {t('signalCount', { n: board.signals })}
-              {q ? <>{' · '}{t('matching', { q })}</> : null}
-            </p>
-
-            <div className="mt-2">
-              {board.rows.length === 0 ? (
-                <EmptyState
-                  icon={SearchX}
-                  title={t('emptyTitle')}
-                  action={q ? <Button asChild variant="outline" size="sm"><Link href={resetHref}>{t('emptyReset')}</Link></Button> : undefined}
-                >
-                  {q ? t('emptyBodyQuery', { q }) : t('emptyBody')}
-                </EmptyState>
-              ) : view === 'cards' ? (
-                <BoardCards rows={board.rows} filter={filter} metric={board.metric} selectable />
-              ) : (
-                <>
-                  <BoardColumnHeader type={type} metric={board.metric} filter={filter} sample={firstOk} changeSample={firstChangeOk} />
-                  <BoardRows rows={board.rows} filter={filter} metric={board.metric} showType={type === 'all'} selectable />
-                </>
-              )}
-            </div>
-          </>
-        )}
+        <SearchableBoard initial={board} query={{ type, metric: metricParam, filter, sort, q, layer }} watching={tab === 'watching'} view={view} resetHref={resetHref} allHref={typeHref('all')} />
 
         <div className="mt-6 grid gap-3 text-[13px] leading-relaxed text-muted md:grid-cols-2 md:gap-8">
           <p>{t('orderNote')}</p>

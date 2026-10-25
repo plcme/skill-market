@@ -1,0 +1,148 @@
+{
+  "runtime": "v24.1.0",
+  "platform": "darwin/arm64",
+  "fuse": "7.5.0",
+  "results": [
+    {
+      "label": "catalogue",
+      "count": 100,
+      "buildMs": 1.4112919999999889,
+      "heapDeltaBytes": 592936,
+      "medianMs": 0.5775830000000042,
+      "p95Ms": 1.0994159999999908,
+      "queries": {
+        "python": [
+          "python"
+        ],
+        "pyhton": [
+          "python"
+        ],
+        "javascrpt": [
+          "javascript"
+        ],
+        "kubernets": [
+          "kubernetes"
+        ],
+        "engineer software": [
+          "software-engineer",
+          "software-tester"
+        ],
+        "c++": [
+          "cpp"
+        ],
+        "zzzzzzzz": []
+      }
+    },
+    {
+      "label": "fixtures",
+      "count": 6,
+      "buildMs": 0.10787499999997863,
+      "heapDeltaBytes": 24880,
+      "medianMs": 0.01820900000001302,
+      "p95Ms": 0.03233299999999417,
+      "queries": {
+        "python": [
+          0
+        ],
+        "pyhton": [
+          0
+        ],
+        "javascrpt": [
+          1
+        ],
+        "kubernets": [
+          2
+        ],
+        "engineer software": [
+          3
+        ],
+        "c++": [
+          4
+        ],
+        "zzzzzzzz": []
+      }
+    },
+    {
+      "label": "synthetic",
+      "count": 1000,
+      "buildMs": 1.8513340000000085,
+      "heapDeltaBytes": 3303896,
+      "medianMs": 2.7562089999999557,
+      "p95Ms": 5.659375000000011,
+      "queries": {
+        "python": [
+          0
+        ],
+        "pyhton": [
+          0
+        ],
+        "javascrpt": [
+          1
+        ],
+        "kubernets": [
+          2
+        ],
+        "engineer software": [
+          3
+        ],
+        "c++": [
+          4
+        ],
+        "zzzzzzzz": []
+      }
+    },
+    {
+      "label": "synthetic",
+      "count": 10000,
+      "buildMs": 21.812084000000027,
+      "heapDeltaBytes": 17279152,
+      "medianMs": 27.542208999999957,
+      "p95Ms": 58.70050000000015,
+      "queries": {
+        "python": [
+          0
+        ],
+        "pyhton": [
+          0
+        ],
+        "javascrpt": [
+          1
+        ],
+        "kubernets": [
+          2
+        ],
+        "engineer software": [
+          3
+        ],
+        "c++": [
+          4
+        ],
+        "zzzzzzzz": []
+      }
+    }
+  ],
+  "minisearch": {
+    "version": "7.2.0",
+    "queries": {
+      "python": [
+        0
+      ],
+      "pyhton": [
+        0
+      ],
+      "javascrpt": [
+        1
+      ],
+      "kubernets": [
+        2
+      ],
+      "engineer software": [
+        3
+      ],
+      "c++": [
+        4
+      ],
+      "zzzzzzzz": []
+    }
+  }
+}

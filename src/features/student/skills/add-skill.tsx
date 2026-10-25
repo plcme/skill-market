@@ -1,5 +1,8 @@
 'use client';
 
+import { useSearchAliases } from '@/lib/search/use-search-aliases';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
+
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Search } from 'lucide-react';
@@ -21,14 +24,15 @@ export function AddSkill({ owned }: { owned: StudentSkill[] }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
+  const aliases = useSearchAliases();
   const [active, setActive] = useState(0);
   const [add, state] = useAction(addSkill);
   const suggested = new Set(owned.filter(s => s.source === 'inferred').map(s => s.skill_slug));
   const options = useMemo(() => {
     const held = new Set(owned.filter(s => s.source !== 'inferred').map(s => s.skill_slug));
-    const list = q.trim() ? searchInstruments(q, 20).map(h => h.instrument).filter(i => i.type === 'skill') : instrumentsOfType('skill').sort((a, b) => a.name.localeCompare(b.name));
+    const list = q.trim() ? searchInstruments(q, 20, { type: 'skill', exclude: held, aliases }).map(h => h.instrument) : instrumentsOfType('skill').sort((a, b) => a.name.localeCompare(b.name));
     return list.filter(i => !held.has(i.slug));
-  }, [q, owned]);
+  }, [q, owned, aliases]);
 
   const choose = async (slug: string, name: string) => {
     const r = await add({ skill_slug: slug });
@@ -50,6 +54,7 @@ export function AddSkill({ owned }: { owned: StudentSkill[] }) {
           <Search className="pointer-events-none absolute left-5 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
           <Input
             autoFocus
+            maxLength={MAX_SEARCH_LENGTH}
             role="combobox"
             aria-expanded
             aria-controls={listId}
@@ -59,6 +64,7 @@ export function AddSkill({ owned }: { owned: StudentSkill[] }) {
             value={q}
             onChange={e => { setQ(e.target.value); setActive(0); }}
             onKeyDown={e => {
+              if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
               if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(a + 1, options.length - 1)); }
               if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
               if (e.key === 'Enter' && options[active]) { e.preventDefault(); void choose(options[active].slug, options[active].name); }

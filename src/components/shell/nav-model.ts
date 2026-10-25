@@ -23,12 +23,14 @@ export function deskFor(session: Session | null): NavLink | null {
 
 /**
  * Account links that follow the desk in the account menu. The desk is the
- * menu's first item (see `accountMenuLinks`), so it is not repeated here.
+ * menu's first item (see `accountMenuLinks`), so it is not repeated here; the
+ * watchlist has no page of its own and links to its section on the desk.
  */
 export function accountLinks(session: Session | null): NavLink[] {
   if (!session) return [];
   if (session.active === 'student') {
     return [
+      { href: '/me#watchlist', key: 'watchlist' },
       { href: '/me/skills', key: 'skills' },
       { href: '/me/requests', key: 'requests' },
       { href: '/me/settings', key: 'settings' },

@@ -1,8 +1,11 @@
 'use client';
 
+import { useSearchAliases } from '@/lib/search/use-search-aliases';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
+
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { instrumentsOfType } from '@/lib/market/catalog';
+import { instrumentsOfType, searchInstruments } from '@/lib/market/catalog';
 import { LOCATIONS } from '@/lib/filters/locations';
 import { TOPICS, type Topic } from '@/lib/demo/seed';
 import { CAP_MAX, CAP_MIN, updateCap, updatePractitionerProfile } from '@/lib/api/practitioner';
@@ -34,6 +37,7 @@ export function ProfileForm({ practitioner, now, submitLabel, onSaved, defaultRo
   const [link, setLink] = useState(practitioner.meeting_link ?? '');
   const [cap, setCap] = useState(String(practitioner.monthly_cap));
   const [skillFilter, setSkillFilter] = useState('');
+  const aliases = useSearchAliases();
   const [saveCap] = useAction(updateCap);
   const [save, state] = useAction(updatePractitionerProfile, async () => {
     await saveCap(Number(cap));
@@ -41,7 +45,12 @@ export function ProfileForm({ practitioner, now, submitLabel, onSaved, defaultRo
   });
   const fields = state.error?.fields ?? {};
   const err = (k: string) => (fields[k] ? t(`fieldErrors.${k}`) : undefined);
-  const shownSkills = useMemo(() => SKILLS.filter(s => !skillFilter || s.name.toLowerCase().includes(skillFilter.toLowerCase()) || skills.includes(s.slug)), [skillFilter, skills]);
+  const shownSkills = useMemo(() => {
+    if (!skillFilter.trim()) return SKILLS;
+    const hits = searchInstruments(skillFilter, SKILLS.length, { type: 'skill', aliases }).map(h => h.instrument);
+    const found = new Set(hits.map(s => s.slug));
+    return [...hits, ...SKILLS.filter(s => skills.includes(s.slug) && !found.has(s.slug))];
+  }, [skillFilter, skills, aliases]);
 
   return (
     <form
@@ -88,7 +97,7 @@ export function ProfileForm({ practitioner, now, submitLabel, onSaved, defaultRo
       <Field label={t('fSkills')} hint={`${t('fSkillsHint')} ${t('fSkillsCount', { n: skills.length })}`} error={err('skills')}>
         {({ id }) => (
           <div className="flex flex-col gap-2">
-            <Input id={id} className="max-w-xs" placeholder={t('fSkillsSearch')} value={skillFilter} onChange={e => setSkillFilter(e.target.value)} />
+            <Input id={id} className="max-w-xs" placeholder={t('fSkillsSearch')} maxLength={MAX_SEARCH_LENGTH} value={skillFilter} onChange={e => setSkillFilter(e.target.value)} />
             <ChipToggleGroup label={t('fSkills')} value={skills} onValueChange={v => setSkills(v.slice(0, 12))} options={shownSkills.map(s => ({ value: s.slug, label: s.name }))} />
           </div>
         )}

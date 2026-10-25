@@ -6,7 +6,7 @@ import { ChevronDown, MapPin, Plus, SlidersHorizontal, Trash2, X } from 'lucide-
 import { Dialog, DialogTrigger, SheetContent, Popover, PopoverContent, PopoverTrigger } from '@/components/ui/overlay';
 import { Button } from '@/components/ui/button';
 import { Checkbox, ChipRadioGroup, ChipToggleGroup, Input, RadioCards, Segmented, Switch } from '@/components/ui/form';
-import { PICKABLE_LOCATIONS, ancestorsOf, getLocation, narrowedPlaces, placesOrAllAustralia } from '@/lib/filters/locations';
+import { ancestorsOf, getLocation, narrowedPlaces, placesOrAllAustralia } from '@/lib/filters/locations';
 import {
   cloneFilter, DEFAULT_FILTER, describeFilter, encodeFilter, fromSimpleFilter, isDefaultFilter, MAX_RULES, normaliseFilter,
   remoteAnywhereRedundant, toSimpleFilter, type SimpleFilter,
@@ -15,6 +15,8 @@ import type { BreakdownDimension, FilterRule, FilterSpec, LocationLevel, MetricK
 import { BREAKDOWN_DIMENSIONS, WORK_MODES, type ActiveInstrumentType } from '@/lib/market/types';
 import { chartPlanFor, chosenByParam, metricParam, splitBlockers } from '@/features/market/logic';
 import { cn } from '@/lib/utils';
+import { searchLocations } from '@/lib/search/locations';
+import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
 import { useFilterCopy } from './filter-readback';
 import { useSetParams, useUrlFilter } from './use-url-state';
 
@@ -83,10 +85,7 @@ function PlacePicker({ selected, onAdd, label }: { selected: string[]; onAdd: (i
   const t = useTranslations('Filter');
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
-  const matches = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return PICKABLE_LOCATIONS.filter(l => !needle || l.name.toLowerCase().includes(needle) || l.short.toLowerCase().includes(needle));
-  }, [q]);
+  const matches = useMemo(() => searchLocations(q), [q]);
   return (
     <Popover open={open} onOpenChange={o => { setOpen(o); if (!o) setQ(''); }}>
       <PopoverTrigger asChild>
@@ -96,7 +95,7 @@ function PlacePicker({ selected, onAdd, label }: { selected: string[]; onAdd: (i
       </PopoverTrigger>
       <PopoverContent className="w-[min(320px,calc(100vw-24px))] p-0">
         <div className="border-b border-rule p-2">
-          <Input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchPlaces')} aria-label={t('searchPlaces')} className="h-9" />
+          <Input autoFocus maxLength={MAX_SEARCH_LENGTH} value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchPlaces')} aria-label={t('searchPlaces')} className="h-9" />
         </div>
         <ul role="listbox" aria-label={t('places')} className="max-h-72 overflow-y-auto py-1">
           {matches.length === 0 ? <li className="px-3 py-2 text-sm text-muted">{t('noPlaces')}</li> : null}
