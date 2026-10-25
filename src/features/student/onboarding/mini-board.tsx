@@ -21,6 +21,7 @@ import { MetricValue } from '@/components/market/metric-value';
 import { MetricLabel } from '@/components/market/metric-info';
 import { EffortText, SuggestionMeta, useErrorText } from '../shared';
 import { InstrumentMark } from '@/components/market/instrument-mark';
+import { ReviewText } from '@/features/dev/copy-review';
 
 /** Roles the suggested skills point to, strongest overlap first (not a fit score — just "where these lead"). */
 export function rolesFromSkills(skills: Array<{ skill_slug: string; confidence: number }>, limit = 3): Array<{ role: Instrument; via: Instrument[] }> {
@@ -99,7 +100,7 @@ export function MiniBoard({ suggestions, limit = 6 }: { suggestions: BoardSugges
                   <InstrumentMark size="sm" slug={inst.slug} symbol={inst.symbol} />
                   <div className="min-w-0">
                     <Link href={instrumentPath('skill', inst.slug)} className="font-medium hover:underline">{inst.name}</Link>
-                    <SuggestionMeta confidence={s.confidence} reason={s.reason} className="mt-0.5" />
+                    <SuggestionMeta confidence={s.confidence} reason={s.reason} className="mt-0.5" reviewId="onboarding.board.suggestion" />
                   </div>
                   <MetricValue reading={reading} size="sm" className="items-end text-right" />
                   <RemoveSuggestion s={s} name={inst.name} />
@@ -108,9 +109,9 @@ export function MiniBoard({ suggestions, limit = 6 }: { suggestions: BoardSugges
             })}
           </ul>
         ) : (
-          <p className="border-b border-rule pb-4 text-[15px] text-ink-2">{t('board.firstBody')}</p>
+          <p className="border-b border-rule pb-4 text-[15px] text-ink-2"><ReviewText id="onboarding.board.firstBody">{t('board.firstBody')}</ReviewText></p>
         )}
-        {top.length ? <p className="mt-3 text-[13px] text-muted">{t('board.suggestionNote')}</p> : null}
+        {top.length ? <p className="mt-3 text-[13px] text-muted"><ReviewText id="onboarding.board.suggestionNote">{t('board.suggestionNote')}</ReviewText></p> : null}
       </section>
 
       <div className="flex flex-col gap-10">
@@ -125,7 +126,7 @@ export function MiniBoard({ suggestions, limit = 6 }: { suggestions: BoardSugges
                 <li key={role.slug} className="flex items-center justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <Link href={instrumentPath('role', role.slug)} className="inline-flex items-center gap-1 font-medium hover:underline">{role.name}<ArrowUpRight className="size-3.5 shrink-0 text-muted" aria-hidden /></Link>
-                    <p className="text-[13px] text-muted">{t('board.rolesVia', { skills: via.map(v => v.name).join(', ') })}</p>
+                    <p className="text-[13px] text-muted"><ReviewText id="onboarding.board.rolesVia">{t('board.rolesVia', { skills: via.map(v => v.name).join(', ') })}</ReviewText></p>
                   </div>
                   <WatchButton slug={role.slug} filter={DEFAULT_FILTER} labelClassName={ROW_WATCH_LABEL} className="shrink-0" />
                 </li>
@@ -144,9 +145,9 @@ export function MiniBoard({ suggestions, limit = 6 }: { suggestions: BoardSugges
                 <div className="min-w-0">
                   <Link href={instrumentPath('skill', step.skill.slug)} className="font-medium hover:underline">{step.skill.name}</Link>
                   <p className="text-[13px] text-muted">
-                    {step.because ? t('board.nextBecause', { skill: step.because.name }) : t('board.nextFirst')}
+                    {step.because ? <ReviewText id="onboarding.board.nextBecause">{t('board.nextBecause', { skill: step.because.name })}</ReviewText> : <ReviewText id="onboarding.board.nextFirst">{t('board.nextFirst')}</ReviewText>}
                     {' · '}
-                    <EffortText effort={step.effort} />
+                    <ReviewText id="onboarding.board.nextEffort"><EffortText effort={step.effort} /></ReviewText>
                   </p>
                 </div>
                 <WatchButton slug={step.skill.slug} filter={DEFAULT_FILTER} metric="ad_count" labelClassName={ROW_WATCH_LABEL} className="shrink-0" />

@@ -22,6 +22,7 @@ import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useAnonymousOnboarding, useErrorText } from '../shared';
 import { MiniBoard, type BoardSuggestion } from './mini-board';
+import { ReviewText } from '@/features/dev/copy-review';
 
 type Step = 'basics' | 'start' | 'units' | 'done';
 const STEPS: Step[] = ['basics', 'start', 'units', 'done'];
@@ -61,10 +62,10 @@ const BASICS: BasicsKey[] = ['university_id', 'degree_id', 'year'];
 function useBasicsQuestions() {
   const t = useTranslations('Onboarding');
   return {
-    university_id: { label: t('university'), hint: t('universityHint'), options: UNIVERSITIES.map(u => ({ value: u.id, label: u.name })) },
-    degree_id: { label: t('degree'), hint: t('degreeHint'), options: DEGREES.map(d => ({ value: d.id, label: d.name })) },
-    year: { label: t('year'), hint: t('yearHint'), options: STUDY_YEARS.map(y => ({ value: y, label: t(`years.${y}`) })) },
-  } satisfies Record<BasicsKey, { label: string; hint: string; options: { value: string; label: string }[] }>;
+    university_id: { label: t('university'), hint: <ReviewText id="onboarding.basics.universityHint">{t('universityHint')}</ReviewText>, options: UNIVERSITIES.map(u => ({ value: u.id, label: u.name })) },
+    degree_id: { label: t('degree'), hint: <ReviewText id="onboarding.basics.degreeHint">{t('degreeHint')}</ReviewText>, options: DEGREES.map(d => ({ value: d.id, label: d.name })) },
+    year: { label: t('year'), hint: <ReviewText id="onboarding.basics.yearHint">{t('yearHint')}</ReviewText>, options: STUDY_YEARS.map(y => ({ value: y, label: t(`years.${y}`) })) },
+  } satisfies Record<BasicsKey, { label: string; hint: React.ReactNode; options: { value: string; label: string }[] }>;
 }
 
 function BasicsSelect({ name, value, onChange, describedBy, invalid, id, autoFocus }: {
@@ -172,7 +173,7 @@ function BasicsForm({ state, onDone, onSkip, skipping }: {
           </Field>
         ))
       )}
-      <p className="text-[13px] text-muted">{t('privacyNote')}</p>
+      <p className="text-[13px] text-muted"><ReviewText id="onboarding.basics.privacyNote">{t('privacyNote')}</ReviewText></p>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" size="lg" loading={saving.pending}>{t('showStart')}<ArrowRight aria-hidden /></Button>
         <Button variant="ghost" size="lg" onClick={onSkip} loading={skipping}>{t('skip')}</Button>
@@ -202,7 +203,7 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
   if (!uni?.has_units) {
     return (
       <div className="grid max-w-xl gap-5">
-        <Notice title={t('noUnitsTitle', { university: uni?.name ?? '' })}>{t('noUnitsBody', { launch: getUniversity('usyd')?.name ?? '' })}</Notice>
+        <Notice title={t('noUnitsTitle', { university: uni?.name ?? '' })}><ReviewText id="onboarding.units.noUnitsBody">{t('noUnitsBody', { launch: getUniversity('usyd')?.name ?? '' })}</ReviewText></Notice>
         <div className="flex flex-wrap gap-3">
           <Button size="lg" onClick={onSkip} loading={skipping}>{t('seeBoard')}<ArrowRight aria-hidden /></Button>
           <Button variant="ghost" size="lg" onClick={onBack}><ArrowLeft aria-hidden />{t('back')}</Button>
@@ -218,10 +219,10 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
           <Input maxLength={MAX_SEARCH_LENGTH} value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchUnits')} aria-label={t('searchUnits')} className="pl-9" />
         </div>
-        <p className="mt-2 text-[13px] text-muted">{t('unitsFrom', { university: uni.name, n: unitsFor(uni.id).length })}</p>
+        <p className="mt-2 text-[13px] text-muted"><ReviewText id="onboarding.units.unitsFrom">{t('unitsFrom', { university: uni.name, n: unitsFor(uni.id).length })}</ReviewText></p>
         <fieldset className="mt-4">
           <legend className="sr-only">{t('unitsLegend')}</legend>
-          {units.length === 0 ? <p className="rounded-md border border-dashed border-rule px-4 py-6 text-sm text-muted">{t('noUnitMatch', { q })}</p> : null}
+          {units.length === 0 ? <p className="rounded-md border border-dashed border-rule px-4 py-6 text-sm text-muted"><ReviewText id="onboarding.units.noUnitMatch">{t('noUnitMatch', { q })}</ReviewText></p> : null}
           <ul className="divide-y divide-rule rounded-md border border-rule bg-surface">
             {units.map(u => {
               const on = picked.includes(u.code);
@@ -231,7 +232,7 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
                     checked={on}
                     onCheckedChange={() => toggle(u.code)}
                     label={<span className="flex flex-wrap items-baseline gap-x-2"><span className="font-mono text-[13px]">{u.code}</span><span className="font-normal">{u.title}</span></span>}
-                    description={t('unitTeaches', { skills: u.skills.map(s => getInstrument(s.skill_slug)?.name ?? s.skill_slug).join(', ') })}
+                    description={<ReviewText id="onboarding.units.unitTeaches">{t('unitTeaches', { skills: u.skills.map(s => getInstrument(s.skill_slug)?.name ?? s.skill_slug).join(', ') })}</ReviewText>}
                   />
                 </li>
               );
@@ -243,7 +244,7 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
         <Card className="p-5">
           <p className="kicker">{t('selected')}</p>
           <p className="serif-num mt-1 text-[40px] leading-none">{picked.length}</p>
-          <p aria-live="polite" className="mt-2 text-[13px] text-ink-2">{picked.length ? t('unitsAdd', { n: added }) : t('unitsNone')}</p>
+          <p aria-live="polite" className="mt-2 text-[13px] text-ink-2">{picked.length ? <ReviewText id="onboarding.units.unitsAdd">{t('unitsAdd', { n: added })}</ReviewText> : <ReviewText id="onboarding.units.unitsNone">{t('unitsNone')}</ReviewText>}</p>
           {picked.length ? (
             <ul className="mt-3 flex flex-wrap gap-1.5">
               {picked.map(code => (
@@ -301,11 +302,12 @@ export function OnboardingFlow() {
     }
   };
 
-  const titles: Record<Step, { kicker: string; title: string; lede: string | null }> = {
-    basics: { kicker: t('basicsKicker'), title: t('basicsTitle'), lede: t('basicsLede') },
-    start: { kicker: t('startKicker'), title: t('startTitle'), lede: context },
-    units: { kicker: t('unitsKicker'), title: t('unitsTitle'), lede: t('unitsLede') },
-    done: { kicker: t('doneKicker'), title: suggestions.length ? t('doneTitle') : t('doneEmptyTitle'), lede: suggestions.length ? context : t('doneEmptyLede') },
+  const lede = (id: string, text: string | null) => (text ? <ReviewText id={id}>{text}</ReviewText> : null);
+  const titles: Record<Step, { kicker: string; title: string; lede: React.ReactNode }> = {
+    basics: { kicker: t('basicsKicker'), title: t('basicsTitle'), lede: lede('onboarding.basics.lede', t('basicsLede')) },
+    start: { kicker: t('startKicker'), title: t('startTitle'), lede: lede('onboarding.start.lede', context) },
+    units: { kicker: t('unitsKicker'), title: t('unitsTitle'), lede: lede('onboarding.units.lede', t('unitsLede')) },
+    done: { kicker: t('doneKicker'), title: suggestions.length ? t('doneTitle') : t('doneEmptyTitle'), lede: suggestions.length ? lede('onboarding.done.lede', context) : lede('onboarding.done.emptyLede', t('doneEmptyLede')) },
   };
   const head = titles[step];
 
@@ -330,8 +332,8 @@ export function OnboardingFlow() {
             <MiniBoard suggestions={suggestions} />
             <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>
-                <p className="font-serif text-[22px] leading-snug">{t('nextUnitsTitle')}</p>
-                <p className="mt-1 text-sm text-muted">{t('nextUnitsBody')}</p>
+                <p className="font-serif text-[22px] leading-snug"><ReviewText id="onboarding.start.nextUnitsTitle">{t('nextUnitsTitle')}</ReviewText></p>
+                <p className="mt-1 text-sm text-muted"><ReviewText id="onboarding.start.nextUnitsBody">{t('nextUnitsBody')}</ReviewText></p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button size="lg" onClick={() => go('units')}>{t('addUnits')}<ArrowRight aria-hidden /></Button>
@@ -359,7 +361,7 @@ export function OnboardingFlow() {
                 <div>
                   <p className="kicker text-night-ink/60">{t('saveKicker')}</p>
                   <h2 id="save-h" className="mt-2 font-serif text-[28px] leading-tight sm:text-[34px]">{t('saveTitle')}</h2>
-                  <p className="mt-2 max-w-xl text-night-ink/80">{t('saveBody')}</p>
+                  <p className="mt-2 max-w-xl text-night-ink/80"><ReviewText id="onboarding.done.saveBody">{t('saveBody')}</ReviewText></p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild size="lg" variant="signal"><Link href={loginHref('/me')}>{t('signUp')}</Link></Button>

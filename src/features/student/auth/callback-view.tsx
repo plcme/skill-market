@@ -12,6 +12,7 @@ import { loginHref } from '@/lib/links';
 import { Button } from '@/components/ui/button';
 import { Container, EmptyState } from '@/components/ui/primitives';
 import { useErrorText } from '../shared';
+import { ReviewText } from '@/features/dev/copy-review';
 
 // One verification per token, even under StrictMode's double effects.
 const inflight = new Map<string, Promise<Result<{ redirect: string }>>>();
@@ -62,7 +63,7 @@ export function CallbackView() {
           <Button asChild><Link href={loginHref(next ?? '/me')}>{t('requestNew')}</Link></Button>
         )}
       >
-        <p aria-live="polite">{errorText(error)}</p>
+        <p aria-live="polite"><ReviewText id="auth.callback.error">{errorText(error)}</ReviewText></p>
       </EmptyState>
     </Container>
   );

@@ -8,6 +8,7 @@ import type { LearningEffort, Transferability } from '@/lib/market/types';
 import { useUiMode } from '@/lib/demo/ui-mode';
 import { ANON_ONBOARDING_EVENT, ANON_ONBOARDING_KEY, parseAnonymousOnboarding, type AnonymousOnboarding } from '@/lib/api/onboarding';
 import { Badge } from '@/components/ui/primitives';
+import { ReviewText } from '@/features/dev/copy-review';
 import { cn } from '@/lib/utils';
 
 /** Maps an action error to copy: student-area keys first, then the shared `Errors`. */
@@ -42,13 +43,20 @@ export function confidenceBand(c: number): ConfidenceBand {
 }
 
 /** Inferred ≠ known: always "Suggestion" + confidence in words and numbers (FR-O4). */
-export function SuggestionMeta({ confidence, reason, className }: { confidence: number | null; reason: string | null; className?: string }) {
+export function SuggestionMeta({ confidence, reason, className, reviewId }: {
+  confidence: number | null;
+  reason: string | null;
+  className?: string;
+  /** Dev copy review only: wraps the badge, confidence and reason as `${reviewId}Badge` etc. */
+  reviewId?: string;
+}) {
   const t = useTranslations('StudentShared');
+  const review = (part: string, node: React.ReactNode) => (reviewId ? <ReviewText id={`${reviewId}${part}`}>{node}</ReviewText> : node);
   return (
     <span className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted', className)}>
-      <Badge tone="outline">{t('suggestion')}</Badge>
-      {confidence !== null ? <span className="num">{t('confidence', { band: t(`bands.${confidenceBand(confidence)}`), pct: Math.round(confidence * 100) })}</span> : null}
-      {reason ? <ReasonText reason={reason} /> : null}
+      {review('Badge', <Badge tone="outline">{t('suggestion')}</Badge>)}
+      {confidence !== null ? review('Confidence', <span className="num">{t('confidence', { band: t(`bands.${confidenceBand(confidence)}`), pct: Math.round(confidence * 100) })}</span>) : null}
+      {reason ? review('Reason', <ReasonText reason={reason} />) : null}
     </span>
   );
 }
