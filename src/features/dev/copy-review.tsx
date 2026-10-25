@@ -15,11 +15,11 @@ import {
   getMounted,
   getSeen,
   groupItems,
+  isCatalogued,
   messageAt,
   recordText,
   refreshActivation,
   registerText,
-  REVIEW_ITEM_IDS,
   REVIEW_ITEMS,
   reviewedCount,
   setDecision,
@@ -111,7 +111,7 @@ function ActiveReviewText({ id, children }: { id: string; children: React.ReactN
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!REVIEW_ITEM_IDS.has(id)) console.warn(`[copy review] "${id}" is not in REVIEW_ITEMS`);
+    if (!isCatalogued(id)) console.warn(`[copy review] "${id}" is not in REVIEW_ITEMS`);
     return registerText(id);
   }, [id]);
   useEffect(() => { recordText(id, textRef.current?.textContent?.trim() ?? ''); });

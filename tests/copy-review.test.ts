@@ -6,9 +6,9 @@ import {
   activationFromSearch,
   exportDecisions,
   groupItems,
+  isCatalogued,
   messageAt,
   parseDecisions,
-  REVIEW_ITEM_IDS,
   REVIEW_ITEMS,
   reviewedCount,
   STORAGE_KEY,
@@ -79,7 +79,7 @@ describe('copy review catalogue (FE-R9)', () => {
 
   it('matches the ids wrapped in src one to one', () => {
     const used = usedIds();
-    expect([...used].filter(id => !REVIEW_ITEM_IDS.has(id))).toEqual([]);
+    expect([...used].filter(id => !isCatalogued(id))).toEqual([]);
     expect(REVIEW_ITEMS.map(i => i.id).filter(id => !used.has(id))).toEqual([]);
   });
 
