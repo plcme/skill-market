@@ -9,7 +9,7 @@
 
 - M0 本地完成（云端接入未完成，见 `docs/SETUP.md`）。之后一直在做前端原型迭代：FE-R1 到 FE-R7 已全部进入 `main` 并上线（`brewdex.app`，Cloudflare）。
 - **Git 流程（2026-10-23 起）**：只有 `main` 一条长期分支，短分支 → PR → 用户授权合并（仅集成）→ 另经发布授权推送 `v*` tag 才上线；`dev` 停用（其内容 `main` 已全部包含）。
-- FE-R8 审查通过（分支 `fe-r8`，PR 合并进 `main`，未发布）：去掉首页，`/` → `/market`，首访开场区块 + 按方向的翻页吸附。
+- FE-R8（分支 `fe-r8`，PR #20，未合并）：去掉首页，`/` → `/market`，开场区块常驻 + 一动就翻的翻页；用户试用后的追加改动审查中。
 - 前端是完整可交互原型：市场数字来自合成引擎，用户数据存浏览器 localStorage，**没有接 Supabase**。
 - **数据来源已定（2026-10-23）**：第一版技能级只用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与覆盖率校准用 JSA IVI；不接 Adzuna、Workday。三家接口和 IVI 都**没有明文许可**，商业化前要拿到书面答复并请律师看（`docs/SETUP.md` §6）。
 - 采集节奏：指标每天结算；每小时轻量检查新职位，按雇主活跃度（泊松速率 λ）调频；盘中喂行情条与"今日新增"；每个数据面标出 "Updated today, 2:14 am"（架构 §6.7、`DESIGN.md` §8）。
@@ -43,11 +43,10 @@
 | 12 | 细分行业颗粒度：ANZSIC Subdivision 还是 Group | — | 前端下一轮 |
 | 13 | 未排期的产品想法：开场动画；LinkedIn 证书导入；Twitter 书签式交互；对比页超过 2 个标的 | — | 用户提出时 |
 
-| 14 | 开场区块只在不带参数的入口显示（深链接直接看结果，也不写 `intro_seen`） | FE-R8 已按此做 | 用户看过后 |
+| 14 | 开场区块只在不带参数的入口显示（深链接直接看结果） | FE-R8 已按此做 | 用户看过后 |
 | 15 | 首页 movers 已从界面去掉，`getMovers` / `pickMovers` 与测试保留在数据层 | 保留，以后可能放进盘面 | 前端下一轮 |
-| 16 | 服务端没有真正的会话读取：开场区块判断"已登录"只看 Supabase SSR auth cookie 是否存在；原型的登录态在 localStorage，由 `IntroSeenRefresh` 补写 cookie | 接 Supabase Auth 后改成真实会话 | M2 |
 
-已决定、不再列出：首页去掉，`/` → `/market` + 首访开场区块；翻页吸附按方向判断（往另一页滑出 `min(48px, 10% anchor)` 就翻，否则回原页；不知道停在哪页时按过半）（FE-R8，2026-10-25）；产品名 Brewdex（域名 `brewdex.app` 已买，`APP_NAME` 默认值为 `skill-market`，仅 `brewdex.app` 发布配置为 `Brewdex`）；数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
+已决定、不再列出：首页去掉，`/` → `/market`；开场区块常驻（不再记"看过"、不分登录），wordmark 回开场顶部、Market 去 `#board`；翻页一动就翻（开场 ↔ 盘面之间允许拦截滚轮，DESIGN §7）；盘面去掉度量下拉与计数行（FE-R8，2026-10-25）；产品名 Brewdex（域名 `brewdex.app` 已买，`APP_NAME` 默认值为 `skill-market`，仅 `brewdex.app` 发布配置为 `Brewdex`）；数据来源（→ Greenhouse / Lever / Ashby + IVI；付费数据合作等有客户后由用户去谈）；采集节奏与更新时间格式；信号检验改用泊松（接真实数据后）；架构对 PRD 的调整（默认通过）；master level = 10 年以上（界面叫 Expert）；skill 显示 Median salary（PRD 已改）；详情页默认不拆分；No PR stated 时 Work rights 拆分置灰；Watching 放在最前；行情条去掉暂停键。
 
 ## 上 main 前必须做
 
@@ -55,7 +54,7 @@
 - [ ] `eslint.config.mjs` 的 `globalIgnores` 加入 `.claude/worktrees/**`（否则 `eslint .` 会扫进 worktree）
 - [ ] 清理已合并分支与 worktree（清单待用户确认后执行）
 - [x] `docs/SETUP.md` Git 分支流程已同步为 `main` + PR 预览；Supabase 开发项目保留
-- [ ] FE-R8 新增的 e2e（`frontend.spec.ts` "first visit" 与翻页、`responsive.spec.ts` 开场区块）没跑过；`playwright.config.ts` 默认给每个 context 带 `intro_seen` cookie
+- [ ] FE-R8 新增 / 改动的 e2e（`frontend.spec.ts` 开场、翻页、nav 目标；`responsive.spec.ts` 开场区块）没在本地跑过；iOS 真机上翻页时的惯性覆盖（动画期间 `overflow:hidden`）未验证
 - [ ] 用户确认后才合并 `main`
 
 已知遗留（非阻断）：全部分档低于阈值时 thin 文案与画面不符（`breakdown-section.tsx:92`）；localStorage 禁用时主题手动选择不生效；单档低于阈值可被总量反推；`/sources` 仍用 `bg-signal-soft`；Watching 数量缺读屏说明；名称搜索时数量与列表不一致；整张 All 表传给客户端（接 Supabase 后改服务端过滤）；Sign in 链接丢筛选参数；375px 标签行可横滑但无提示；标题句子可能自相矛盾；被固定的 `by` 参数在 URL 中清不掉。

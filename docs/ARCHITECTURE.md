@@ -187,8 +187,8 @@ Supabase 免费档允许 2 个项目，正好一 prod 一 dev。migration 通过
 /market?type=watching|all|skill|role|industry&metric=&layer=&q=
                                    行情表。没有筛选，固定 All Australia · All levels · 任意 work rights；
                                    旧链接的 ?f= 重定向去掉。Watching 标签在最前（书签 + 数量）
-                                   首访开场区块：不带参数、未登录、没有 intro_seen cookie 时，
-                                   在盘面上方显示标语 + 行业热力图（DESIGN.md §4「开场区块」）
+                                   不带参数时盘面上方永远有开场区块（标语 + 行业热力图，DESIGN.md §4）；
+                                   wordmark → /market 顶部，nav 的 Market → /market#board
 /s/[slug] · /r/[slug] · /i/[slug]  技能 / 岗位 / 行业详情页：一张图 + Statistics。
                                    ?metric= 同时驱动 Right now 与大图；?by= 拆分（默认不拆）；?f= 筛选，
                                    入口是标题里的 "in …"
