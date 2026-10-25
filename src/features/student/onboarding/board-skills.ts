@@ -65,3 +65,27 @@ export function addedByUnits(state: Pick<OnboardingState, 'degree_id' | 'year' |
   const base = new Set(kept([]).map(s => s.skill_slug));
   return kept(unit_codes).filter(s => !base.has(s.skill_slug)).length;
 }
+
+/** Pending focus move after a removal: which row is going, and where focus should land. */
+export interface RemovalFocus {
+  removed: string;
+  /** Slug of the row whose remove button gets focus; null = the section heading. */
+  target: string | null;
+}
+
+/** Decided before the removal starts: the next row, else the previous one, else the heading. */
+export function removalFocus(rows: readonly string[], removed: string): RemovalFocus {
+  const i = rows.indexOf(removed);
+  if (i < 0) return { removed, target: null };
+  return { removed, target: rows[i + 1] ?? rows[i - 1] ?? null };
+}
+
+/**
+ * Where to move focus once the rows have re-rendered: undefined while the
+ * removed row is still listed (removal pending), the target slug (or null for
+ * the heading) once it is gone. A target that disappeared too falls back to null.
+ */
+export function resolveRemovalFocus(pending: RemovalFocus | null, rows: readonly string[]): string | null | undefined {
+  if (!pending || rows.includes(pending.removed)) return undefined;
+  return pending.target && rows.includes(pending.target) ? pending.target : null;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MAX_SEARCH_LENGTH } from '@/lib/search/matcher';
@@ -196,7 +196,8 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
   const [save, saving] = useAction(completeTier1);
   const uni = getUniversity(state.university_id);
   const units = searchUnits(state.university_id, q);
-  const added = useMemo(() => addedByUnits(state, picked), [state, picked]);
+  // Not memoised: `state` and its arrays are rebuilt on every render; two small inferences are cheap.
+  const added = addedByUnits(state, picked);
   const toggle = (code: string) => setPicked(p => (p.includes(code) ? p.filter(c => c !== code) : [...p, code]));
 
   if (!uni?.has_units) {

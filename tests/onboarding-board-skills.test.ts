@@ -3,7 +3,7 @@ import { getDB, resetPreview, setPersona } from '../src/lib/demo/store';
 import { clearAnonymousOnboarding, completeTier0, EMPTY_ONBOARDING, readAnonymousOnboarding, selectOnboarding, type OnboardingState } from '../src/lib/api/onboarding';
 import { addSkill, confirmSkill, suggestNextSteps } from '../src/lib/api/skills';
 import { inferSkillProfile } from '../src/lib/demo/education';
-import { addedByUnits, selectBoardSkills, startColumn } from '../src/features/student/onboarding/board-skills';
+import { addedByUnits, removalFocus, resolveRemovalFocus, selectBoardSkills, startColumn } from '../src/features/student/onboarding/board-skills';
 
 beforeEach(() => {
   resetPreview();
@@ -73,5 +73,25 @@ describe('mini-board skills (FE-R9)', () => {
     expect(added).toBeGreaterThan(0);
     expect(addedByUnits({ ...state, removed_skills: ['networking'] }, ['ELEC3506'])).toBe(added - 1);
     expect(addedByUnits(state, [])).toBe(0);
+  });
+});
+
+describe('focus after removing a suggestion (FE-R9)', () => {
+  it('targets the next row, else the previous one, else the heading', () => {
+    expect(removalFocus(['a', 'b', 'c'], 'a')).toEqual({ removed: 'a', target: 'b' });
+    expect(removalFocus(['a', 'b', 'c'], 'b')).toEqual({ removed: 'b', target: 'c' });
+    expect(removalFocus(['a', 'b', 'c'], 'c')).toEqual({ removed: 'c', target: 'b' });
+    expect(removalFocus(['a'], 'a')).toEqual({ removed: 'a', target: null });
+    expect(removalFocus(['a'], 'zzz')).toEqual({ removed: 'zzz', target: null });
+  });
+
+  it('waits while the removed row is still listed, then resolves once', () => {
+    const pending = removalFocus(['a', 'b', 'c'], 'a');
+    expect(resolveRemovalFocus(pending, ['a', 'b', 'c'])).toBeUndefined();
+    expect(resolveRemovalFocus(pending, ['b', 'c'])).toBe('b');
+    expect(resolveRemovalFocus(pending, ['b', 'c', 'd'])).toBe('b');
+    expect(resolveRemovalFocus(pending, ['c'])).toBeNull();
+    expect(resolveRemovalFocus(removalFocus(['a'], 'a'), [])).toBeNull();
+    expect(resolveRemovalFocus(null, ['a'])).toBeUndefined();
   });
 });

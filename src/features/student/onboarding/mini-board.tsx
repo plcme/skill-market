@@ -23,7 +23,7 @@ import { EffortText, SuggestionMeta, useErrorText } from '../shared';
 import { InstrumentMark } from '@/components/market/instrument-mark';
 import { ReviewText } from '@/features/dev/copy-review';
 import { cn } from '@/lib/utils';
-import { startColumn, type BoardSkills, type BoardSuggestion } from './board-skills';
+import { removalFocus, resolveRemovalFocus, startColumn, type BoardSkills, type BoardSuggestion, type RemovalFocus } from './board-skills';
 
 export type { BoardSuggestion };
 
@@ -43,26 +43,29 @@ export function rolesFromSkills(skills: Array<{ skill_slug: string; confidence: 
   return [...acc.values()].sort((a, b) => b.weight - a.weight).slice(0, limit).map(({ role, via }) => ({ role, via: via.slice(0, 3) }));
 }
 
-function RemoveSuggestion({ s, name, onRemoved }: { s: BoardSuggestion; name: string; onRemoved: () => void }) {
+/** `onStart` records where focus goes next and returns a cancel for a failed removal. */
+function RemoveSuggestion({ s, name, onStart }: { s: BoardSuggestion; name: string; onStart: () => () => void }) {
   const t = useTranslations('Onboarding');
   const errorText = useErrorText();
   const { toast } = useToast();
   const [remove, state] = useAction(removeSkill);
   const onClick = async () => {
+    const cancelFocus = onStart();
     if (!s.row) {
-      onRemoved();
       hideAnonymousSuggestion(s.skill_slug);
       toast({ title: t('board.removed', { name }), action: { label: t('board.undo'), onClick: () => unhideAnonymousSuggestion(s.skill_slug) } });
       return;
     }
     const r = await remove(s.row.id);
     if (r?.ok) {
-      onRemoved();
       const undo = () => {
         void restoreSkill(r.data).then(u => { if (!u.ok) toast({ tone: 'warn', title: errorText(u.error) }); });
       };
       toast({ title: t('board.removed', { name }), action: { label: t('board.undo'), onClick: undo } });
-    } else if (r) toast({ tone: 'warn', title: errorText(r.error) });
+    } else {
+      cancelFocus();
+      if (r) toast({ tone: 'warn', title: errorText(r.error) });
+    }
   };
   return (
     <Button variant="ghost" size="icon-sm" loading={state.pending} onClick={onClick} data-remove={s.skill_slug} aria-label={t('board.removeName', { name })} className="text-muted hover:text-ink">
@@ -83,16 +86,19 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, limit = 
   const listRef = useRef<HTMLUListElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const nextHeadingRef = useRef<HTMLHeadingElement>(null);
-  const focusNext = useRef<string | null | undefined>(undefined);
-  const removedFrom = (slug: string) => () => {
-    const i = top.findIndex(s => s.skill_slug === slug);
-    focusNext.current = top[i + 1]?.skill_slug ?? top[i - 1]?.skill_slug ?? null;
-  };
+  const pendingFocus = useRef<RemovalFocus | null>(null);
   const rowKeys = top.map(s => s.skill_slug).join(' ');
+  // Set synchronously before the removal starts, so the re-render that drops
+  // the row (which may run before the awaited action resolves) can consume it.
+  const startRemoval = (slug: string) => () => {
+    const pending = removalFocus(top.map(s => s.skill_slug), slug);
+    pendingFocus.current = pending;
+    return () => { if (pendingFocus.current === pending) pendingFocus.current = null; };
+  };
   useEffect(() => {
-    const target = focusNext.current;
+    const target = resolveRemovalFocus(pendingFocus.current, rowKeys ? rowKeys.split(' ') : []);
     if (target === undefined) return;
-    focusNext.current = undefined;
+    pendingFocus.current = null;
     const next = target ? listRef.current?.querySelector<HTMLElement>(`[data-remove="${CSS.escape(target)}"]`) : null;
     (next ?? headingRef.current ?? nextHeadingRef.current)?.focus();
   }, [rowKeys]);
@@ -122,7 +128,7 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, limit = 
                     <SuggestionMeta confidence={s.confidence} reason={s.reason} className="mt-0.5" reviewId="onboarding.board.suggestionReason" />
                   </div>
                   <MetricValue reading={reading} size="sm" className="items-end text-right" />
-                  <RemoveSuggestion s={s} name={inst.name} onRemoved={removedFrom(s.skill_slug)} />
+                  <RemoveSuggestion s={s} name={inst.name} onStart={startRemoval(s.skill_slug)} />
                 </li>
               );
             })}
