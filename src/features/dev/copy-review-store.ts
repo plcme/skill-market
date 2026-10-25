@@ -46,18 +46,14 @@ export const REVIEW_ITEMS: readonly ReviewItem[] = [
   { id: 'onboarding.basics.privacyNote', group: 'Onboarding · Basics', source: 'Onboarding.privacyNote' },
 
   { id: 'onboarding.start.lede', group: 'Onboarding · Starting point', source: 'Onboarding.context' },
-  { id: 'onboarding.start.nextUnitsTitle', group: 'Onboarding · Starting point', source: 'Onboarding.nextUnitsTitle' },
   { id: 'onboarding.start.nextUnitsBody', group: 'Onboarding · Starting point', source: 'Onboarding.nextUnitsBody' },
 
   { id: 'onboarding.board.firstBody', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.firstBody' },
-  { id: 'onboarding.board.suggestionBadge', group: 'Onboarding · Mini-board (starting point and board)', source: 'StudentShared.suggestion' },
-  { id: 'onboarding.board.suggestionConfidence', group: 'Onboarding · Mini-board (starting point and board)', source: 'StudentShared.confidence' },
   { id: 'onboarding.board.suggestionReason', group: 'Onboarding · Mini-board (starting point and board)', source: 'StudentShared.fromDegree' },
   { id: 'onboarding.board.suggestionNote', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.suggestionNote' },
   { id: 'onboarding.board.rolesVia', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.rolesVia' },
   { id: 'onboarding.board.nextBecause', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.nextBecause' },
   { id: 'onboarding.board.nextFirst', group: 'Onboarding · Mini-board (starting point and board)', source: 'Onboarding.board.nextFirst' },
-  { id: 'onboarding.board.nextEffort', group: 'Onboarding · Mini-board (starting point and board)', source: 'StudentShared.effort.months' },
 
   { id: 'onboarding.units.lede', group: 'Onboarding · Units', source: 'Onboarding.unitsLede' },
   { id: 'onboarding.units.unitsFrom', group: 'Onboarding · Units', source: 'Onboarding.unitsFrom' },

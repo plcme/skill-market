@@ -56,19 +56,22 @@ describe('copy review catalogue (FE-R9)', () => {
     if (statSync(path).isDirectory()) return files(path);
     return /\.(ts|tsx)$/.test(name) && !path.includes(`${join('features', 'dev')}`) ? [path] : [];
   });
-  /** Ids written in src: literal `onboarding.*` / `auth.*` strings, and `reviewId="x"` expanded to its three parts. */
+  /** Ids written in src: literal `onboarding.*` / `auth.*` strings (including `reviewId="…"`). */
   const usedIds = () => {
     const ids = new Set<string>();
     for (const file of files(ROOT)) {
       const source = readFileSync(file, 'utf8');
-      for (const m of source.matchAll(/reviewId="([\w.]+)"/g)) for (const part of ['Badge', 'Confidence', 'Reason']) ids.add(`${m[1]}${part}`);
-      for (const m of source.matchAll(/(?<!reviewId=)['"]((?:onboarding|auth)\.[a-z]\w*\.[\w.]+)['"]/g)) ids.add(m[1]);
+      for (const m of source.matchAll(/['"]((?:onboarding|auth)\.[a-z]\w*\.[\w.]+)['"]/g)) ids.add(m[1]);
     }
     return ids;
   };
 
   it('uses a new storage key so FE-R5 decisions do not bleed in', () => {
     expect(STORAGE_KEY).toBe('copy-review-v2');
+  });
+
+  it('leaves FR-O4 labels, data values and titles out', () => {
+    for (const id of ['onboarding.board.suggestionBadge', 'onboarding.board.suggestionConfidence', 'onboarding.board.nextEffort', 'onboarding.start.nextUnitsTitle']) expect(isCatalogued(id), id).toBe(false);
   });
 
   it('has unique ids, each pointing at a real message', async () => {

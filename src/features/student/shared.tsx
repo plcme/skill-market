@@ -47,16 +47,15 @@ export function SuggestionMeta({ confidence, reason, className, reviewId }: {
   confidence: number | null;
   reason: string | null;
   className?: string;
-  /** Dev copy review only: wraps the badge, confidence and reason as `${reviewId}Badge` etc. */
+  /** Dev copy review only: wraps the reason text (the badge and confidence are required by FR-O4). */
   reviewId?: string;
 }) {
   const t = useTranslations('StudentShared');
-  const review = (part: string, node: React.ReactNode) => (reviewId ? <ReviewText id={`${reviewId}${part}`}>{node}</ReviewText> : node);
   return (
     <span className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted', className)}>
-      {review('Badge', <Badge tone="outline">{t('suggestion')}</Badge>)}
-      {confidence !== null ? review('Confidence', <span className="num">{t('confidence', { band: t(`bands.${confidenceBand(confidence)}`), pct: Math.round(confidence * 100) })}</span>) : null}
-      {reason ? review('Reason', <ReasonText reason={reason} />) : null}
+      <Badge tone="outline">{t('suggestion')}</Badge>
+      {confidence !== null ? <span className="num">{t('confidence', { band: t(`bands.${confidenceBand(confidence)}`), pct: Math.round(confidence * 100) })}</span> : null}
+      {reason ? (reviewId ? <ReviewText id={reviewId}><ReasonText reason={reason} /></ReviewText> : <ReasonText reason={reason} />) : null}
     </span>
   );
 }
