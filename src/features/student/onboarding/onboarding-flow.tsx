@@ -10,7 +10,7 @@ import { useDB } from '@/lib/demo/store';
 import { useAction } from '@/lib/api/client';
 import { completeTier0, completeTier1, selectOnboarding, skipOnboarding, type OnboardingState } from '@/lib/api/onboarding';
 import type { StudyYear } from '@/lib/api/types';
-import { DEGREES, getDegree, getUniversity, inferSkillProfile, searchUnits, STUDY_YEARS, UNIVERSITIES, unitsFor, type InferredSkill } from '@/lib/demo/education';
+import { DEGREES, getDegree, getUniversity, inferSkillProfile, searchUnits, STUDY_YEARS, UNIVERSITIES, unitsFor } from '@/lib/demo/education';
 import { getInstrument } from '@/lib/market/catalog';
 import { loginHref } from '@/lib/links';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { PHONE_QUERY, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useAnonymousOnboarding, useErrorText } from '../shared';
-import { MiniBoard } from './mini-board';
+import { MiniBoard, type BoardSuggestion } from './mini-board';
 
 type Step = 'basics' | 'start' | 'units' | 'done';
 const STEPS: Step[] = ['basics', 'start', 'units', 'done'];
@@ -285,7 +285,13 @@ export function OnboardingFlow() {
   const go = (s: Step) => router.push(s === 'basics' ? '/onboarding' : `/onboarding?step=${s}`, { scroll: true });
   const degree = getDegree(state.degree_id);
   const uni = getUniversity(state.university_id);
-  const suggestions: InferredSkill[] = hasBasics || state.unit_codes.length ? inferSkillProfile({ degree_id: state.degree_id, year: state.year, unit_codes: state.unit_codes }) : [];
+  // Signed in: the profile's stored suggestions, so a removal shows at once.
+  // Signed out: a fresh inference minus what was removed on this device.
+  const suggestions: BoardSuggestion[] = state.signed_in
+    ? db.skills.filter(s => s.source === 'inferred').sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)).map(row => ({ skill_slug: row.skill_slug, confidence: row.confidence, reason: row.reason, row }))
+    : hasBasics || state.unit_codes.length
+      ? inferSkillProfile({ degree_id: state.degree_id, year: state.year, unit_codes: state.unit_codes }).filter(s => !state.removed_skills.includes(s.skill_slug))
+      : [];
   const context = degree && state.year ? t('context', { degree: degree.name, year: t(`yearsShort.${state.year}`), university: uni?.short ?? '' }) : null;
   const doSkip = async (tier: 'tier0' | 'tier1') => {
     const r = await skip({ tier });

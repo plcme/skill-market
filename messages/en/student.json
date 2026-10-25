@@ -114,7 +114,10 @@
       "nextKicker": "Next steps",
       "nextTitle": "Close to what you have",
       "nextBecause": "Often asked for with {skill}",
-      "nextFirst": "Broad and quick to start"
+      "nextFirst": "Broad and quick to start",
+      "removeName": "Remove {name}",
+      "removed": "{name} removed",
+      "undo": "Undo"
     },
     "nextUnitsTitle": "Add the units you’ve taken — about a minute",
     "nextUnitsBody": "Each unit sharpens your suggestions. Nothing is confirmed until you say so.",
