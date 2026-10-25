@@ -12,8 +12,7 @@ import { BoardTextFilter, BoardViewControls, SkillLayerSwitch } from '@/features
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
 import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
 import { WatchingTabCount } from '@/features/market/watching-board';
-import { IntroBand } from '@/features/market/intro-band';
-import { BOARD_ANCHOR_ID, isBareEntry } from '@/features/market/intro';
+import { BOARD_ANCHOR_ID } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
 
 // Board type tabs, Watching included.
@@ -46,13 +45,8 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
   const keep = { sort: sort === 'value' ? undefined : sort, view: view === 'list' ? undefined : view };
   const typeHref = (next: MarketTab) => hrefWith('/market', { type: boardTypeParam(next), ...keep });
   const resetHref = hrefWith('/market', { type: boardTypeParam(tab), metric: metricParam, layer: layerParam(layer), ...keep });
-  // The bare entry is the landing: the band on top, the board below it. Deep links open the board alone.
-  const showIntro = isBareEntry(sp);
 
   return (
-    <>
-    <h1 className="sr-only">{t('title')}</h1>
-    {showIntro ? <IntroBand /> : null}
     <Container className="pb-20">
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
       <CompareSelectionProvider key={tab}>
@@ -112,6 +106,5 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
       </section>
       </CompareSelectionProvider>
     </Container>
-    </>
   );
 }

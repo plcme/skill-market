@@ -230,6 +230,25 @@ test.describe('landing', () => {
     expect(await scrollY(page)).toBe(anchor + 400);
   });
 
+  test('changing the board in place keeps the band and the scroll position', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/market');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('link', { name: 'Explore the market' }).click();
+    await expect.poll(() => scrollY(page)).toBeGreaterThan(100);
+    const anchor = await scrollY(page);
+    await page.waitForTimeout(700);
+    await page.getByLabel('Filter this board by name').fill('data');
+    await expect(page).toHaveURL(/\/market\?q=data$/);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(1);
+    expect(await scrollY(page)).toBe(anchor);
+    await page.getByRole('radio', { name: 'By change' }).click();
+    await expect(page).toHaveURL(/sort=change/);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(1);
+    expect(await scrollY(page)).toBe(anchor);
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+  });
+
   test('Explore the market flips to the board; a scroll left mid-way settles the way it set off', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/market');
