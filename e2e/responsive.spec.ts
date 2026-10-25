@@ -54,9 +54,8 @@ for (const path of PUBLIC) {
   });
 }
 
-test.describe('first visit', () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
-  test('responsive: /market intro band fits one screen with the board tabs peeking, and passes axe', async ({ page }) => {
+test.describe('landing', () => {
+  test('responsive: /market landing band fits one screen with the board tabs peeking, and passes axe', async ({ page }) => {
     await page.goto('/market');
     await expect(page.getByRole('heading', { level: 2, name: /A stock market for skills/ })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();

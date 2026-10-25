@@ -24,7 +24,7 @@ const HEAT_SR_FOCUSABLE = cn(HEAT_SR, '[@media(max-width:39.99rem),(max-height:3
 const HEAT_WIDTH = '[@media(min-width:40rem)_and_(min-height:32rem)]:w-[var(--heat-w)]';
 const HEAT_CHROME = '6rem';
 
-/** First-visit band on top of the board: what the market is, today's industries, and the way in. */
+/** The landing band on top of the board: what the market is, today's industries, and the way in. */
 export async function IntroBand() {
   const t = await getTranslations('Home');
   const tt = await getTranslations('Ticker');

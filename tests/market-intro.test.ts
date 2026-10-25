@@ -1,19 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_QUERY_KEYS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, hasIntroCookie, hasSessionCookie, INTRO_COOKIE, INTRO_MAX_AGE, introSeenCookie, isBareEntry, KEYBOARD_QUIET_MS, restingPage, settleStep, shouldShowIntro, skipSnap, UNKNOWN_REST, type PagerState } from '@/features/market/intro';
+import { BOARD_QUERY_KEYS, easeOutCubic, FLIP_MS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, isBareEntry, KEYBOARD_QUIET_MS, restingPage, settleStep, skipSnap, touchTarget, tweenAt, UNKNOWN_REST, WHEEL_QUIET_MS, wheelFlipTarget, wheelPixels, wheelStep, type PagerState } from '@/features/market/intro';
 import { marketEntryHref } from '@/features/market/logic';
 
-describe('intro band gating', () => {
-  it('shows only to anonymous visitors without the cookie, on the bare entry', () => {
-    expect(shouldShowIntro({ signedIn: false, cookieValue: undefined, bareEntry: true })).toBe(true);
-    expect(shouldShowIntro({ signedIn: false, cookieValue: '1', bareEntry: true })).toBe(false);
-    expect(shouldShowIntro({ signedIn: false, cookieValue: '', bareEntry: true })).toBe(false);
-    expect(shouldShowIntro({ signedIn: true, cookieValue: undefined, bareEntry: true })).toBe(false);
-    expect(shouldShowIntro({ signedIn: true, cookieValue: '1', bareEntry: true })).toBe(false);
-    expect(shouldShowIntro({ signedIn: false, cookieValue: undefined, bareEntry: false })).toBe(false);
-    expect(shouldShowIntro({ signedIn: true, cookieValue: '1', bareEntry: false })).toBe(false);
-  });
-
-  it('counts /market as the bare entry only without board query keys', () => {
+describe('landing band', () => {
+  it('shows on the bare entry only, for everyone: no board query keys (tracking params do not count)', () => {
     expect(isBareEntry({})).toBe(true);
     expect(isBareEntry({ utm_source: 'newsletter', ref: 'x' })).toBe(true);
     expect(isBareEntry({ type: '', q: '  ', sort: undefined, view: [] })).toBe(true);
@@ -21,30 +11,6 @@ describe('intro band gating', () => {
     expect(isBareEntry({ type: 'role' })).toBe(false);
     expect(isBareEntry({ q: ['', 'js'] })).toBe(false);
     expect(BOARD_QUERY_KEYS).toEqual(['type', 'q', 'sort', 'view', 'layer', 'metric']);
-  });
-
-  it('treats a Supabase auth cookie, whole or chunked, as signed in', () => {
-    expect(hasSessionCookie([{ name: 'sb-abcdefghij-auth-token', value: 'base64-x' }])).toBe(true);
-    expect(hasSessionCookie([{ name: 'sb-abcdefghij-auth-token.0', value: 'x' }, { name: 'sb-abcdefghij-auth-token.1', value: 'y' }])).toBe(true);
-    expect(hasSessionCookie([{ name: 'sb-abcdefghij-auth-token', value: '' }])).toBe(false);
-    expect(hasSessionCookie([{ name: 'sb-abcdefghij-auth-token-code-verifier', value: 'x' }])).toBe(false);
-    expect(hasSessionCookie([{ name: INTRO_COOKIE, value: '1' }, { name: 'sm-theme', value: 'dark' }])).toBe(false);
-    expect(hasSessionCookie([])).toBe(false);
-  });
-
-  it('remembers the band for 30 days, Secure on https only, without the brand in its name', () => {
-    expect(INTRO_COOKIE).toBe('intro_seen');
-    expect(INTRO_MAX_AGE).toBe(2_592_000);
-    expect(introSeenCookie(false)).toBe('intro_seen=1; Path=/; Max-Age=2592000; SameSite=Lax');
-    expect(introSeenCookie(true)).toBe('intro_seen=1; Path=/; Max-Age=2592000; SameSite=Lax; Secure');
-  });
-
-  it('finds the cookie in a document.cookie string by exact name', () => {
-    expect(hasIntroCookie('')).toBe(false);
-    expect(hasIntroCookie('intro_seen=1')).toBe(true);
-    expect(hasIntroCookie('a=b; intro_seen=1; c=d')).toBe(true);
-    expect(hasIntroCookie('a=b;intro_seen=')).toBe(true);
-    expect(hasIntroCookie('not_intro_seen=1; intro_seen_x=1')).toBe(false);
   });
 });
 
@@ -222,6 +188,141 @@ describe('skipSnap', () => {
     expect(skipSnap({ ...base, y: 400, target: 600, focus: { top: 500, bottom: 540 } })).toBe(false);
     // A tall focused region (the board section) that spans the move.
     expect(skipSnap({ ...base, focus: { top: 100, bottom: 4000 } })).toBe(false);
+  });
+});
+
+describe('wheel flip', () => {
+  const anchor = 600;
+
+  it('measures every delta mode in px', () => {
+    expect(wheelPixels(100, 0, 800)).toBe(100);
+    expect(wheelPixels(3, 1, 800)).toBe(48);
+    expect(wheelPixels(-1, 2, 800)).toBe(-800);
+  });
+
+  it('on the band, only a downward wheel flips, to the board', () => {
+    expect(wheelFlipTarget(0, anchor, 4)).toBe(anchor);
+    expect(wheelFlipTarget(1, anchor, 100)).toBe(anchor);
+    expect(wheelFlipTarget(0, anchor, -100)).toBeNull();
+  });
+
+  it('between the pages, the wheel direction decides at once', () => {
+    for (const y of [2, 47, 300, 598]) {
+      expect(wheelFlipTarget(y, anchor, 1)).toBe(anchor);
+      expect(wheelFlipTarget(y, anchor, -1)).toBe(0);
+    }
+  });
+
+  it('at the board top, only an upward wheel flips, to the band', () => {
+    for (const y of [599, 600, 601]) {
+      expect(wheelFlipTarget(y, anchor, -1)).toBe(0);
+      expect(wheelFlipTarget(y, anchor, 100)).toBeNull();
+    }
+  });
+
+  it('further down the board the wheel is native, unless one notch would carry the page back into the gap', () => {
+    expect(wheelFlipTarget(900, anchor, 100)).toBeNull();
+    expect(wheelFlipTarget(900, anchor, -100)).toBeNull();
+    expect(wheelFlipTarget(650, anchor, -50)).toBeNull();
+    expect(wheelFlipTarget(650, anchor, -51)).toBeNull();
+    expect(wheelFlipTarget(650, anchor, -52)).toBe(0);
+    expect(wheelFlipTarget(630, anchor, -100)).toBe(0);
+  });
+
+  it('leaves the wheel alone without a band that fits, and for sideways-only input', () => {
+    expect(wheelFlipTarget(0, null, 100)).toBeNull();
+    expect(wheelFlipTarget(300, null, -100)).toBeNull();
+    expect(wheelFlipTarget(0, 0, 100)).toBeNull();
+    expect(wheelFlipTarget(300, anchor, 0)).toBeNull();
+  });
+
+  it('a flip locks the wheel for the flip plus a quiet moment, and momentum keeps pushing the lock on', () => {
+    const first = wheelStep({ y: 0, anchor, dy: 6, now: 1000, lockUntil: -Infinity, flipMs: FLIP_MS });
+    expect(first).toEqual({ action: 'flip', to: anchor, lockUntil: 1000 + FLIP_MS + WHEEL_QUIET_MS });
+    // Momentum during the flip, then at the board top after it: swallowed, wherever the page is.
+    let lock = first.lockUntil;
+    for (const [now, y] of [[1100, 200], [1400, anchor], [1520, anchor], [1650, anchor], [1780, anchor]] as const) {
+      const step = wheelStep({ y, anchor, dy: 3, now, lockUntil: lock, flipMs: FLIP_MS });
+      expect(step.action, `t=${now}`).toBe('swallow');
+      expect(step.lockUntil).toBe(Math.max(lock, now + WHEEL_QUIET_MS));
+      lock = step.lockUntil;
+    }
+    expect(lock).toBe(1780 + WHEEL_QUIET_MS);
+    // A quiet moment later the wheel is the visitor's again: down scrolls the board, up flips back.
+    expect(wheelStep({ y: anchor, anchor, dy: 3, now: lock, lockUntil: lock, flipMs: FLIP_MS }).action).toBe('native');
+    expect(wheelStep({ y: anchor, anchor, dy: -3, now: lock, lockUntil: lock, flipMs: FLIP_MS })).toEqual({ action: 'flip', to: 0, lockUntil: lock + FLIP_MS + WHEEL_QUIET_MS });
+  });
+
+  it('under reduced motion the lock is only the quiet moment', () => {
+    expect(wheelStep({ y: 0, anchor, dy: 6, now: 50, lockUntil: -Infinity, flipMs: 0 }).lockUntil).toBe(50 + WHEEL_QUIET_MS);
+  });
+
+  it('native wheel input does not touch the lock', () => {
+    expect(wheelStep({ y: 900, anchor, dy: 50, now: 5000, lockUntil: 10, flipMs: FLIP_MS })).toEqual({ action: 'native', lockUntil: 10 });
+  });
+});
+
+describe('touch flip', () => {
+  const anchor = 600; // threshold 48
+
+  it('from the band: a threshold or more down flips to the board, less snaps back', () => {
+    expect(touchTarget({ startY: 0, y: 20, anchor })).toBe(0);
+    expect(touchTarget({ startY: 0, y: 47, anchor })).toBe(0);
+    expect(touchTarget({ startY: 0, y: 48, anchor })).toBe(anchor);
+    expect(touchTarget({ startY: 0, y: 500, anchor })).toBe(anchor);
+  });
+
+  it('from the board: a threshold or more up flips to the band, less snaps back', () => {
+    expect(touchTarget({ startY: anchor, y: anchor - 20, anchor })).toBe(anchor);
+    expect(touchTarget({ startY: anchor, y: anchor - 48, anchor })).toBe(0);
+    // Dragged up from further down the board: measured from the board's top.
+    expect(touchTarget({ startY: anchor + 400, y: anchor - 30, anchor })).toBe(anchor);
+    expect(touchTarget({ startY: anchor + 400, y: anchor - 60, anchor })).toBe(0);
+  });
+
+  it('leaves the page to the browser when the finger lifts on a page or past the board top', () => {
+    expect(touchTarget({ startY: 0, y: 0, anchor })).toBeNull();
+    expect(touchTarget({ startY: 0, y: -30, anchor })).toBeNull();
+    expect(touchTarget({ startY: 0, y: anchor, anchor })).toBeNull();
+    expect(touchTarget({ startY: 0, y: anchor + 80, anchor })).toBeNull();
+    expect(touchTarget({ startY: anchor + 400, y: anchor + 10, anchor })).toBeNull();
+  });
+
+  it('a touch that caught our flip mid-way goes the way the finger moved', () => {
+    expect(touchTarget({ startY: 300, y: 310, anchor })).toBe(anchor);
+    expect(touchTarget({ startY: 300, y: 290, anchor })).toBe(0);
+    // A tap that did not move: the nearer page.
+    expect(touchTarget({ startY: 200, y: 200, anchor })).toBe(0);
+    expect(touchTarget({ startY: 400, y: 400, anchor })).toBe(anchor);
+  });
+
+  it('does nothing without a band that fits', () => {
+    expect(touchTarget({ startY: 0, y: 100, anchor: null })).toBeNull();
+    expect(touchTarget({ startY: 0, y: 1, anchor: 2 })).toBeNull();
+  });
+});
+
+describe('flip tween', () => {
+  it('eases out cubically and clamps', () => {
+    expect(easeOutCubic(0)).toBe(0);
+    expect(easeOutCubic(1)).toBe(1);
+    expect(easeOutCubic(0.5)).toBeCloseTo(0.875);
+    expect(easeOutCubic(-1)).toBe(0);
+    expect(easeOutCubic(2)).toBe(1);
+  });
+
+  it('runs about 420ms, most of the way in the first third', () => {
+    expect(FLIP_MS).toBeGreaterThanOrEqual(380);
+    expect(FLIP_MS).toBeLessThanOrEqual(450);
+    expect(tweenAt(0, 600, 0, FLIP_MS)).toBe(0);
+    expect(tweenAt(0, 600, FLIP_MS / 3, FLIP_MS)).toBeGreaterThan(400);
+    expect(tweenAt(600, 0, FLIP_MS / 2, FLIP_MS)).toBeCloseTo(75);
+    expect(tweenAt(0, 600, FLIP_MS, FLIP_MS)).toBe(600);
+    expect(tweenAt(0, 600, FLIP_MS + 50, FLIP_MS)).toBe(600);
+  });
+
+  it('jumps straight there under reduced motion', () => {
+    expect(tweenAt(0, 600, 0, 0)).toBe(600);
   });
 });
 

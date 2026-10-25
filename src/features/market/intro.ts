@@ -1,11 +1,7 @@
-// First-visit intro band on top of the /market board: who sees it, the cookie
-// that remembers it was seen, and the "page flip" between band and board.
-// Pure functions only, so the rules are unit-tested without a browser.
+// The landing band on top of the /market board: when it shows, and the "page
+// flip" between band and board. Pure functions only, so the rules are
+// unit-tested without a browser.
 
-/** Present once a visitor has seen the band. Brand-free on purpose. */
-export const INTRO_COOKIE = 'intro_seen';
-/** 30 days; refreshed on every visit, so only visitors gone longer see the band again. */
-export const INTRO_MAX_AGE = 60 * 60 * 24 * 30;
 /** The board section the band flips to (and the no-JS anchor target). */
 export const BOARD_ANCHOR_ID = 'board';
 export const INTRO_ID = 'intro';
@@ -13,47 +9,12 @@ export const INTRO_ID = 'intro';
 /** Board query keys that make a /market URL a deep link rather than the bare entry. */
 export const BOARD_QUERY_KEYS = ['type', 'q', 'sort', 'view', 'layer', 'metric'] as const;
 
-/** Whether `/market` was opened bare: none of the board's own query keys carry a value (tracking params don't count). */
+/** Whether `/market` was opened bare, which shows the band: none of the board's own query keys carry a value (tracking params don't count). */
 export function isBareEntry(sp: Record<string, string | string[] | undefined>): boolean {
   return BOARD_QUERY_KEYS.every(key => {
     const v = sp[key];
     return (Array.isArray(v) ? v : [v]).every(x => !x || !x.trim());
   });
-}
-
-/**
- * The band greets the bare entry only: signed-in visitors never see it, deep
- * links skip it (without marking it seen), and anonymous visitors see it until
- * the cookie exists.
- */
-export function shouldShowIntro({ signedIn, cookieValue, bareEntry }: { signedIn: boolean; cookieValue: string | undefined; bareEntry: boolean }): boolean {
-  return bareEntry && !signedIn && cookieValue === undefined;
-}
-
-/** Supabase SSR stores the session as `sb-<project-ref>-auth-token`, chunked as `.0`, `.1`, … when large. */
-const SUPABASE_AUTH_COOKIE = /^sb-[a-z0-9-]+-auth-token(?:\.\d+)?$/i;
-
-/**
- * Whether the request carries a Supabase session cookie. Presence is enough to
- * hide a cosmetic band; nothing here grants access, so no token verification.
- */
-export function hasSessionCookie(cookies: ReadonlyArray<{ name: string; value: string }>): boolean {
-  return cookies.some(c => c.value !== '' && SUPABASE_AUTH_COOKIE.test(c.name));
-}
-
-/** `document.cookie` assignment that (re)marks the band as seen for another 30 days. */
-export function introSeenCookie(secure: boolean): string {
-  return `${INTRO_COOKIE}=1; Path=/; Max-Age=${INTRO_MAX_AGE}; SameSite=Lax${secure ? '; Secure' : ''}`;
-}
-
-/** Browser only: (re)mark the band as seen. */
-export function markIntroSeen(): void {
-  document.cookie = introSeenCookie(window.location.protocol === 'https:');
-}
-
-/** Whether a `document.cookie` string contains the intro cookie. */
-export function hasIntroCookie(cookieString: string): boolean {
-  return cookieString.split(';').some(part => part.trim().split('=')[0] === INTRO_COOKIE);
 }
 
 /** Positions within this many px of a page edge count as on it (sub-pixel rounding of scroll offsets). */
@@ -131,6 +92,81 @@ export function settleStep(state: PagerState, { y, anchor, skip }: { y: number; 
   const target = flipTarget(y, anchor, restedAt);
   if (target === null || skip(target)) return { rest: { page: null, anchor }, pending: null, scrollTo: null };
   return { rest: { page: restedAt, anchor }, pending: target, scrollTo: target };
+}
+
+/** How long our own flip takes. */
+export const FLIP_MS = 420;
+/** Strong ease-out: the page leaves fast and lands softly. */
+export function easeOutCubic(t: number): number {
+  const c = Math.min(1, Math.max(0, t));
+  return 1 - (1 - c) ** 3;
+}
+/** The flip's scroll offset `elapsed` ms after it started; `duration` 0 (reduced motion) jumps straight there. */
+export function tweenAt(from: number, to: number, elapsed: number, duration: number): number {
+  if (!(duration > 0) || elapsed >= duration) return to;
+  return from + (to - from) * easeOutCubic(elapsed / duration);
+}
+
+/**
+ * After a wheel flip, wheel input stays swallowed until the flip has ended and
+ * no wheel event has arrived for this long: trackpad momentum belongs to the
+ * gesture that turned the page, so one gesture turns one page.
+ */
+export const WHEEL_QUIET_MS = 150;
+/** Pixels per line for `WheelEvent.DOM_DELTA_LINE` (Firefox mouse wheels). */
+const LINE_PX = 16;
+/** A wheel event's vertical delta in px, whatever unit it came in. */
+export function wheelPixels(deltaY: number, deltaMode: number, pageHeight: number): number {
+  if (deltaMode === 1) return deltaY * LINE_PX;
+  if (deltaMode === 2) return deltaY * pageHeight;
+  return deltaY;
+}
+
+/**
+ * Where one wheel event (`dy` px, positive = down) flips to, or null to let it
+ * scroll natively. Between the band and the board the wheel direction decides
+ * at once; on the band only a downward wheel flips; at the board's top only an
+ * upward one, and further down the board the wheel is native unless this one
+ * notch would carry the page back up into the gap.
+ */
+export function wheelFlipTarget(y: number, anchor: number | null, dy: number): number | null {
+  if (anchor === null || !(anchor > 2 * EDGE) || dy === 0) return null;
+  if (y <= EDGE) return dy > 0 ? anchor : null;
+  if (y < anchor - EDGE) return dy > 0 ? anchor : 0;
+  if (dy > 0) return null;
+  return y <= anchor + EDGE || y + dy < anchor - EDGE ? 0 : null;
+}
+
+/** One wheel event: scroll natively, swallow it (inside the lock), or flip; plus when the lock now ends. */
+export type WheelStep = { action: 'native' | 'swallow'; lockUntil: number } | { action: 'flip'; to: number; lockUntil: number };
+
+/**
+ * `now` and `lockUntil` are ms on one clock; `flipMs` is how long the flip
+ * about to start will take (0 under reduced motion). Inside the lock every
+ * wheel event is swallowed, wherever the page is, and pushes the lock on.
+ */
+export function wheelStep({ y, anchor, dy, now, lockUntil, flipMs }: { y: number; anchor: number | null; dy: number; now: number; lockUntil: number; flipMs: number }): WheelStep {
+  if (now < lockUntil) return { action: 'swallow', lockUntil: Math.max(lockUntil, now + WHEEL_QUIET_MS) };
+  const to = wheelFlipTarget(y, anchor, dy);
+  if (to === null) return { action: 'native', lockUntil };
+  return { action: 'flip', to, lockUntil: now + flipMs + WHEEL_QUIET_MS };
+}
+
+/**
+ * Where to flip when the finger lifts, or null to leave the page to the
+ * browser (it ended on a page, or past the board's top). The distance comes
+ * from the page the touch started on: at least `flipThreshold` off it turns
+ * to the other page, less snaps back. A touch that started mid-way (it caught
+ * our flip) goes the way the finger moved.
+ */
+export function touchTarget({ startY, y, anchor }: { startY: number; y: number; anchor: number | null }): number | null {
+  if (anchor === null || !(anchor > 2 * EDGE)) return null;
+  if (y <= EDGE || y >= anchor - EDGE) return null;
+  const from = restingPage(startY, anchor);
+  if (from) return flipTarget(y, anchor, from);
+  if (y > startY) return anchor;
+  if (y < startY) return 0;
+  return flipTarget(y, anchor, null);
 }
 
 /** Keyboard input this recent means the scroll was the user's (focus moves, arrow keys): leave it alone. */

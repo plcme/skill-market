@@ -8,7 +8,6 @@ import { APP_NAME } from '@/config/app';
 import { AppProvider } from '@/components/shell/app-provider';
 import { PREPAINT_SCRIPT } from '@/lib/prepaint';
 import { CommandPalette } from '@/components/shell/command-palette';
-import { IntroSeenRefresh } from '@/components/shell/intro-seen-refresh';
 import { MobileTabBar } from '@/components/shell/mobile-tabbar';
 import { PreviewDock } from '@/components/shell/preview-dock';
 import { SiteFooter } from '@/components/shell/site-footer';
@@ -45,7 +44,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <MobileTabBar />
             <PreviewDock />
             <CommandPalette />
-            <IntroSeenRefresh />
           </AppProvider>
         </NextIntlClientProvider>
       </body>
