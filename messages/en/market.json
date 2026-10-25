@@ -53,13 +53,6 @@
     "simpleBack": "Back to simple controls"
   },
   "Metrics": {
-    "switcher": "Measure",
-    "switcherHint": "Only measures that make sense for this type are listed.",
-    "groupDefault": "Default",
-    "groupCommon": "Common",
-    "groupAdvanced": "Advanced",
-    "showAdvanced": "More measures",
-    "hideAdvanced": "Fewer measures",
     "info": "What does {metric} mean?",
     "fields": {
       "definition": "Definition",
@@ -300,6 +293,7 @@
   },
   "Heatmap": {
     "window": "Window {start} – {end}.",
+    "captionSourced": "{caption}. {source}. {window}",
     "tileLabel": "{name}: {ads} job ads, {dir, select, up {up {change}} down {down {change}} other {no change}} in 4 weeks ({from} → {to}).",
     "tileLabelThin": "{name}: {ads} job ads. Too few ads (under {min}) to show a 4-week change.",
     "thinShort": "Too few ads",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseStoredTheme, resolveTheme, THEME_SCRIPT, toggledTheme } from '../src/lib/theme';
-import { accountLinks, accountMenuLinks, deskFor, mobileMenuLinks, PRIMARY_NAV } from '../src/components/shell/nav-model';
+import { accountLinks, accountMenuLinks, deskFor, isCurrent, mobileMenuLinks, PRIMARY_NAV } from '../src/components/shell/nav-model';
 import type { Session } from '../src/lib/api/types';
 
 describe('two-state theme', () => {
@@ -45,8 +45,16 @@ describe('two-state theme', () => {
 describe('navigation model', () => {
   const student = { active: 'student', personas: ['student'] } as unknown as Session;
   const practitioner = { active: 'practitioner', personas: ['practitioner'] } as unknown as Session;
-  it('keeps the primary nav to Market and People', () => {
-    expect(PRIMARY_NAV.map(l => l.href)).toEqual(['/market', '/people']);
+  it('keeps the primary nav to Market and People, Market going straight to the board', () => {
+    expect(PRIMARY_NAV.map(l => l.href)).toEqual(['/market#board', '/people']);
+  });
+  it('marks Market current anywhere on /market, and an in-page link only by its own path', () => {
+    const market = PRIMARY_NAV[0];
+    expect(isCurrent('/market', market)).toBe(true);
+    expect(isCurrent('/market/x', market)).toBe(true);
+    expect(isCurrent('/marketing', market)).toBe(false);
+    expect(isCurrent('/people', market)).toBe(false);
+    expect(isCurrent('/me', { href: '/me#watchlist', key: 'watchlist' })).toBe(false);
   });
   it('puts the desk first in the account menu, once', () => {
     const desk = deskFor(student);
@@ -57,7 +65,7 @@ describe('navigation model', () => {
     expect(accountMenuLinks(null)).toEqual([]);
   });
   it('mobile menu sheet keeps to the primary nav (desk and account live in the account menu)', () => {
-    expect(mobileMenuLinks(student).map(l => l.href)).toEqual(['/market', '/people']);
-    expect(mobileMenuLinks(null).map(l => l.href)).toEqual(['/market', '/people']);
+    expect(mobileMenuLinks(student).map(l => l.href)).toEqual(['/market#board', '/people']);
+    expect(mobileMenuLinks(null).map(l => l.href)).toEqual(['/market#board', '/people']);
   });
 });

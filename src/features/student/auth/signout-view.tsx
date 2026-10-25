@@ -38,7 +38,7 @@ export function SignOutView() {
           <>
             <Button asChild><Link href="/market">{t('toMarket')}</Link></Button>
             {!deleted ? <Button asChild variant="outline"><Link href="/auth/login">{t('signInAgain')}</Link></Button> : null}
-            <Button asChild variant="ghost"><Link href="/">{t('toHome')}</Link></Button>
+            <Button asChild variant="ghost"><Link href="/market">{t('toHome')}</Link></Button>
           </>
         }
       >

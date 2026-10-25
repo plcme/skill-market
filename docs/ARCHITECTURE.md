@@ -180,13 +180,15 @@ Supabase 免费档允许 2 个项目，正好一 prod 一 dev。migration 通过
 
 ### 4.1 路由与信息架构
 
-> 现状（2026-10-23，FE-R7）：前端是完整可交互的原型，数据来自合成市场引擎 + 浏览器内演示后端（`src/lib/demo/store.ts`，localStorage），尚未接 Supabase。前后端契约见 `docs/FRONTEND_API_REPORT.md`；视觉与交互以 `docs/DESIGN.md` 为准，本节只记路由。
+> 现状（2026-10-25，FE-R8）：前端是完整可交互的原型，数据来自合成市场引擎 + 浏览器内演示后端（`src/lib/demo/store.ts`，localStorage），尚未接 Supabase。前后端契约见 `docs/FRONTEND_API_REPORT.md`；视觉与交互以 `docs/DESIGN.md` 为准，本节只记路由。
 
 ```
-/                                  首页：搜索 + 行业热力图 + 信号卡轮播（未登录可用）
+/                                  307 → /market（保留查询参数，同一跳去掉旧 ?f=）；没有单独的首页
 /market?type=watching|all|skill|role|industry&metric=&layer=&q=
                                    行情表。没有筛选，固定 All Australia · All levels · 任意 work rights；
                                    旧链接的 ?f= 重定向去掉。Watching 标签在最前（书签 + 数量）
+                                   不带参数时盘面上方永远有开场区块（标语 + 行业热力图，DESIGN.md §4）；
+                                   wordmark → /market 顶部，nav 的 Market → /market#board
 /s/[slug] · /r/[slug] · /i/[slug]  技能 / 岗位 / 行业详情页：一张图 + Statistics。
                                    ?metric= 同时驱动 Right now 与大图；?by= 拆分（默认不拆）；?f= 筛选，
                                    入口是标题里的 "in …"

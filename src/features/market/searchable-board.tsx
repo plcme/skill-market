@@ -26,14 +26,12 @@ export function SearchableBoard({ initial, query, watching, view, resetHref, all
           <WatchingBoard rows={board.rows} filter={filter} metric={board.metric} view={view} q={q} allHref={allHref} resetHref={resetHref} />
         ) : (
           <>
-            <p className="num mt-5 text-[13px] text-muted" aria-live="polite">
+            <p className="sr-only" aria-live="polite">
               {t(`count.${type}`, { n: board.rows.length })}
-              {' · '}
-              {t('signalCount', { n: board.signals })}
               {q ? <>{' · '}{t('matching', { q })}</> : null}
             </p>
 
-            <div className="mt-2">
+            <div className="mt-5">
               {board.rows.length === 0 ? (
                 <EmptyState
                   icon={SearchX}

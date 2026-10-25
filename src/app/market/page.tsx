@@ -7,20 +7,24 @@ import { ArrowRight, Bookmark } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getBoard } from '@/lib/queries/market';
 import { Container } from '@/components/ui/primitives';
-import { MetricSwitcher } from '@/components/market/metric-switcher';
 import { SearchableBoard } from '@/features/market/searchable-board';
-import { BoardTextFilter, BoardViewControls, SharedMetricSelect, SkillLayerSwitch } from '@/features/market/board-controls';
+import { BoardTextFilter, BoardViewControls, SkillLayerSwitch } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
 import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
 import { WatchingTabCount } from '@/features/market/watching-board';
+import { BOARD_ANCHOR_ID } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
+
+// Board type tabs, Watching included.
+const TAB = 'shrink-0 border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-colors sm:text-[26px]';
+const TAB_CURRENT = 'border-ink text-ink';
+const TAB_OTHER = 'border-transparent text-muted hover:text-ink';
 
 export async function generateMetadata({ searchParams }: PageProps<'/market'>): Promise<Metadata> {
   const t = await getTranslations('MarketPage');
   const type = parseBoardType((await searchParams).type);
   return { title: t(`metaTitle.${type}`), description: t('metaDescription') };
 }
-
 
 export default async function MarketPage({ searchParams }: PageProps<'/market'>) {
   const t = await getTranslations('MarketPage');
@@ -44,11 +48,10 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
 
   return (
     <Container className="pb-20">
-      <h1 className="sr-only">{t('title')}</h1>
-
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
       <CompareSelectionProvider key={tab}>
-      <section aria-labelledby="board-h" className="pt-8 sm:pt-12">
+      {/* Scroll margin = sticky header (h-16 + 1px rule), so #board lands just under it; focusable so the band's link can move focus here. */}
+      <section id={BOARD_ANCHOR_ID} tabIndex={-1} aria-labelledby="board-h" className="scroll-mt-[65px] pt-8 outline-none sm:pt-12">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
         <div className="border-b border-rule">
           {/* Scrolls sideways at narrow widths; the nav (not the tabs) overlaps the rule so nothing overflows vertically. */}
@@ -56,12 +59,9 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
             <Link
               href={typeHref('watching')}
               aria-current={tab === 'watching' ? 'page' : undefined}
-              className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 border-b-2 pb-2.5 text-[14px] font-medium leading-none transition-colors sm:text-[15px]',
-                tab === 'watching' ? 'border-ink text-ink' : 'border-transparent text-ink-2 hover:text-ink',
-              )}
+              className={cn(TAB, 'inline-flex items-baseline gap-1.5 sm:gap-2', tab === 'watching' ? TAB_CURRENT : TAB_OTHER)}
             >
-              <Bookmark className="size-3.5" aria-hidden />
+              <Bookmark className="size-[15px] sm:size-5" strokeWidth={1.75} aria-hidden />
               {t('types.watching')}
               <Suspense fallback={null}><WatchingTabCount /></Suspense>
             </Link>
@@ -71,10 +71,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
                 key={k}
                 href={typeHref(k)}
                 aria-current={k === tab ? 'page' : undefined}
-                className={cn(
-                  'shrink-0 border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-colors sm:text-[26px]',
-                  k === tab ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink',
-                )}
+                className={cn(TAB, k === tab ? TAB_CURRENT : TAB_OTHER)}
               >
                 {t(`types.${k}`)}
               </Link>
@@ -91,9 +88,6 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
         <Suspense fallback={<div className="mt-4 h-8" />}>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <BoardTextFilter initial={q} className="w-full sm:w-80" />
-            {type === 'all'
-              ? <SharedMetricSelect value={board.metric} />
-              : <MetricSwitcher type={type} value={board.metric} />}
             <BoardViewControls sort={sort} view={view} />
             <CompareModeToggle className="lg:ml-auto" />
           </div>

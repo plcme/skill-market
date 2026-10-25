@@ -80,7 +80,7 @@
 
 | 角色 | 字号 | 写法 |
 |---|---|---|
-| 首页大标题 | 46 / 64 / 76 px（手机 / sm / lg） | `.display` |
+| 开场区块大标题 | 46 / 64 / 76 px（手机 / sm / lg） | `.display` |
 | 页面 h1 | 40 / 56 px | `PageHeader` |
 | 大数字（主卡） | 56 / 64 px | `.serif-num`，`leading-[0.9]` |
 | 主区块标题 h2（详情页 Statistics） | 32 / 40 px | `SectionHeader size="lg"` |
@@ -106,6 +106,7 @@
 - **圆角**：小控件 3–5px，卡片 `rounded-md`（6px），胶囊和头像用 `rounded-full`。不使用大圆角。
 - **分隔**：用 `border-rule` 细线分隔，不用阴影和色块分隔。
 - **网格**：详情页首屏在 lg 下按 5 : 7 分成"数字区"和"图表区"，手机上纵向堆叠。
+- **开场区块**（FE-R8，2026-10-25 改）：没有单独的首页，`/` 直接进 `/market`。不带参数的 `/market` 最上面永远是一屏开场（所有人，不分登录、不记次数）：标语 + lede + 行业热力图，主按钮 "Explore the market" 翻到盘面，次按钮 "Personalise"。高度不超过一屏（扣掉行情条、吸顶 header、手机 tab bar），盘面的类型 tabs 从底部露出来，让"往下滑"直接滑进盘面。小屏放不下热力图时隐藏热力图块。深链接（带 `type` / `q` 等参数）不显示开场。点 wordmark 永远回到开场顶部；nav 的 Market 去 `/market#board`，直接落在盘面。盘面之外不放"今日信号"、榜单预览之类和盘面重复的内容；盘面工具栏不放度量下拉和"N skills… · M with signals"计数行（固定 Demand）。
 
 ## 5. 组件
 
@@ -118,7 +119,7 @@
   - 其余动作用 `subtle`、`outline` 或 `ghost`。
   - `signal` 按钮只出现在信号相关的入口。
   - 危险操作用 `danger`，并且必须二次确认。
-- **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接，或一个覆盖全卡、带 `aria-label` 的 absolute 链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。首页 movers 卡片、详情页 Statistics 格子都按此处理（点 Statistics 格子 = 把该度量切到顶部 "Right now" 并滚回去）。当前选中的格子整格用 `bg-picked` 着色并加 2px 墨色内边框，不只顶边一条线；`--picked` 上正文 ≥ 4.5:1、涨跌大数字 ≥ 3:1（`tests/theme-contrast.test.ts`）。其他格子 hover 只用浅 `bg-sunken/50`。
+- **整卡可点**：用 stretched link（`relative` 的卡片 + 一个 `after:absolute after:inset-0` 的链接，或一个覆盖全卡、带 `aria-label` 的 absolute 链接），只保留一个可访问链接；卡内的 ⓘ 等按钮加 `relative z-10` 浮在链接之上。要有 hover 态和焦点环。详情页 Statistics 格子按此处理（点 Statistics 格子 = 把该度量切到顶部 "Right now" 并滚回去）。当前选中的格子整格用 `bg-picked` 着色并加 2px 墨色内边框，不只顶边一条线；`--picked` 上正文 ≥ 4.5:1、涨跌大数字 ≥ 3:1（`tests/theme-contrast.test.ts`）。其他格子 hover 只用浅 `bg-sunken/50`。
 - **标的符号框**：统一用 `InstrumentMark`（`src/components/market/instrument-mark.tsx`）。Skills and tools with a recognisable logo show it, monochrome in ink, in the symbol box; everything else keeps letters. Logos identify the technology only (nominative use), never brand colours; drop a logo if its owner objects. 标志来自 Simple Icons（CC0），映射表在 `src/lib/market/logos.ts`，只收录图标集里确实存在的那一项技术；role、industry 永远用字母。符号框是装饰（`aria-hidden`），名称总在旁边。
 - **数字**：一律通过 `MetricValue` 和 `MetricInfo` 渲染，不要裸写数字。
 - **涨跌**：用 `ChangeBadge`，它永远显示原始计数 from → to。
@@ -179,10 +180,11 @@
 | `tape` | 110s 线性循环 | 顶部行情滚动条，**全站唯一的循环动画** |
 | `live-dot` | 2s 呼吸 | "数据仍在更新"的小圆点 |
 | 按钮按下 | 150ms，`translate-y-px` | 按压反馈 |
+| 翻页 | 约 420ms，easeOutCubic（rAF 补间） | 开场区块 ↔ 盘面：滚轮 / 触控板一动就翻，一次手势一页（动画期间吞掉惯性）；手机松手瞬间按方向判断，滑出 `min(48px, 10% 距离)` 就翻，否则回原页 |
 
 规则：
 - 动效只用来表达数据或状态的变化：数字切换、图表随筛选重绘、新信号出现。
-- 不做视差，不做无意义的滚动劫持，不做弹跳。
+- 不做视差，不做无意义的滚动劫持，不做弹跳。**唯一例外是开场区块 ↔ 盘面的翻页**（用户明确要求，2026-10-25）：只在两页之间那一段拦截滚轮，进了盘面完全原生滚动；触摸不拦截拖动，只在松手后接管；缩放、横向、弹层与内部滚动区不拦截；键盘操作（按键或焦点移动后 600ms 内）不翻页，焦点不会被滚到屏幕外；开场区块比屏幕高时关闭；遵守 reduced motion（直接跳）。
 - 所有动效必须遵守 `prefers-reduced-motion`；全局已经关闭动画，新代码也不要绕过它。
 - 第 1 轮反馈里的三项要等用户提供参考后再设计，届时在这里补规范：live data 动画、滚动效果、模仿推特书签里的交互。**待定**。
 

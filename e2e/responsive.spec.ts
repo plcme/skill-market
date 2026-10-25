@@ -58,6 +58,16 @@ for (const path of PUBLIC) {
   });
 }
 
+test.describe('landing', () => {
+  test('responsive: /market landing band fits one screen with the board tabs peeking, and passes axe', async ({ page }) => {
+    await page.goto('/market');
+    await expect(page.getByRole('heading', { level: 2, name: /A stock market for skills/ })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+    await noHorizontalOverflow(page);
+    await noSeriousAxe(page);
+  });
+});
+
 test('responsive: signed-in demo routes fit the viewport and pass axe', async ({ page }) => {
   test.setTimeout(120_000);
   await loadSampleStudent(page);

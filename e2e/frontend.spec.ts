@@ -75,8 +75,8 @@ test('signed-out visitors are asked to sign in on private pages', async ({ page 
 });
 
 test.describe('market board', () => {
-  test('opens on All with name search and no whole-board filter or A–Z pills', async ({ page }) => {
-    await page.goto('/market');
+  test('opens on All with name search and no whole-board filter, A–Z pills, measure select or count line', async ({ page }) => {
+    await page.goto('/market#board');
     const tabs = page.getByRole('navigation', { name: 'Instrument type' });
     await expect(tabs.getByRole('link')).toHaveText(['Watching', 'All', 'Skills', 'Roles', 'Industries']);
     await expect(tabs.getByRole('link', { name: 'All' })).toHaveAttribute('aria-current', 'page');
@@ -87,8 +87,12 @@ test.describe('market board', () => {
     await expect(page.getByLabel('Filter this board by name')).toBeVisible();
     await page.goto('/market?type=skill&sort=az');
     await expect(page.getByText('Job ads', { exact: true }).filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Measure:\s*Demand/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Measure/ })).toHaveCount(0);
+    await expect(page.getByRole('combobox', { name: 'Measure' })).toHaveCount(0);
+    await expect(page.getByText(/with signals?\b/)).toHaveCount(0);
     await expect(page.getByRole('radio', { name: 'By measure' })).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByRole('radio', { name: 'List' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Compare$/ })).toBeVisible();
   });
 
   test('Demand column definition explains share of ads without an unnamed figure', async ({ page }) => {
@@ -147,6 +151,8 @@ test('primary nav is Market and People; Sources sits in the footer', async ({ pa
   test.skip(info.project.name === 'mobile', 'Primary nav is in the menu sheet on phones');
   const nav = page.getByRole('banner').getByRole('navigation', { name: 'Main' });
   await expect(nav.getByRole('link')).toHaveText(['Market', 'Coffee chats']);
+  await expect(nav.getByRole('link', { name: 'Market' })).toHaveAttribute('href', '/market#board');
+  await expect(nav.getByRole('link', { name: 'Market' })).toHaveAttribute('aria-current', 'page');
 });
 
 test('account menu contains one desk entry at every width', async ({ page }) => {
@@ -174,6 +180,197 @@ test('settings offer Light / Dark and a way back to matching the device', async 
   expect(await page.evaluate(() => localStorage.getItem('sm-theme'))).toBeNull();
 });
 
+test.describe('landing', () => {
+  const INTRO = /A stock market for skills/;
+  const scrollY = (page: Page) => page.evaluate(() => window.scrollY);
+
+  test('a deep link through / lands on its board tab without the band', async ({ page }) => {
+    await page.goto('/?type=role');
+    await expect(page).toHaveURL(/\/market\?type=role$/);
+    await expect(page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Roles' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('heading', { name: INTRO })).toHaveCount(0);
+  });
+
+  test('the bare entry always shows the band, signed in or not, with the board tabs peeking below it', async ({ page, context, baseURL }) => {
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/market$/);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Explore the market' })).toHaveAttribute('href', '#board');
+    await expect(page.getByRole('link', { name: 'Personalise' })).toHaveAttribute('href', '/onboarding');
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeVisible();
+    await context.addCookies([{ name: 'sb-test-auth-token', value: 'x', url: baseURL }]);
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeVisible();
+  });
+
+  test('one wheel turn flips between the band and the board; further down the board the wheel is native', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/market');
+    await page.waitForLoadState('networkidle');
+    const box = page.viewportSize();
+    await page.mouse.move((box?.width ?? 800) / 2, (box?.height ?? 600) / 2);
+    await page.mouse.wheel(0, 100);
+    await expect.poll(() => scrollY(page)).toBeGreaterThan(100);
+    const anchor = await scrollY(page);
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+    // Past the wheel lock, one turn up goes back to the band.
+    await page.waitForTimeout(300);
+    await page.mouse.wheel(0, -100);
+    await expect.poll(() => scrollY(page)).toBe(0);
+    await page.waitForTimeout(300);
+    await page.mouse.wheel(0, 100);
+    await expect.poll(() => scrollY(page)).toBe(anchor);
+    // On the board, down is native.
+    await page.waitForTimeout(300);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => scrollY(page)).toBe(anchor + 400);
+    await page.waitForTimeout(400);
+    expect(await scrollY(page)).toBe(anchor + 400);
+  });
+
+  test('changing the board in place keeps the band and the scroll position', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/market');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('link', { name: 'Explore the market' }).click();
+    await expect.poll(() => scrollY(page)).toBeGreaterThan(100);
+    const anchor = await scrollY(page);
+    await page.waitForTimeout(700);
+    await page.getByLabel('Filter this board by name').fill('data');
+    await expect(page).toHaveURL(/\/market\?q=data$/);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(1);
+    expect(await scrollY(page)).toBe(anchor);
+    await page.getByRole('radio', { name: 'By change' }).click();
+    await expect(page).toHaveURL(/sort=change/);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(1);
+    expect(await scrollY(page)).toBe(anchor);
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+  });
+
+  test('a deep link keeps its board in place when the query turns bare; the wordmark brings the band', async ({ page }) => {
+    await page.goto('/market?q=data');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(0);
+    const search = page.getByLabel('Filter this board by name');
+    const before = (await search.boundingBox())?.y;
+    await search.fill('');
+    await expect(page).toHaveURL(/\/market$/);
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(0);
+    await expect(search).toBeInViewport();
+    expect((await search.boundingBox())?.y).toBe(before);
+    await page.getByRole('banner').locator('a[href="/market"]').click();
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeInViewport();
+    expect(await scrollY(page)).toBe(0);
+  });
+
+  test('Explore the market flips to the board; a scroll left mid-way settles the way it set off', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/market');
+    const scrollTo = (y: number) => page.evaluate(top => window.scrollTo(0, top), y);
+    await page.getByRole('link', { name: 'Explore the market' }).click();
+    await expect.poll(() => scrollY(page)).toBeGreaterThan(100);
+    const anchor = await scrollY(page);
+    await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
+    // Focus follows, like a native in-page anchor.
+    await expect(page.locator('#board')).toBeFocused();
+    // Snapping stays off for a moment after any focus move or key press.
+    await page.waitForTimeout(700);
+    // Scrolls that are not a wheel or a touch (scrollbar, find in page) settle. Resting on the board: 60px up flips, 20px springs back.
+    await scrollTo(anchor - 20);
+    await expect.poll(() => scrollY(page)).toBe(anchor);
+    await scrollTo(anchor - 60);
+    await expect.poll(() => scrollY(page)).toBe(0);
+    // Resting on the band: 20px down springs back, 60px down flips to the board.
+    await scrollTo(20);
+    await expect.poll(() => scrollY(page)).toBe(0);
+    await scrollTo(60);
+    await expect.poll(() => scrollY(page)).toBe(anchor);
+    // Past the board, scrolling is free.
+    await scrollTo(anchor + 200);
+    await page.waitForTimeout(400);
+    expect(await scrollY(page)).toBe(anchor + 200);
+  });
+
+  test('Market in the nav lands on the board under the band; the wordmark goes back to the top', async ({ page }, info) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/people');
+    const market = info.project.name === 'mobile'
+      ? page.getByRole('navigation', { name: 'Main' }).filter({ visible: true }).getByRole('link', { name: 'Market' })
+      : page.getByRole('banner').getByRole('link', { name: 'Market' });
+    await market.click();
+    await expect(page).toHaveURL(/\/market#board$/);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(1);
+    const board = page.getByRole('navigation', { name: 'Instrument type' });
+    await expect(board).toBeInViewport();
+    await expect.poll(() => scrollY(page)).toBeGreaterThan(100);
+    const anchor = await scrollY(page);
+    // The pager counts the jump as resting on the board: a small nudge up springs back rather than leaving it mid-way.
+    await page.waitForTimeout(700);
+    await page.evaluate(top => window.scrollTo(0, top), anchor - 20);
+    await expect.poll(() => scrollY(page)).toBe(anchor);
+    // The wordmark (named by APP_NAME, so found by its href), from deep in the board, goes back to the top of the landing.
+    const wordmark = page.getByRole('banner').locator('a[href="/market"]');
+    await page.evaluate(top => window.scrollTo(0, top), anchor + 900);
+    await wordmark.click();
+    await expect(page).toHaveURL(/\/market$/);
+    await expect.poll(() => scrollY(page)).toBe(0);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeInViewport();
+    // And from a board tab.
+    await page.goto('/market?type=role');
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await wordmark.click();
+    await expect(page).toHaveURL(/\/market$/);
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeInViewport();
+    expect(await scrollY(page)).toBe(0);
+  });
+
+  test('keyboard focus and arrow keys are never snapped away', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/market');
+    await page.getByRole('link', { name: 'Personalise' }).focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(800);
+    const y = await scrollY(page);
+    expect(y).toBeGreaterThan(0);
+    // Left mid-way, the band no longer counts as where the visitor rested: a nudge up goes to the nearer page, not the board.
+    await page.evaluate(top => window.scrollTo(0, top), Math.max(2, y - 10));
+    await expect.poll(() => scrollY(page)).toBe(0);
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(800);
+    await expect(page.locator(':focus')).toBeInViewport();
+  });
+
+  test('landing heatmap tiles are labelled links to industry pages', async ({ page }, info) => {
+    await page.goto('/market');
+    await expect(page.getByRole('table').filter({ hasText: 'Industries by job ads' })).toHaveCount(1);
+    test.skip(info.project.name === 'mobile', 'Tiles are hidden on phones; the table remains');
+    const map = page.getByRole('list', { name: /Industries by job ads/ }).filter({ visible: true });
+    const tile = map.getByRole('link', { name: /^Mining: [\d,]+ job ads/ });
+    await expect(tile).toBeVisible();
+    await expect(tile).toHaveAttribute('aria-label', /4.week|up|down|unchanged/i);
+    await tile.click();
+    await expect(page).toHaveURL(/\/i\/mining$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
+    await expect(page.getByText('ANZSIC Division B')).toBeVisible();
+  });
+});
+
+test.describe('landing without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('the band is in the HTML ahead of the board and visible', async ({ page }) => {
+    await page.goto('/market');
+    await expect(page.getByRole('heading', { level: 2, name: /A stock market for skills/ })).toBeVisible();
+    // Document order: the band, then the board (not streamed in afterwards).
+    await expect(page.locator('#intro ~ * #board')).toHaveCount(1);
+    await expect(page.getByRole('link', { name: 'Explore the market' })).toHaveAttribute('href', '#board');
+  });
+});
+
 test.describe('industries', () => {
   test('Industries tab lists ANZSIC divisions by Demand', async ({ page }) => {
     await page.goto('/market');
@@ -182,35 +379,8 @@ test.describe('industries', () => {
     // Follow the link directly: a click before hydration can be lost under load.
     await page.goto('/market?type=industry');
     await expect(page.getByRole('navigation', { name: 'Instrument type' }).getByRole('link', { name: 'Industries' })).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByRole('button', { name: /Measure:\s*Demand/ })).toBeVisible();
+    await expect(page.getByText('Job ads', { exact: true }).filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Health Care and Social Assistance' }).first()).toBeVisible();
-  });
-
-  test('landing heatmap tiles are labelled links to industry pages', async ({ page }) => {
-    await page.goto('/');
-    const map = page.getByRole('list', { name: /Industries by job ads/ }).filter({ visible: true });
-    const tile = map.getByRole('link', { name: /^Mining: [\d,]+ job ads/ });
-    await expect(tile).toBeVisible();
-    await expect(tile).toHaveAttribute('aria-label', /4.week|up|down|unchanged/i);
-    await expect(page.getByRole('table').filter({ hasText: 'Industries by job ads' })).toHaveCount(1);
-    await tile.click();
-    await expect(page).toHaveURL(/\/i\/mining$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
-    await expect(page.getByText('ANZSIC Division B')).toBeVisible();
-  });
-
-  test('movers carousel states its rule, advances and links to the instrument', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/');
-    await page.getByRole('button', { name: 'About Today’s signals' }).click();
-    await expect(page.getByText(/biggest 4-week changes, up or down/)).toBeVisible();
-    await page.keyboard.press('Escape');
-    const carousel = page.getByRole('region', { name: 'Biggest 4-week moves' });
-    const first = await carousel.getByRole('heading', { level: 3 }).textContent();
-    await expect(carousel.getByRole('heading', { level: 3 }).getByRole('link')).toHaveAttribute('href', /^\/(s|r|i)\/[a-z0-9-]+$/);
-    await carousel.getByRole('button', { name: 'Next move' }).click();
-    await expect(carousel.getByRole('heading', { level: 3 })).not.toHaveText(first ?? '');
-    await expect(carousel.getByText(/^Ads (mentioning|for|in) .+ (rose|fell) [\d,]+ → [\d,]+ in 4 weeks\.$/).first()).toBeVisible();
   });
 
   test('industry page shows skills as a heatmap and a labelled list, plus a way to talk', async ({ page }) => {
