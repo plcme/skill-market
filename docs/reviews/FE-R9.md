@@ -46,3 +46,39 @@
 - **未登录删除后只能靠 toast 里的 Undo 恢复**：toast 消失后没有入口可以撤回。目前可以接受，等 #14 有结论后一并考虑。
 - **Watch 按钮的可访问名称不带技能名**：Roles 和 Next steps 行里的 Watch 按钮只显示图标时，可访问名称只有 "Watch"，未登录时也一样，一列里会读出好几个相同的 "Watch"。这是 `WatchButton` 原有的问题，可以以后给它加 `aria-label`（带 `{name}`）。
 - **375px 布局未实测**：本轮没跑 e2e，也没有实际看页面。按代码推算，`grid-cols-[auto_minmax(0,1fr)_auto_auto]` 加上 `@container` 和 `@max-4xl:sr-only` 不会横向溢出，合并 main 前跑 `e2e/responsive.spec.ts` 时确认一下。
+
+## Round 2 — 退回
+
+审查范围：`git diff f3ab002..fe-r9`（d22e641、e276b98），对照第 1 轮的必须修复清单。不跑 e2e，也没有打开浏览器（主会话在 3009 端口自己验证）。
+
+验收命令结果：
+- `pnpm lint && pnpm typecheck`：通过，lint 0 错误，tsc 0 错误
+- `pnpm exec vitest run --maxWorkers=2`：通过，34 个文件，355 个测试通过，13 个 todo（新增 `tests/onboarding-board-skills.test.ts`）
+
+第 1 轮必须修复项的复核：
+1. **已修复。** 新的 `selectBoardSkills` 返回 `answered`，判断依据是"回答过问题"，与还剩几条建议无关。done 步骤的标题和 lede 改为按 `answered` 决定。`startColumn` 在"回答过但列表为空"时返回 `'none'`，整栏隐藏，`firstBody` 不再出现，Next steps 回退到 "Broad and quick to start"，这句话属实。已登录全部确认、未登录全部删除这两种情况都有测试。
+2. **已修复。** 已登录时 `anchors` 等于全部 `db.skills`（held 和 inferred 都在），并保留 `source`。`suggestNextSteps(anchors)` 会把 held 技能计入 owned，`rolesFromSkills` 里 held 技能的权重是 1。有测试验证 next steps 不包含 confirmed 或 self_reported 的技能。
+3. **已修复。** `SuggestionMeta` 只包 reason。nextEffort 和 nextUnitsTitle 已去掉包装，4 条 catalogue 已删除。测试改为直接匹配 id 字面量，并新增反向断言。
+
+第 1 轮的建议项：
+- `addedByUnits` 已排除 `removed_skills`，有测试。
+- 已登录 Undo 失败时会弹 warn toast。
+- 焦点管理在未登录时是对的，已登录时有问题，见下面阻断项 1。
+
+### 必须修复（阻断）
+
+1. **[src/features/student/onboarding/mini-board.tsx:59-64、84-96] 已登录删除时，`onRemoved()` 调用得太晚，删除后焦点不移动，而且留下的过期目标会在之后抢走焦点。**
+   - 时序：`removeSkill` 在 `transact` 里同步执行 `emit()`。`useSyncExternalStore` 因此安排了一次 SyncLane 重渲染，在微任务里 flush；SyncLane 的 passive effect 在 commit 末尾同步执行。这个微任务排在 `await remove(...)` 的续体之前。
+   - 所以 `[rowKeys]` effect 先运行，此时 `focusNext.current` 还是 `undefined`，直接返回。之后 `onRemoved()` 才把目标写进去，但 `rowKeys` 不会再变，这个目标就一直留着。
+   - 后果：
+     - 删除后焦点停在 `body`。按钮在 pending 期间是 `disabled`，焦点那时已经丢了。
+     - 用户随后点 toast 里的 Undo，`restoreSkill` 让 `rowKeys` 变化，effect 带着过期目标运行，焦点从 toast 跳到另一行的 X。
+     - 下一次删除也会用上一轮留下的目标。
+   - 未登录时不受影响：`onRemoved()` 在 `hideAnonymousSuggestion` 之前同步调用，effect 能正常消费目标。
+   - 为什么是问题：这是本轮新代码引入的可访问性错误（焦点被意外移走），比不做焦点处理还差。
+   - 怎么改：两种状态都在发起删除之前调用 `onRemoved()`，也就是放到 `await remove(...)` 之前；删除失败时把 `focusNext.current` 重置为 `undefined`，例如让 `onRemoved` 返回一个取消函数，或者额外传一个 `onFailed`。也可以在 Undo 和每次 effect 运行时都清空目标，保证目标只会被消费一次。主会话可以在 3009 上用键盘验证：已登录状态下 Tab 到第一行的 X，按 Enter，确认焦点落到下一行的 X；然后点 Undo，确认焦点不会跳走。
+
+### 建议（不阻断）
+
+- onboarding-flow.tsx:199 的 `useMemo(() => addedByUnits(state, picked), [state, picked])` 不起作用：`state` 每次渲染都是 `selectOnboarding` 返回的新对象。改成依赖 `state.degree_id`、`state.year`、`state.removed_skills`，或者直接去掉 memo。
+- 回答过但列表为空时，done 步骤的大标题仍是 "Your starting point"，下面却没有 starting point 列表，只有 lede 里的答案摘要和 Next steps。内容是真的，可以接受；如果觉得别扭，可以以后换一个更贴切的标题。
