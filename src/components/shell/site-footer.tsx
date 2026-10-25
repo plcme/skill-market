@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Container } from '@/components/ui/primitives';
+import { MARKET_BOARD_HREF } from './nav-model';
 import { Wordmark } from './wordmark';
 
 export function SiteFooter({ appName }: { appName: string }) {
   const t = useTranslations('Footer');
   const tn = useTranslations('Nav');
   const cols: Array<{ title: string; links: Array<[string, string]> }> = [
-    { title: t('product'), links: [['/market', tn('market')], ['/compare', tn('compare')], ['/people', tn('people')], ['/practitioner/join', t('practitioners')]] },
+    { title: t('product'), links: [[MARKET_BOARD_HREF, tn('market')], ['/compare', tn('compare')], ['/people', tn('people')], ['/practitioner/join', t('practitioners')]] },
     // Sources moved here from the primary nav (GLOSSARY §4 "Data & safety").
     {
       title: t('dataSafety'),
