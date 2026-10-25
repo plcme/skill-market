@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_QUERY_KEYS, easeOutCubic, FLIP_MS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, isBareEntry, isBareSearch, isZoomed, keepBand, KEYBOARD_QUIET_MS, restingPage, settleStep, skipSnap, touchTarget, tweenAt, UNKNOWN_REST, WHEEL_QUIET_MS, wheelFlipTarget, wheelPixels, wheelStep, type PagerState } from '@/features/market/intro';
+import { BOARD_QUERY_KEYS, easeOutCubic, FLIP_MS, FLIP_THRESHOLD_MAX, flipTarget, flipThreshold, bandStep, isBareEntry, isBareSearch, isZoomed, KEYBOARD_QUIET_MS, restingPage, settleStep, skipSnap, touchTarget, tweenAt, UNKNOWN_REST, WHEEL_QUIET_MS, wheelFlipTarget, wheelPixels, wheelStep, type PagerState } from '@/features/market/intro';
 import { marketEntryHref } from '@/features/market/logic';
 
 describe('landing band', () => {
@@ -21,21 +21,34 @@ describe('landing band', () => {
     expect(isBareSearch(new URLSearchParams('q=&q=js'))).toBe(false);
   });
 
-  it('stays on while the board changes the query in place; only a fresh deep link starts without it', () => {
-    // Bare entry, then search, sort and a tab: the band stays.
-    let shown = isBareSearch(new URLSearchParams(''));
-    for (const qs of ['q=d', 'q=dat', 'q=dat&sort=change', 'type=role&view=cards', '']) {
-      shown = keepBand(shown, isBareSearch(new URLSearchParams(qs)));
-      expect(shown, qs).toBe(true);
+  it('decides the band on entry only: bare entries get it, deep links do not', () => {
+    for (const shown of [true, false]) {
+      expect(bandStep(shown, { type: 'enter', bare: true })).toBe(true);
+      expect(bandStep(shown, { type: 'enter', bare: false })).toBe(false);
     }
-    // Fresh deep link: no band while the query stays deep, back once it is bare (the wordmark).
-    shown = isBareSearch(new URLSearchParams('type=role'));
+  });
+
+  it('never adds or removes the band for in-place query changes, whichever way the query goes', () => {
+    // Bare entry, then search, sort, a tab, and back to bare: the band stays.
+    let shown = bandStep(false, { type: 'enter', bare: isBareSearch(new URLSearchParams('')) });
+    for (let i = 0; i < 4; i++) {
+      shown = bandStep(shown, { type: 'query' });
+      expect(shown).toBe(true);
+    }
+    // Deep entry (/market?q=data), then clearing the search makes the query bare: still no band.
+    shown = bandStep(true, { type: 'enter', bare: isBareSearch(new URLSearchParams('q=data')) });
     expect(shown).toBe(false);
-    shown = keepBand(shown, isBareSearch(new URLSearchParams('type=role&sort=change')));
-    expect(shown).toBe(false);
-    shown = keepBand(shown, isBareSearch(new URLSearchParams('')));
-    expect(shown).toBe(true);
-    expect(keepBand(shown, false)).toBe(true);
+    for (let i = 0; i < 4; i++) {
+      shown = bandStep(shown, { type: 'query' });
+      expect(shown).toBe(false);
+    }
+  });
+
+  it('the wordmark always brings the band', () => {
+    expect(bandStep(false, { type: 'wordmark' })).toBe(true);
+    expect(bandStep(true, { type: 'wordmark' })).toBe(true);
+    // And later query changes keep it.
+    expect(bandStep(bandStep(false, { type: 'wordmark' }), { type: 'query' })).toBe(true);
   });
 });
 

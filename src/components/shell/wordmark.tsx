@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { flipToTop } from '@/features/market/intro-pager';
+import { showLanding } from '@/features/market/sticky-band';
 import { cn } from '@/lib/utils';
 
 /** The landing: the band on top of the bare board. */
@@ -21,8 +22,9 @@ export function LogoMark({ className }: { className?: string }) {
 
 /**
  * Always back to the top of the landing. Already on /market (scrolled into
- * the board, or on a board tab), the router keeps the scroll position, so the
- * page goes up itself: the band's flip when it is there, a jump otherwise.
+ * the board, or on a board tab), the layout stays mounted and the router keeps
+ * the scroll position, so the wordmark asks for the band itself and goes up:
+ * the band's flip when it is there, a jump otherwise.
  */
 export function Wordmark({ name, className }: { name: string; className?: string }) {
   const onMarket = usePathname() === LANDING_HREF;
@@ -32,6 +34,7 @@ export function Wordmark({ name, className }: { name: string; className?: string
       scroll={!onMarket}
       onClick={e => {
         if (!onMarket || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        showLanding();
         flipToTop();
       }}
       className={cn('group inline-flex items-center gap-2.5 rounded-[4px]', className)}

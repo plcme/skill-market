@@ -23,13 +23,24 @@ export function isBareSearch(params: { getAll(key: string): string[] }): boolean
 }
 
 /**
- * Whether the band stays on: it shows on a bare entry, stays while the board
- * changes the query in place (search, sort, layout, tabs), and comes back
- * whenever the query is bare again. Only a fresh load of a deep link starts
- * without it.
+ * What happens to the band. `enter`: the visitor came into /market (a fresh
+ * load, or a navigation from another route), with a bare query or not.
+ * `query`: the board changed the query in place (search, sort, layout,
+ * layer, tabs, clearing the search). `wordmark`: the wordmark was clicked.
  */
-export function keepBand(shownBefore: boolean, bare: boolean): boolean {
-  return shownBefore || bare;
+export type BandEvent = { type: 'enter'; bare: boolean } | { type: 'query' } | { type: 'wordmark' };
+
+/**
+ * Whether the band shows after `event`. Only entering /market decides it (band
+ * iff the entry URL is bare) and the wordmark always brings it; in-place query
+ * changes never add or remove it, so the controls never jump under the visitor.
+ */
+export function bandStep(shown: boolean, event: BandEvent): boolean {
+  switch (event.type) {
+    case 'enter': return event.bare;
+    case 'query': return shown;
+    case 'wordmark': return true;
+  }
 }
 
 /** Positions within this many px of a page edge count as on it (sub-pixel rounding of scroll offsets). */

@@ -249,6 +249,23 @@ test.describe('landing', () => {
     await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
   });
 
+  test('a deep link keeps its board in place when the query turns bare; the wordmark brings the band', async ({ page }) => {
+    await page.goto('/market?q=data');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(0);
+    const search = page.getByLabel('Filter this board by name');
+    const before = (await search.boundingBox())?.y;
+    await search.fill('');
+    await expect(page).toHaveURL(/\/market$/);
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(0);
+    await expect(search).toBeInViewport();
+    expect((await search.boundingBox())?.y).toBe(before);
+    await page.getByRole('banner').locator('a[href="/market"]').click();
+    await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeInViewport();
+    expect(await scrollY(page)).toBe(0);
+  });
+
   test('Explore the market flips to the board; a scroll left mid-way settles the way it set off', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/market');
@@ -339,6 +356,18 @@ test.describe('landing', () => {
     await expect(page).toHaveURL(/\/i\/mining$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Mining\s+in All Australia/);
     await expect(page.getByText('ANZSIC Division B')).toBeVisible();
+  });
+});
+
+test.describe('landing without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('the band is in the HTML ahead of the board and visible', async ({ page }) => {
+    await page.goto('/market');
+    await expect(page.getByRole('heading', { level: 2, name: /A stock market for skills/ })).toBeVisible();
+    // Document order: the band, then the board (not streamed in afterwards).
+    await expect(page.locator('#intro ~ * #board')).toHaveCount(1);
+    await expect(page.getByRole('link', { name: 'Explore the market' })).toHaveAttribute('href', '#board');
   });
 });
 
