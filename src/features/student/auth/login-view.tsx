@@ -13,6 +13,7 @@ import { Checkbox, Field, Input } from '@/components/ui/form';
 import { Card, Container, Divider, Kicker, Notice, PageSkeleton } from '@/components/ui/primitives';
 import { useAppName } from '@/components/shell/app-provider';
 import { useErrorText } from '../shared';
+import { ReviewText } from '@/features/dev/copy-review';
 
 function GoogleMark() {
   return (
@@ -26,6 +27,8 @@ function GoogleMark() {
 }
 
 type Sent = { email: string; token: string };
+
+const BENEFIT_REVIEW_ID = { b1: 'auth.login.benefit1', b3: 'auth.login.benefit3' } as const;
 
 /** `/auth/login`: magic link or (simulated) Google, 18+ and privacy notice first (FR-A1, FR-A2, FR-A6). */
 export function LoginView() {
@@ -82,22 +85,21 @@ export function LoginView() {
       <div className="max-w-xl">
         <Kicker>{t('kicker')}</Kicker>
         <h1 className="display mt-3 text-[40px] sm:text-[56px]">{t('title')}</h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-ink-2">{t('lede', { app: appName })}</p>
+        <p className="mt-4 text-[17px] leading-relaxed text-ink-2"><ReviewText id="auth.login.lede">{t('lede', { app: appName })}</ReviewText></p>
         <ul className="mt-8 flex flex-col gap-4 border-t border-rule pt-6">
-          {(['b1', 'b2', 'b3'] as const).map(k => (
+          {(['b1', 'b3'] as const).map(k => (
             <li key={k} className="flex gap-3 text-[15px] text-ink-2">
               <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
-              <span>{t(`benefits.${k}`)}</span>
+              <span><ReviewText id={BENEFIT_REVIEW_ID[k]}>{t(`benefits.${k}`)}</ReviewText></span>
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-[13px] text-muted">{t('free')}</p>
       </div>
 
       <Card className="h-fit p-5 sm:p-7">
         {signedIn && !sent ? (
           <div className="flex flex-col gap-4">
-            <Notice tone="success" title={t('alreadyTitle')}>{t('alreadyBody', { email: signedIn.email })}</Notice>
+            <Notice tone="success" title={t('alreadyTitle')}><ReviewText id="auth.login.alreadyBody">{t('alreadyBody', { email: signedIn.email })}</ReviewText></Notice>
             <div className="flex flex-wrap gap-2">
               <Button asChild><Link href={next || '/me'}>{t('goDesk')}<ArrowRight aria-hidden /></Link></Button>
               <Button asChild variant="ghost"><Link href="/auth/signout">{t('signOutInstead')}</Link></Button>
@@ -107,11 +109,11 @@ export function LoginView() {
           <div className="flex flex-col gap-4" aria-live="polite">
             <MailCheck className="size-7 text-accent" aria-hidden strokeWidth={1.5} />
             <h2 className="font-serif text-[28px] leading-tight">{t('sentTitle')}</h2>
-            <p className="break-words text-[15px] text-ink-2">{t('sentBody', { email: sent.email })}</p>
-            <p className="text-[13px] text-muted">{t('sentHint')}</p>
+            <p className="break-words text-[15px] text-ink-2"><ReviewText id="auth.login.sentBody">{t('sentBody', { email: sent.email })}</ReviewText></p>
+            <p className="text-[13px] text-muted"><ReviewText id="auth.login.sentHint">{t('sentHint')}</ReviewText></p>
             <div className="rounded-md border border-dashed border-rule bg-paper p-4">
               <p className="kicker">{t('previewKicker')}</p>
-              <p className="mt-1 text-[13px] text-ink-2">{t('previewBody')}</p>
+              <p className="mt-1 text-[13px] text-ink-2"><ReviewText id="auth.login.previewBody">{t('previewBody')}</ReviewText></p>
               <Button asChild variant="accent" className="mt-3 h-auto min-h-10 w-full whitespace-normal py-2 sm:w-auto">
                 <Link href={`/auth/callback?${new URLSearchParams({ token: sent.token, ...(next ? { next } : {}) }).toString()}`}>
                   <MailOpen aria-hidden />{t('openPreview')}
@@ -127,14 +129,14 @@ export function LoginView() {
         ) : (
           <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
             <h2 className="font-serif text-[26px] leading-tight">{t('formTitle')}</h2>
-            <Field label={t('email')} hint={t('emailHint')} error={fields.email ? errorText(fields.email) : undefined}>
+            <Field label={t('email')} error={fields.email ? errorText(fields.email) : undefined}>
               {({ id, describedBy, invalid }) => (
                 <Input id={id} type="email" autoComplete="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} placeholder={t('emailPlaceholder')} />
               )}
             </Field>
             <div className="flex flex-col gap-3 border-t border-rule pt-4">
               <div>
-                <Checkbox checked={age} onCheckedChange={v => setAge(v === true)} label={t('age')} description={t('ageHint')} aria-invalid={Boolean(fields.age_confirmed)} />
+                <Checkbox checked={age} onCheckedChange={v => setAge(v === true)} label={t('age')} description={<ReviewText id="auth.login.ageHint">{t('ageHint')}</ReviewText>} aria-invalid={Boolean(fields.age_confirmed)} />
                 {fields.age_confirmed ? <p className="ml-[30px] mt-1 text-[13px] font-medium text-danger">{errorText(fields.age_confirmed)}</p> : null}
               </div>
               <div>
@@ -142,7 +144,7 @@ export function LoginView() {
                   checked={privacy}
                   onCheckedChange={v => setPrivacy(v === true)}
                   label={t('privacy')}
-                  description={t.rich('privacyHint', { link: chunks => <Link href="/legal/privacy" className="link" target="_blank">{chunks}</Link> })}
+                  description={<ReviewText id="auth.login.privacyHint">{t.rich('privacyHint', { link: chunks => <Link href="/legal/privacy" className="link" target="_blank">{chunks}</Link> })}</ReviewText>}
                   aria-invalid={Boolean(fields.privacy_acknowledged)}
                 />
                 {fields.privacy_acknowledged ? <p className="ml-[30px] mt-1 text-[13px] font-medium text-danger">{errorText(fields.privacy_acknowledged)}</p> : null}
@@ -158,7 +160,6 @@ export function LoginView() {
             <Button variant="subtle" size="lg" loading={googleState.pending} onClick={onGoogle}>
               {!googleState.pending ? <GoogleMark /> : null}{t('google')}
             </Button>
-            <p className="text-[12.5px] text-muted">{t('googleNote')}</p>
           </form>
         )}
       </Card>

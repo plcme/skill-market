@@ -143,7 +143,8 @@
     "markWorked": "Mark as a role I’ve worked in",
     "workedAdded": "{name} added to roles you’ve worked in",
     "filterIncluded": "Saved with the current filter.",
-    "removed": "{name} removed"
+    "removed": "{name} removed",
+    "watchNamed": "Watch {name}"
   },
   "Errors": {
     "generic": "Something went wrong. Please try again.",
@@ -247,6 +248,7 @@
     "markWorked": "Mark as a role I’ve worked in",
     "workedAdded": "{name} added to roles you’ve worked in",
     "filterIncluded": "Saved with the current filter.",
-    "removed": "{name} removed"
+    "removed": "{name} removed",
+    "watchNamed": "Track {name}"
   }
 }
