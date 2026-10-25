@@ -10,7 +10,7 @@ import { useDB } from '@/lib/demo/store';
 import { useAction } from '@/lib/api/client';
 import { completeTier0, completeTier1, selectOnboarding, skipOnboarding, type OnboardingState } from '@/lib/api/onboarding';
 import type { StudyYear } from '@/lib/api/types';
-import { DEGREES, getDegree, getUniversity, inferSkillProfile, searchUnits, STUDY_YEARS, UNIVERSITIES, unitsFor } from '@/lib/demo/education';
+import { DEGREES, getDegree, getUniversity, searchUnits, STUDY_YEARS, UNIVERSITIES, unitsFor } from '@/lib/demo/education';
 import { getInstrument } from '@/lib/market/catalog';
 import { loginHref } from '@/lib/links';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,8 @@ import { PHONE_QUERY, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useAnonymousOnboarding, useErrorText } from '../shared';
-import { MiniBoard, type BoardSuggestion } from './mini-board';
+import { MiniBoard } from './mini-board';
+import { addedByUnits, selectBoardSkills } from './board-skills';
 import { ReviewText } from '@/features/dev/copy-review';
 
 type Step = 'basics' | 'start' | 'units' | 'done';
@@ -195,9 +196,7 @@ function UnitsForm({ state, onDone, onSkip, onBack, skipping }: {
   const [save, saving] = useAction(completeTier1);
   const uni = getUniversity(state.university_id);
   const units = searchUnits(state.university_id, q);
-  const base = useMemo(() => inferSkillProfile({ degree_id: state.degree_id, year: state.year, unit_codes: [] }), [state.degree_id, state.year]);
-  const withUnits = useMemo(() => inferSkillProfile({ degree_id: state.degree_id, year: state.year, unit_codes: picked }), [state.degree_id, state.year, picked]);
-  const added = withUnits.filter(s => !base.some(b => b.skill_slug === s.skill_slug)).length;
+  const added = useMemo(() => addedByUnits(state, picked), [state, picked]);
   const toggle = (code: string) => setPicked(p => (p.includes(code) ? p.filter(c => c !== code) : [...p, code]));
 
   if (!uni?.has_units) {
@@ -286,13 +285,7 @@ export function OnboardingFlow() {
   const go = (s: Step) => router.push(s === 'basics' ? '/onboarding' : `/onboarding?step=${s}`, { scroll: true });
   const degree = getDegree(state.degree_id);
   const uni = getUniversity(state.university_id);
-  // Signed in: the profile's stored suggestions, so a removal shows at once.
-  // Signed out: a fresh inference minus what was removed on this device.
-  const suggestions: BoardSuggestion[] = state.signed_in
-    ? db.skills.filter(s => s.source === 'inferred').sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)).map(row => ({ skill_slug: row.skill_slug, confidence: row.confidence, reason: row.reason, row }))
-    : hasBasics || state.unit_codes.length
-      ? inferSkillProfile({ degree_id: state.degree_id, year: state.year, unit_codes: state.unit_codes }).filter(s => !state.removed_skills.includes(s.skill_slug))
-      : [];
+  const board = selectBoardSkills(state, db.skills);
   const context = degree && state.year ? t('context', { degree: degree.name, year: t(`yearsShort.${state.year}`), university: uni?.short ?? '' }) : null;
   const doSkip = async (tier: 'tier0' | 'tier1') => {
     const r = await skip({ tier });
@@ -307,7 +300,7 @@ export function OnboardingFlow() {
     basics: { kicker: t('basicsKicker'), title: t('basicsTitle'), lede: lede('onboarding.basics.lede', t('basicsLede')) },
     start: { kicker: t('startKicker'), title: t('startTitle'), lede: lede('onboarding.start.lede', context) },
     units: { kicker: t('unitsKicker'), title: t('unitsTitle'), lede: lede('onboarding.units.lede', t('unitsLede')) },
-    done: { kicker: t('doneKicker'), title: suggestions.length ? t('doneTitle') : t('doneEmptyTitle'), lede: suggestions.length ? lede('onboarding.done.lede', context) : lede('onboarding.done.emptyLede', t('doneEmptyLede')) },
+    done: { kicker: t('doneKicker'), title: board.answered ? t('doneTitle') : t('doneEmptyTitle'), lede: board.answered ? lede('onboarding.done.lede', context) : lede('onboarding.done.emptyLede', t('doneEmptyLede')) },
   };
   const head = titles[step];
 
@@ -329,10 +322,10 @@ export function OnboardingFlow() {
 
         {step === 'start' ? (
           <div className="flex flex-col gap-10">
-            <MiniBoard suggestions={suggestions} />
+            <MiniBoard skills={board} />
             <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>
-                <p className="font-serif text-[22px] leading-snug"><ReviewText id="onboarding.start.nextUnitsTitle">{t('nextUnitsTitle')}</ReviewText></p>
+                <p className="font-serif text-[22px] leading-snug">{t('nextUnitsTitle')}</p>
                 <p className="mt-1 text-sm text-muted"><ReviewText id="onboarding.start.nextUnitsBody">{t('nextUnitsBody')}</ReviewText></p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -350,7 +343,7 @@ export function OnboardingFlow() {
 
         {step === 'done' ? (
           <div className="flex flex-col gap-10">
-            <MiniBoard suggestions={suggestions} limit={8} />
+            <MiniBoard skills={board} limit={8} />
             {state.signed_in ? (
               <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                 <p className="font-serif text-[22px] leading-snug">{t('savedTitle')}</p>
