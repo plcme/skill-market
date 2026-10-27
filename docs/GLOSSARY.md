@@ -1,65 +1,65 @@
-# GLOSSARY — 术语表
+# GLOSSARY — Terminology
 
-> 产品、界面、代码三套用词的对照。所有 agent 在写文案、命名变量、讨论需求前以此为准。
-> 由主会话维护；用户拍板后更新。状态为"未定"的条目不得擅自落地为界面概念。
+> Maps product, interface, and code terminology. Every agent must consult this before writing copy, naming variables, or discussing requirements.
+> Maintained by the main session; updated after user decisions. Entries marked undecided must not be introduced as UI concepts without approval.
 
-## 1. 标的（target）
+## 1. Instruments (targets)
 
-| 中文 | 界面用词（UI） | 代码 / 数据 | 说明 | 状态 |
+| Concept | UI wording | Code / data | Explanation | Status |
 |---|---|---|---|---|
-| 标的 | target（对外尽量不直接出现，用具体类型名） | `instrument`，类型 `instrument_type` | 可被追踪、可 watch 的对象 | 已定 |
-| 技能 | Skill | `instrument_type = 'skill'` + `skill_layer` | 具体可学、可验证的能力。按 ASC 分两层：**Technology tool**（`technology_tool`，如 SQL、Excel、AutoCAD）和 **Specialist task**（`specialist_task`，如 data analysis、project management） | 原型（2026-10-06，参考 ASC） |
-| 核心能力 | Core competency | `competencies.ts`（不是 instrument） | ASC 的 10 项通用能力（Oral communication、Teamwork 等）。每份工作都用，**不追踪需求、不配指标**；只在 role 页按 1–10 展示强度。Communication 归这里 | 原型（2026-10-06） |
-| 职位 | Role | `instrument_type = 'role'` | 一组技能的加权组合（`RoleComponent.weight`），即"skill ETF"；ANZSCO 编码 | 已定 |
-| 行业 | Industry | `instrument_type = 'industry'` | ANZSIC 第一层（Division，19 个） | 已定（2026-09-26） |
-| 细分行业 | Sub-industry | `instrument_type = 'industry'` + `parent_id` | ANZSIC 下一层；数据模型预留，界面暂不展示 | 颗粒度未定 |
-| 雇主 / 证书 | Employer / Credential | `'employer'` / `'credential'` | 仅类型预留，不做界面 | Post-MVP |
-| 持仓构成 | Top holdings | `RoleComponent[]` | Role 页上展示的组成技能及权重 | 已定 |
+| Instrument | target (prefer the specific type name in public copy) | instrument, type `instrument_type` | A trackable, watchable entity | Decided |
+| Skill | Skill | `instrument_type = 'skill'` + `skill_layer` | Specific learnable, verifiable capability. Two ASC layers: **Technology tool** (`technology_tool`, e.g. SQL, Excel, AutoCAD) and **Specialist task** (`specialist_task`, e.g. data analysis, project management) | Prototype (2026-10-06, based on ASC) |
+| Core competency | Core competency | `competencies.ts` (not an instrument) | ASC's 10 general capabilities, including Oral communication and Teamwork. Used in every job; **no demand tracking or metrics**. Role pages show intensity from 1–10 only. Communication belongs here | Prototype (2026-10-06) |
+| Role | Role | `instrument_type = 'role'` | Weighted skill basket (`RoleComponent.weight`), a "skill ETF"; ANZSCO code | Decided |
+| Industry | Industry | `instrument_type = 'industry'` | ANZSIC Division level (19 divisions) | Decided (2026-09-26) |
+| Sub-industry | Sub-industry | `instrument_type = 'industry'` + `parent_id` | Next ANZSIC level; reserved in the model, not shown in UI | Granularity undecided |
+| Employer / credential | Employer / Credential | `'employer'` / `'credential'` | Reserved types only, no UI | Post-MVP |
+| Component holdings | Top holdings | `RoleComponent[]` | Component skills and weights on role pages | Decided |
 
-## 2. 盘面（board）上的几个维度
+## 2. Board dimensions
 
-| 中文 | 界面用词 | 代码 | 定义 |
+| Concept | UI wording | Code | Definition |
 |---|---|---|---|
-| 筛选 | Filter | `FilterSpec`（`rules[]`、`seniority`、`work_rights`） | **作用于整张表**的范围：地区、工作方式、资历、工作权利。改筛选 = 改分母。只在详情页标题里改；`/market` 行情表没有筛选，固定为默认范围（FE-R7，2026-10-22） |
-| 纵轴变量 / 度量 | Measure；详情页图表左上角的下拉（"Job ads ▾"），Filter 面板里叫 **Y axis** | `MetricKey`（注册表 `src/lib/metrics/registry.ts`）；详情页只有一个参数 `?metric=`（旧链接 `?y=ads\|salary` 自动改写成 `metric=ad_count\|salary_median`）；度量 → 图表的映射是 `chartPlanFor`（`src/features/market/logic.ts`） | 每个标的显示的那个数字。详情页上 "Right now" 大数字和图表永远显示同一个度量（2026-10-22）。Y axis 选项 = 有周序列的水平量（`CHART_SERIES`）：Job ads、Median salary（无 industry）、Entry-level share、No PR stated、Employers hiring、Remote or hybrid、Contract share。变化量不是选项，但选中后图表要对：4-week change → Job ads、3M，前后两个 4 周窗口加阴影并标出 from → to；12-month change → Job ads、2Y，两个 12 个月窗口加阴影；Volatility → Job ads、1Y；Salary range、Skill premium → Median salary |
-| 统计 | Statistics | `Statistics`（`src/features/market/instrument-sections.tsx`） | 详情页列出全部度量的格子区，标题就叫 "Statistics"（大号衬线，无 kicker）。当前度量（= "Right now" 和图表）那一格整格着色并加墨色边框；点一格切换度量。旧名 Fundamentals，界面不再用（2026-10-22） |
-| 拆分 / 分布 | Breakdown；界面叫 **Split by** | `?by=experience\|rights\|mode`（缺省 = 不拆分；旧链接 `by=none` 自动去掉，FE-R6 2026-10-22），注册表 `breakdown: 'stack'\|'lines'\|null` | 把一个 measure 按**一个**维度切开。**只能在标题打开的 Filter 面板里改**（2026-10-22），图表上没有拆分控件。维度：Experience · Work rights · Work mode（地点不是维度）。筛选已把某维度固定成一个桶时（Entry-level/Graduate → Experience；Work rights 选 "No PR stated" → Work rights；只选一种 work mode → Work mode），该选项置灰并注明 "Fixed by your filter"；占比按它自己的维度拆没有意义（Entry-level share × Experience 等），置灰并注明 "Not for this measure"。被固定的 `by` 不留在 URL 里（直接去掉 `by`）。标题句子和 "Currently showing" 只在拆分时加 "· by experience"。**可相加的量用堆叠面积，不可相加的量（中位数、占比、雇主数）用多条线**。详见 `docs/DESIGN.md` §6.3 |
-| 经验段 | Entry / Mid / Senior / Expert | `experience`：0–2 / 3–5 / 6–9 / 10+ 年 | Expert = 用户说的 "master level"（10 年以上）；界面不用 Master 以免和硕士学位混淆 |
-| 地点 | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules`（OR 合并） | 地点是整张表的筛选；开关 = 追加规则 `{remote, au}`。只有澳大利亚：All Australia（`au`）是固定底，不能选也不能删；只能缩小到州、城市或区域，删掉最后一个就回到 All Australia（2026-10-21）。详情页标题里的 "in …" 是整条筛选的一句话，比如 "SQL in [Sydney + remote · Entry-level ▾]"：地点总在前，其他条件只列缩小范围的那些，用 " · " 分隔，多规则时写 "custom places"。点它打开 Filter 面板；"in …" 字号小于标的名（2026-10-21，取代 10-17 的地点弹层和可删除条件标签） |
-| 排序 | Sort | `sort`：`value` / `change` | 只有"按度量""按变化"两种；不提供 A–Z |
-| 视图 | View | `view`：`list` / `cards` | 列表或卡片 |
-| 关注标签 | Watching（`/market` 第一个标签） | `?type=watching`（`MarketTab`、`boardForTab`、`watchedSlugs`，`src/features/market/logic.ts`；`WatchingBoard`） | 行情表标签顺序：**Watching** ｜ All · Skills · Roles · Industries（FE-R6，2026-10-22）。Watching 是轻样式（书签图标 + 文字 + 灰色小号数量），后面一条细竖线，再接四个衬线标签；默认仍打开 All。内容 = All 表只保留 watchlist 里的标的（held 和 watching 都算，同一标的不同筛选只算一次），控件、排序与 All 相同（行情表没有筛选）；标签上的数量与列表一致。未登录：不显示数量，内容是 "Sign in to see what you watch." + Sign in；已登录但没关注："Nothing watched yet." + "Browse all"。375px 下标签行横向滚动 |
-| 信号 | Signal | `Signal`（`rise` / `fall` / `entry_open` / `since_added`） | 满足阈值的显著变化；不代表"应该去学" |
+| Filter | Filter | `FilterSpec` (`rules[]`, seniority, `work_rights`) | Scope affecting **the whole table**: location, work mode, seniority, work rights. Changing filters changes the denominator. Editable only through detail-page titles; `/market` has no filters and uses the default scope (FE-R7, 2026-10-22) |
+| Y-axis variable / measure | Measure; dropdown at the chart's top left ("Job ads ▾"), called **Y axis** in Filter | `MetricKey` (`src/lib/metrics/registry.ts`); one detail parameter `?metric=` (legacy `?y=ads\|salary` rewrites to `metric=ad_count\|salary_median`); `chartPlanFor` in `src/features/market/logic.ts` maps measures to charts | Number shown for each instrument. Detail "Right now" and chart always share a measure (2026-10-22). Y axis offers level measures with weekly series (`CHART_SERIES`): Job ads, Median salary (not industry), Entry-level share, No PR stated, Employers hiring, Remote or hybrid, Contract share. Change measures are not options, but their charts must be correct when selected: 4-week change → Job ads, 3M, shade two four-week windows and show from → to; 12-month change → Job ads, 2Y, shade two 12-month windows; Volatility → Job ads, 1Y; Salary range/Skill premium → Median salary |
+| `Statistics` | `Statistics` | `Statistics` (`src/features/market/instrument-sections.tsx`) | Detail grid listing all measures, titled "`Statistics`" in large serif with no kicker. The active measure's whole cell is tinted and outlined in ink; selecting a cell changes the measure. Formerly Fundamentals, no longer used in UI (2026-10-22) |
+| Breakdown / distribution | Breakdown; UI **Split by** | `?by=experience\|rights\|mode` (absent = none; legacy `by=none` removed, FE-R6 2026-10-22); registry `breakdown: 'stack'\|'lines'\|null` | Split one measure by **one** dimension. **Editable only in the Filter panel opened from the title** (2026-10-22), with no chart breakdown controls. Dimensions: Experience, Work rights, Work mode; location is not one. Disable fixed dimensions with "Fixed by your filter": Entry-level/Graduate fixes Experience, No PR stated fixes Work rights, one work mode fixes Work mode. Splitting a share by its own dimension is meaningless (e.g. Entry-level share × Experience): disable with "Not for this measure". Remove fixed by from URL. Title/readback adds "· by experience" only when split. **Additive measures use stacked areas; non-additive medians, shares, and employer counts use multiple lines.** DESIGN §6.3 |
+| Experience band | Entry / Mid / Senior / Expert | experience: 0–2 / 3–5 / 6–9 / 10+ years | Expert means the user's "master level" (10+ years); avoid Master to prevent confusion with a master's degree |
+| Location | Places + "Also include remote jobs anywhere in Australia" | `FilterSpec.rules` (OR) | Whole-table filter; toggle appends `{remote, au}`. Australia only: All Australia (au) is the fixed, non-selectable, non-removable base; narrow to states/cities/regions; removing the last selection restores it (2026-10-21). Detail title's "in …" summarises the entire filter, e.g. "SQL in [Sydney + remote · Entry-level ▾]". Location first, then only narrowing conditions separated by " · "; multiple rules use "custom places". Opens Filter; smaller than instrument name (2026-10-21, replacing the 10-17 location popup/removable chips) |
+| Sorting | Sort | sort: value / change | By measure or change only; no A–Z |
+| View | View | view: list / cards | List or cards |
+| Watched tab | Watching (first `/market` tab) | `?type=watching` (`MarketTab`, `boardForTab`, `watchedSlugs`, `src/features/market/logic.ts`; `WatchingBoard`) | Order: **Watching** ｜ All · Skills · Roles · Industries (FE-R6, 2026-10-22). Watching uses a bookmark icon, text, and small grey count, then a thin vertical divider and four serif tabs. Default remains All. Content = All restricted to watchlist instruments (held and watching; deduplicate different filters for one instrument). Same controls/sorting as All; no board filters. Count matches rows. Signed out: no count, "Sign in to see what you watch." + Sign in. Empty signed-in: "Nothing watched yet." + "Browse all". Tabs scroll horizontally at 375px |
+| `Signal` | `Signal` | `Signal` (rise / fall / `entry_open` / `since_added`) | Significant threshold-crossing change; does not imply an obligation to learn |
 
-## 3. 度量（measure）用词
+## 3. Measure wording
 
-| 界面用词 | 代码 | 定义 |
+| UI wording | Code | Definition |
 |---|---|---|
-| **Demand**（度量选择器里的名字） / **Job ads**（表格列头、数字单位） | `ad_count` | 时间窗内提到该标的的招聘广告数 |
-| Share of ads（只在定义弹窗里作为辅助说明出现） | `share_of_ads` | 提到该标的的广告 ÷ 同筛选下的全部广告；用于扣除整体市场涨落 |
-| 4-week change | `change_4w` | 近 4 周对比前 4 周的相对变化，并显示 from → to 原始计数 |
-| 12-month growth | `growth_12m` | 同比变化 |
-| Entry-level share | `entry_level_share` | 文本抽取，需标注方法与误差 |
-| No PR required | `no_pr_required_share` | 文本抽取，需标注方法与误差 |
-| Median salary | `salary_median` | role 和 skill（2026-10-17 用户决定 skill 也显示）。只统计写明薪资的广告。为避免把"岗位偏资深"误读成"学了就能拿"，可在 Split by 选 Experience（FE-R6 起图表默认不拆分） |
-| Coverage（只在 ⓘ 和覆盖说明里出现，不进度量下拉） | `coverage_ratio` | 我们看到的新增广告 ÷ JSA IVI 同职业同州新增广告；近似的相对覆盖率。覆盖不足时数字旁加说明或不显示信号（架构 §6.8） |
-| Skill premium | `skill_premium` | 仅 skill，进阶指标；同一 role 内有无该技能的受控对比 |
+| **Demand** (selector) / **Job ads** (column header and unit) | `ad_count` | Ads mentioning the instrument within the time window |
+| Share of ads (supporting explanation in definition popovers only) | `share_of_ads` | Ads mentioning it ÷ all ads under the same filters; adjusts for market-wide movement |
+| 4-week change | `change_4w` | Relative change, latest four weeks versus previous four; include raw from → to counts |
+| 12-month growth | `growth_12m` | Year-on-year change |
+| Entry-level share | `entry_level_share` | Text extraction; disclose method and error |
+| No PR required | `no_pr_required_share` | Text extraction; disclose method and error |
+| Median salary | `salary_median` | Roles and skills (user decision, 2026-10-17). Disclosed salaries only. To avoid confusing senior-role salaries with guaranteed learning outcomes, Experience is available under Split by (charts unsplit by default since FE-R6) |
+| Coverage (ⓘ and coverage notes only, not selector) | `coverage_ratio` | Observed new ads ÷ JSA IVI new ads for the same occupation/state; approximate relative coverage. Add notes or suppress signals when insufficient (architecture §6.8) |
+| Skill premium | `skill_premium` | Advanced, skills only; controlled comparison within a role with/without the skill |
 
-## 4. 其他产品用词
+## 4. Other product wording
 
-| 中文 | 界面用词 | 说明 |
+| Concept | UI wording | Explanation |
 |---|---|---|
-| 工作台 | My desk | 学生 `/me`；从业者 `/practitioner` |
-| 关注 | Watch / Watchlist | 不用"持仓""组合收益""仓位强弱"（PRD §10.7） |
-| 我有这个技能 | I have this skill（desk 分组 "Held — skills you have"） | watch 的 `status = 'held'`，`instrument_type = 'skill'`。学生已经掌握的技能；不进"学习中"统计 |
-| 我在这个岗位干过 | Worked in this role（desk 分组 "Worked in this role"） | watch 的 `status = 'held'`，`instrument_type = 'role'`（FE-R5，2026-10-22）。和 skill 共用 `held`，按标的类型区分文案；能否标记由 `canBeHeld` 判断（industry 不行）。标记后在 role 页邀请一次 "Join as a practitioner"（已是 practitioner 的不显示） |
-| 咖啡聊 | Coffee chat | 20 分钟、异步预约，不是 IM |
-| 从业者 | Practitioner | 主动加入、持有该技能的在职者 |
-| 数据与安全 | Data & safety | 页脚入口，含数据来源（原 Sources 页） |
-| 主题 | Light / Dark | 默认跟随系统；手动点选后记住用户选择；界面上不出现"System"状态 |
+| Personal workspace | My desk | Student `/me`; practitioner `/practitioner` |
+| Tracking | Watch / Watchlist | Avoid portfolio holdings, returns, or position strength (PRD §10.7) |
+| Existing skill | I have this skill (desk: "Held — skills you have") | Watch `status = 'held'`, `instrument_type = 'skill'`; already mastered, excluded from learning counts |
+| Previous role experience | Worked in this role (desk: "Worked in this role") | Watch `status = 'held'`, `instrument_type = 'role'` (FE-R5, 2026-10-22). Shares held state with skills; copy depends on type. `canBeHeld` determines eligibility (not industry). Marking invites "Join as a practitioner" once on the role page, unless already a practitioner |
+| Coffee conversation | Coffee chat | 20-minute asynchronous booking, not IM |
+| Employed contributor | Practitioner | Opted-in employed person holding the skill |
+| Sources and safety | Data & safety | Footer entry, includes data sources (formerly Sources page) |
+| Theme | Light / Dark | Follow system by default; remember manual choice; no System state in UI |
 
-## 5. 未定概念（不得擅自落地）
+## 5. Undecided concepts (do not introduce without approval)
 
-- **什么算 skill**：按 ASC 三层做原型（见 §1），看过效果后定稿。
-- **Breakdown**：v3（2026-10-22）：详情页只有一张图；图表左上是度量下拉，右上只有 3M / 6M / 1Y / 2Y；Y axis 和 Split by 都在标题打开的 Filter 面板里（在 "Currently showing" 之后、Work rights 之前），随 Apply 一起生效。v2 原型 https://claude.ai/artifact/72Ka23B5tHtKwUWCQfyE1V 。
-- **细分行业颗粒度**：ANZSIC Subdivision 还是 Group。
+- **What counts as a skill**: prototype ASC's three layers (§1), finalise after visual review.
+- **Breakdown**: v3 (2026-10-22): one detail chart; measure top left, only 3M / 6M / 1Y / 2Y top right; Y axis and Split by in title-opened Filter (after Currently showing, before Work rights), committed with Apply. v2 prototype: https://claude.ai/artifact/72Ka23B5tHtKwUWCQfyE1V .
+- **Sub-industry granularity**: ANZSIC Subdivision or Group.

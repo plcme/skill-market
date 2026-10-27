@@ -1,454 +1,454 @@
-# PRD — 技能市场 × 从业者匹配（Brewdex）
+# PRD — Skill market × Practitioner matching (Brewdex)
 
-| 项 | 内容 |
+| Item | Details |
 |---|---|
-| 状态 | Draft v0.1 — 待产品负责人确认 |
-| 产品名 | **Brewdex**（2026-10-23 已确定）。代码中统一使用配置常量 `APP_NAME`，仓库代号 `skill-market`；域名已买 `brewdex.app` |
-| 目标市场 | 只做澳大利亚（2026-10-21 用户决定：NZ 及其他国家暂不做，合规与数据成本过高）；后续增长目标全球 |
-| 文档语言 | 正文中文；术语、字段名、变量名用英文 |
-| 依据 | `docs/research/` 下的竞品分析、访谈与问卷分析、需求追溯表、数据源调研 |
+| Status | Draft v0.1 — awaiting product owner confirmation |
+| Product name | **Brewdex** (confirmed 2026-10-23). Use configuration constant `APP_NAME` throughout code; repository codename `skill-market`; domain `brewdex.app` purchased |
+| Target market | Australia only (user decision, 2026-10-21: defer NZ and other countries because of compliance and data costs); global growth later |
+| Document language | English, including terminology, field names, and variable names |
+| Evidence | Competitor analysis, interview and questionnaire analysis, requirements traceability, and data-source research under `docs/research/` |
 
-> **证据优先原则**：原始工作文档中的设想，凡与用户研究结论冲突的，以研究结论为准（例如：研究明确反对排名和"你的仓位很弱"式的赤字表达）。凡标注 **[假设]** 的内容尚无用户证据，需在上线后验证。
+> **Evidence first**: where ideas in the original working document conflict with user research, research takes precedence (for example, research explicitly rejects rankings and deficit framing such as "your position is weak"). Items marked **[Assumption]** lack user evidence and must be validated after launch.
 
 ---
 
-## 1. 背景与问题
+## 1. Background and problem
 
-澳洲大学生需要在选专业、选课、做项目、找实习和 graduate program 时判断"该学什么"。相关信息分散在招聘广告、政府劳动力数据、就业中心和熟人经验里，学生面临三个缺口：
+Australian university students must decide "what to learn" when choosing majors, units, projects, internships, and graduate programs. Information is scattered across job ads, government labour data, career centres, and personal networks. Students face three gaps:
 
-1. **信号看不懂、也不相关**：公开劳动力数据面向政策制定者，不按学生的专业、年级、地点、工作权利过滤；数字缺少定义和分母，容易误读（访谈 4/4 对指标定义提出疑问）。
-2. **需求 ≠ 决策**：学生不会只因为"某技能在涨"就去学，还要看个人兴趣、可投入时间、可迁移性（访谈 4/4 强调个人相关性，3/4 明确表示不会仅凭需求行动）。
-3. **找不到、也不敢找对的人**：学生最看重从业者的具体经验（4/4），但冷启动联系的摩擦很大——不知道找谁、怕显得功利、被无视后会停止尝试（3/4）。
+1. **Signals are unclear and irrelevant**: public labour data serves policymakers, without filters for students' majors, years, locations, or work rights. Missing definitions and denominators invite misinterpretation (4/4 interviewees questioned metric definitions).
+2. **Demand ≠ decision**: students do not learn a skill simply because it is "rising"; interests, available time, and transferability also matter (4/4 emphasised personal relevance; 3/4 explicitly would not act on demand alone).
+3. **The right person is hard to find and approach**: students value practitioners' concrete experience most (4/4), but cold outreach has substantial friction: not knowing whom to approach, fearing seeming transactional, and giving up after being ignored (3/4).
 
-问卷中 5/6 的受访者认为学位没有让自己为就业做好准备；缺口不在"完全不懂技术"，而在**深度、实践语境与优先级判断**。
+In the questionnaire, 5/6 respondents felt their degree had not prepared them for employment. The gap is **depth, practical context, and prioritisation**, rather than a complete absence of technical knowledge.
 
-**竞品格局**：数据类工具（JSA、ITJobsWatch、LinkedIn Jobs on the Rise）有信号没有人；人际类工具（Aphinity、ADPList、就业中心）有人没有信号。**没有任何产品根据市场信号来匹配学生与从业者**（见 `docs/research/competitor-analysis.md` §3–§4）。
+**Competitive landscape**: data tools (JSA, ITJobsWatch, LinkedIn Jobs on the Rise) provide signals without people; networking tools (Aphinity, ADPList, career centres) provide people without signals. **No product matches students to practitioners based on market signals** (see `docs/research/competitor-analysis.md` §§3–4).
 
-## 2. 产品定位
+## 2. Positioning
 
-**一句话**：把澳洲劳动力市场需求做成可追踪的"盘面"，让学生关注与自己相关的技能和岗位；当某个信号值得深究时，一键找到持有该技能的在职者做 20 分钟的咖啡聊。
+**One sentence**: turn Australian labour-market demand into a trackable market board where students watch relevant skills and roles, then find an employed practitioner with the skill for a 20-minute coffee chat when a signal warrants exploration.
 
-**核心论点：两个功能是一件事**。匹配理由来自市场信号（"你在关注 Rust，它在 Sydney 的 entry-level 岗位里 12 个月增长明显；这位从业者 2 年前用 Rust 入行"）。信号给出"问什么"，人给出"怎么解读"。
+**Core proposition: the two features form one experience.** Matching reasons originate in market signals ("You watch Rust; it has grown substantially over 12 months in Sydney entry-level roles; this practitioner entered the industry using Rust two years ago"). Signals suggest what to ask; people explain how to interpret them.
 
-**利益立场**：付费方不限（学生、从业者、大学、雇主及其他机构都可以是付费者）；但**收入永远不影响盘面**：任何付费方都不能购买、调整或影响指标、信号、排序与匹配理由，避免继承招聘中介"优化掉无经验候选人"的激励错配（见 §12.1）。
+**Commercial stance**: any party may pay (students, practitioners, universities, employers, or other organisations), but **revenue never influences the market board**. No payer can buy, adjust, or influence metrics, signals, sorting, or matching reasons. This avoids recruitment agencies' incentive mismatch of filtering out inexperienced candidates (§12.1).
 
-**隐喻使用原则**：股票隐喻（watchlist、走势、ticker card）只作为轻量的界面语言，用于降低理解门槛；不引入组合收益、排名、"仓位强弱"等可能伤人或误导的概念，并提供关闭隐喻的纯文字模式（**[假设]** 待验证是否需要）。
+**Metaphor policy**: stock-market metaphors (watchlist, trends, ticker cards) are lightweight interface language to aid understanding. Do not introduce portfolio returns, rankings, or "position strength" concepts that could harm or mislead. Offer a plain-text mode without metaphors (**[Assumption]**: validate whether needed).
 
-## 3. 用户与 Persona
+## 3. Users and personas
 
-### 3.1 用户分层
+### 3.1 User segments
 
-| 层级 | 用户 | MVP 是否服务 |
+| Segment | Users | Served by MVP? |
 |---|---|---|
-| Primary | 在读大学生（本科/研究生），含国际学生 | ✅ |
-| Primary（供给侧） | 在职从业者，重点是入行 3 年内的 | ✅ |
-| Secondary | 应届/往届毕业生、转行者 | ✅（同学生流程，不做专门优化） |
-| Secondary | 高中生 | ❌ 不服务 18 岁以下用户（安全与合规） |
-| Tertiary | 大学就业中心（分发渠道、从业者供给来源）、JSA 等数据提供方 | 非产品用户；运营合作对象 |
-| 暂不服务 | 雇主 / HR / 招聘中介 | ❌ MVP 不作为平台用户；可作为潜在付费方（见 §12.1） |
+| Primary | Current undergraduate/postgraduate students, including international students | ✅ |
+| Primary (supply) | Employed practitioners, especially within three years of entering the industry | ✅ |
+| Secondary | Recent/previous graduates and career changers | ✅ Same student flow, without dedicated optimisation |
+| Secondary | High-school students | ❌ No users under 18 (safety and compliance) |
+| Tertiary | University career centres (distribution and practitioner supply), data providers such as JSA | Operational partners, not product users |
+| Deferred | Employers / HR / recruiters | ❌ Not MVP platform users; potential payers (§12.1) |
 
-### 3.2 Persona（基于研究的合成画像）
+### 3.2 Personas (research-based composites)
 
-**Persona A — 准备不足的技能缺口探索者**
-觉得自己没准备好就业，能说出一些技能缺口，但不知道先补哪个。需要"方向感"而不是"差距清单"；赤字式表达会打击他。要求自动推断的技能由自己掌控。
-关联用户故事：US1、US2、US7。
+**Persona A — The underprepared skill-gap explorer**
+Feels unprepared for employment and can identify some skill gaps, but cannot prioritise them. Needs direction rather than a gap list; deficit framing is discouraging. Wants control over automatically inferred skills.
+Related stories: US1, US2, US7.
 
-**Persona B — 要证据也要建议的求证者**
-会查大学资源、问有经验的人，但要先弄清数据来源、时效和指标含义才会信。想要具体的从业者经验，但对主动联系陌生人有顾虑，怕不被回应。
-关联用户故事：US3、US4、US5、US6、US7。
+**Persona B — The evidence-and-advice seeker**
+Consults university resources and experienced people, but needs sources, freshness, and metric definitions before trusting information. Wants specific practitioner experience, yet worries about approaching strangers and receiving no response.
+Related stories: US3, US4, US5, US6, US7.
 
-**Persona C — 愿意帮忙但时间很贵的从业者 [假设]**
-入行 1–3 年，记得自己当年的迷茫，愿意每月花 1–2 次 20 分钟帮学生，但前提是：知道学生为什么找自己、学生做了准备、能一键婉拒且无负担。**供给侧目前零访谈数据，整个 persona 待验证。**
+**Persona C — The willing but time-constrained practitioner [Assumption]**
+Entered the industry 1–3 years ago, remembers the uncertainty, and is willing to help students for one or two 20-minute sessions a month, provided they know why they were approached, the student is prepared, and declining is effortless. **There are currently zero supply-side interviews; the entire persona requires validation.**
 
-### 3.3 用户故事
+### 3.3 User stories
 
-| ID | Persona | 用户故事 |
+| ID | Persona | Story |
 |---|---|---|
-| US1 | A | 作为觉得自己准备不足的学生，我想对比目标岗位需要的技能和我已有的技能，从而知道下一步该发展什么 |
-| US2 | A | 作为可能被技能缺口打击的学生，我希望指引以"方向与进展"的方式呈现，从而能迈出可控的下一步 |
-| US3 | B | 作为评估职业信息的学生，我想看到信息的来源和时效，从而判断能不能信 |
-| US4 | B | 作为查看劳动力市场趋势的学生，我想要每个指标的白话定义和支撑细节，从而在行动前真正理解它 |
-| US5 | B | 作为寻找职业方向的学生，我想得到具体的从业者建议，从而把市场信息和真实工作联系起来 |
-| US6 | B | 作为对联系从业者有顾虑的学生，我想要提问建议，以及对方没回应时的明确替代方案，从而降低联系的不确定感 |
-| US7 | A、B | 作为收到系统推断技能的学生，我想查看、修改或删除它们，从而让画像反映我对自己的认知 |
-| US8 | C | 作为从业者，我想知道学生为什么找我、要花多久，并能一键接受/改期/婉拒，从而用最小负担帮到人 **[假设]** |
+| US1 | A | As a student who feels underprepared, I want to compare a target role's required skills with mine so I know what to develop next |
+| US2 | A | As a student who may be discouraged by skill gaps, I want guidance framed as direction and progress so I can take a manageable next step |
+| US3 | B | As a student evaluating career information, I want its source and freshness so I can assess its trustworthiness |
+| US4 | B | As a student viewing labour-market trends, I want plain-language definitions and supporting detail for each metric so I understand it before acting |
+| US5 | B | As a student exploring career direction, I want concrete practitioner advice to connect market information with real work |
+| US6 | B | As a student hesitant to contact practitioners, I want question suggestions and clear alternatives if there is no reply, reducing uncertainty |
+| US7 | A, B | As a student receiving inferred skills, I want to inspect, edit, or remove them so my profile reflects my own understanding of myself |
+| US8 | C | As a practitioner, I want to know why a student approached me and the time required, with one-click acceptance/rescheduling/declining, so helping has minimal overhead **[Assumption]** |
 
-## 4. 目标与成功指标
+## 4. Goals and success metrics
 
-### 4.1 产品目标（MVP 上线后 3 个月）
+### 4.1 Product goals (three months after MVP launch)
 
-1. 学生能在无需登录的情况下读懂一个与自己相关的市场信号。
-2. 学生能从一个信号出发，完成一次与从业者的咖啡聊。
-3. 验证供给侧可行性：从业者愿意加入并如约出席。
+1. Students can understand a relevant market signal without signing in.
+2. Students can complete a practitioner coffee chat starting from a signal.
+3. Validate supply feasibility: practitioners join and attend as agreed.
 
-### 4.2 指标
+### 4.2 Metrics
 
-| 类型 | 指标 | 目标（初始值，上线后校准） |
+| Type | Metric | Target (initial; recalibrate after launch) |
 |---|---|---|
-| North Star | 每周完成"信号 → 请求 → 咖啡聊完成"闭环的学生数 | 上线后第 8 周起周环比正增长 |
-| 理解度 | 可用性测试中对每个展示指标的单选理解题正确率 | ≥ 80%（来自 R1 评估标准） |
-| 激活 | 访客完成 Tier 0 onboarding 并看到个性化盘面的比例 | ≥ 40% |
-| 留存 | 建立 watchlist 的学生 W4 回访率 | ≥ 25% |
-| 匹配 | 发出的请求在 72 小时内被接受的比例 | ≥ 50% |
-| 可靠性 | 已确认的咖啡聊的双方出席率 | ≥ 85% |
-| 复盘 | 完成的咖啡聊中提交 L0 投票的比例 | ≥ 60% |
-| 供给 | 首发细分领域中有开放时段的从业者数 | ≥ 30 人 |
-| 情绪安全 | 可用性测试中认为界面"打击人/像排名"的参与者 | 0 人 |
+| North Star | Students completing the signal → request → completed coffee chat loop each week | Positive week-on-week growth from week 8 |
+| Comprehension | Correct answers to single-choice interpretation questions for each displayed metric in usability tests | ≥ 80% (R1 evaluation criterion) |
+| Activation | Visitors completing Tier 0 onboarding and seeing a personalised board | ≥ 40% |
+| Retention | W4 return rate for students with a watchlist | ≥ 25% |
+| Matching | Requests accepted within 72 hours | ≥ 50% |
+| Reliability | Both-party attendance at confirmed coffee chats | ≥ 85% |
+| Debrief | Completed chats with an L0 vote | ≥ 60% |
+| Supply | Practitioners with open slots in the launch niche | ≥ 30 |
+| Emotional safety | Usability participants describing the UI as discouraging or like a ranking | 0 |
 
-## 5. 范围
+## 5. Scope
 
-### 5.1 MVP（首个公开上线版本）
+### 5.1 MVP (first public release)
 
-- 标的类型：**技能（skill）+ 岗位（role）**，可互相跳转
-- 数据：AU 市场，首发细分领域的技能/岗位（见 §12.2）
-- 免登录浏览盘面、ticker card、指标定义
-- 复合地理 + 工作模式 + 工作权利筛选
-- 注册登录（邮箱 + Google）
-- 阶梯式 onboarding（Tier 0–1），技能画像（推断 + 可编辑）
-- Watchlist（持有 / 关注），filter 作为 watchlist 条目的一部分
-- 缺口诊断（目标岗位 vs 我的技能）、两项对比视图
-- 从业者注册、工作邮箱验证、技能与话题、可约时段
-- 信号驱动匹配、咖啡聊请求全流程（含超时、婉拒、改期、no-show）
-- 复盘 L0 投票 + 从业者 L2 出席确认
-- 邮件通知（请求、确认、提醒、超时）
-- 隐私控制、账号删除、数据导出
-- 举报与屏蔽、基础管理后台
+- Instruments: **skills + roles**, with reciprocal navigation
+- Data: AU market, skills/roles in the launch niche (§12.2)
+- Anonymous browsing of the board, ticker cards, and metric definitions
+- Compound location + work mode + work rights filters
+- Email + Google registration/sign-in
+- Progressive onboarding (Tiers 0–1), inferred and editable skill profiles
+- Watchlist (held / watching), with filters as part of each entry
+- Gap diagnosis (target role versus own skills), two-instrument comparison
+- Practitioner registration, work-email verification, skills/topics, and availability
+- Signal-driven matching and the full chat-request lifecycle (timeouts, declines, rescheduling, no-shows)
+- L0 debrief votes and practitioner L2 attendance confirmation
+- Email notifications (requests, confirmations, reminders, timeouts)
+- Privacy controls, account deletion, and data export
+- Reporting/blocking and basic administration
 
 ### 5.2 Post-MVP
 
-- 行业 / 雇主 / 证书三种标的类型（数据模型需预留）
-- 澳洲以外市场（NZ 及国际）：暂不做（2026-10-21 用户决定），重新开启需单独评估合规与数据来源
-- 简历导入（Tier 2）、渐进补全（Tier 3）
-- 周/月 digest、watchlist 提醒推送
-- 复盘 L1（结构化 takeaway）、L3（半公开摘要）
-- 聚合情绪面（"聊过 Rust 的 14 人里 11 人更想学了"）
-- 申请季的季节性默认视图
-- LinkedIn 登录
-- 与大学就业中心的机构合作版本
+- Industry / employer / credential instruments (reserve support in the data model)
+- Markets outside Australia (NZ and international): deferred by user decision on 2026-10-21; reassess compliance and data sources separately before reopening
+- Resume import (Tier 2), progressive completion (Tier 3)
+- Weekly/monthly digests and watchlist alerts
+- L1 structured takeaways and L3 semi-public summaries
+- Aggregate sentiment ("11 of 14 people who discussed Rust became more interested in learning it")
+- Seasonal defaults for application periods
+- LinkedIn sign-in
+- Institutional partnerships with university career centres
 
-### 5.3 明确不做（Won't）
+### 5.3 Explicit exclusions (Won't)
 
-- 付费功能与支付接入（付费方不限，见 §12.1；MVP 阶段不收费）
-- 雇主发布职位、雇主查看学生
-- 职位申请、简历投递
-- 学生之间的排名、百分位、单一"就业准备度"分数（违反 R7）
-- 抓取禁止抓取的平台（如 LinkedIn、SEEK）的数据
-- 平台内即时聊天（咖啡聊是异步预约，不是 IM）
-- 18 岁以下用户
+- Paid features and payment integration (any payer permitted, §12.1; no MVP charging)
+- Employer job posting or access to students
+- Job applications or resume submission
+- Student rankings, percentiles, or a single employability-readiness score (violates R7)
+- Scraping platforms that prohibit it, such as LinkedIn and SEEK
+- In-platform instant messaging (coffee chats are asynchronous bookings, not IM)
+- Users under 18
 
-## 6. 核心概念与术语
+## 6. Core concepts and terminology
 
-| 术语 | 英文 / 标识 | 定义 |
+| Term | Identifier | Definition |
 |---|---|---|
-| 标的 | `instrument` | 可被追踪的对象。类型 `instrument_type` ∈ `skill` / `role`（MVP），预留 `industry` / `employer` / `credential` |
-| 技能 | `skill` | 如 Rust、SQL、Communication。对应股票里的"个股" |
-| 岗位 | `role` | 如 Data Engineer。视为一篮子加权技能，对应"ETF / 指数"。岗位 → 成分技能及权重；技能 → 持有它的岗位 |
-| 指标 | `metric`（界面上称"视角"，原文档称 Y 轴） | 对标的的一种度量，如 `share_of_ads`、`growth_12m`。每个指标必须有定义、单位、分母、来源、时间窗 |
-| 筛选规则 | `filter_rule` | 一条规则 = 一种工作模式 `work_mode` + 一组地点 `locations`；多条规则取并集。另含 `seniority`、`work_rights` 条件 |
-| 信号 | `signal` | 某标的在某筛选条件下的显著变化（如 12 个月增长超过阈值），可触发提醒与匹配 |
-| Ticker card | `ticker_card` | 一个标的的最小信息单元，三种尺寸：列表行 / 卡片 / 完整页 |
-| 关注列表 | `watchlist` | 学生追踪的标的集合。条目 = 标的 + 筛选条件。分为"已持有"`held`（我有的技能）与"关注中"`watching` |
-| 技能画像 | `skill_profile` | 学生的技能集合，每项有来源 `source` ∈ `self_reported` / `inferred` / `confirmed`，推断项带置信度 |
-| 从业者 | `practitioner` | 已验证身份、主动选择加入的在职者 |
-| 咖啡聊请求 | `chat_request` | 学生向从业者发起的 20 分钟交流请求，携带信号上下文和决策问题 |
-| 匹配理由 | `match_reason` | 系统解释"为什么推荐这个人"，必须来自信号 + 技能 + 入行时间等可解释因素 |
-| 复盘投票 | `debrief_vote`（L0） | 聊完后的一次点击："更想学 / 更不想学 / 没变" |
-| 可靠度 | `reliability` | 基于出席确认的记录。**仅用于调度与内部风控，不向学生展示关于学生的分数** |
+| Instrument | instrument | Trackable entity. `instrument_type` ∈ skill / role in MVP; reserve industry / employer / credential |
+| Skill | skill | E.g. Rust, SQL, Communication; analogous to an individual stock |
+| Role | role | E.g. Data Engineer; a weighted basket of skills, analogous to an ETF/index. Role → component skills and weights; skill → roles requiring it |
+| Metric | metric (called a "perspective" in the UI and Y axis in the original document) | A measure such as `share_of_ads` or `growth_12m`. Every metric needs a definition, unit, denominator, source, and time window |
+| Filter rule | `filter_rule` | One work mode `work_mode` + a set of locations; multiple rules form a union. Also includes seniority and `work_rights` conditions |
+| Signal | signal | Significant change for an instrument under a filter (e.g. 12-month growth exceeding a threshold), potentially triggering alerts and matching |
+| Ticker card | `ticker_card` | Smallest information unit for an instrument; row / card / full-page sizes |
+| Watchlist | watchlist | Instruments a student tracks. Entry = instrument + filters. Status held (skills I have) or watching |
+| Skill profile | `skill_profile` | Student skill set; each has source ∈ `self_reported` / inferred / confirmed; inferences carry confidence |
+| Practitioner | practitioner | Identity-verified employed person who opts in |
+| Chat request | `chat_request` | Student's request for a 20-minute conversation, carrying signal context and a decision question |
+| Match reason | `match_reason` | Explanation of why a person is suggested, based on interpretable factors such as signal, skill, and industry-entry date |
+| Debrief vote | `debrief_vote` (L0) | One click after a chat: more interested / less interested / unchanged |
+| Reliability | reliability | Attendance-based record. **For scheduling and internal risk controls only; never display student scores to students** |
 
-## 7. 功能需求
+## 7. Functional requirements
 
-优先级：**M** = Must（MVP 必需）、**S** = Should（MVP 尽量做，可延后）、**C** = Could（Post-MVP）。
-"研究依据"列指向 `docs/research/requirements-traceability.csv` 的 R1–R8 及报告中的 SR1–SR6。
+Priority: **M** = Must (required for MVP), **S** = Should (aim for MVP; may defer), **C** = Could (Post-MVP).
+"Research" refers to R1–R8 in `docs/research/requirements-traceability.csv` and SR1–SR6 in the report.
 
-### 7.1 市场数据与指标（Market data）
+### 7.1 Market data and metrics
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-D1 | 系统定期从已授权数据源采集数据，计算各标的在各筛选维度下的指标时间序列 | M | — | 管道按计划运行；每个数据点可追溯到来源、采集时间、原始记录数 |
-| FR-D2 | 每个展示的指标都附带：白话定义、单位、分母或基数、时间窗、地理范围、岗位层级、数据来源、最后更新时间 | M | R1、SR2、SR3 | 任意指标旁一次点击即可看到全部字段；无任何裸百分比 |
-| FR-D3 | 变化率必须同时展示绝对值（如"+38%（120 → 166 个岗位）"），避免"涨 38%"与"占 38%"混淆 | M | R1、访谈 4/4 | 可用性测试理解题正确率 ≥ 80% |
-| FR-D4 | 样本量低于阈值时显示"样本不足，趋势不可靠"并建议放宽条件，不画趋势线 | M | — | 阈值可配置；低于阈值时不渲染趋势线 |
-| FR-D5 | 区分数据来源类型：官方统计 / 招聘广告聚合 / 从业者经验，在界面上视觉区分 | M | SR2 | 每类来源有固定标识 |
-| FR-D6 | 技能与岗位使用标准分类（ANZSCO 作岗位骨架），支持别名归一（如 "JS" → JavaScript） | M | — | 搜索别名能命中标准标的 |
-| FR-D7 | 数据模型支持五种 `instrument_type`，MVP 只开放 `skill` 与 `role` | M | 原文档 D5 | 新增类型不需改表结构 |
+| FR-D1 | Collect periodically from authorised sources and calculate instrument metric time series across filter dimensions | M | — | Scheduled pipeline runs; every point traces to its source, collection time, and raw record count |
+| FR-D2 | Every displayed metric includes a plain-language definition, unit, denominator/base, time window, geography, seniority, source, and last update | M | R1, SR2, SR3 | All fields one click away beside any metric; no unexplained percentages |
+| FR-D3 | Show absolute counts with rates (e.g. "+38% (120 → 166 jobs)") to distinguish growth from share | M | R1, 4/4 interviews | ≥ 80% interpretation accuracy in usability tests |
+| FR-D4 | Below a configurable sample threshold, show "Insufficient sample; trend unreliable", suggest broader filters, and omit trend lines | M | — | Configurable threshold; no trend line below it |
+| FR-D5 | Visually distinguish official statistics / aggregated job ads / practitioner experience | M | SR2 | Consistent marker for each source type |
+| FR-D6 | Standard skill/role classifications (ANZSCO role backbone), with alias normalisation such as "JS" → JavaScript | M | — | Alias searches find canonical instruments |
+| FR-D7 | Model all five `instrument_type` values; expose only skill and role in MVP | M | Original D5 | Adding a type requires no schema change |
 
-**MVP 指标集（标的 × 指标有效性矩阵）**：界面只允许有效组合，默认每种标的一个默认指标 + 4–6 个常用 + "进阶"抽屉。
+**MVP metric set (instrument × metric validity)**: allow only valid combinations. Each instrument type has one default, 4–6 common metrics, and an Advanced drawer.
 
-| 指标 `metric` | skill | role | MVP 常用 | 说明 |
+| Metric | skill | role | MVP common | Notes |
 |---|:--:|:--:|:--:|---|
-| `ad_count` 岗位广告数 | ✅ | ✅ | ✅ | |
-| `share_of_ads` 占全部广告比例 | ✅ 默认 | ✅ | ✅ | |
-| `growth_12m` 12 个月变化 | ✅ | ✅ 默认 | ✅ | 同时显示绝对值 |
-| `entry_level_share` entry-level 占比 | ✅ | ✅ | ✅ | 差异化指标 |
-| `no_pr_required_share` 不要求 PR/公民的岗位占比 | ✅ | ✅ | ✅ | 国际学生刚需；从广告文本抽取，需标注抽取方法与误差 |
-| `employer_concentration` 雇主集中度 | ✅ | ✅ | ✅ | "有多少家不同雇主在招" |
-| `salary_median` 薪资中位数 | ✅ | ✅ | ✅ | skill 也显示（2026-10-17 用户决定）：提到该技能的广告中标注薪资的中位数 |
-| `salary_p10_p90` 薪资区间 | ❌ | ✅ | 进阶 | |
-| `skill_premium` 技能溢价 | ✅ | ❌ | 进阶 | 数据充分时才开放 |
-| `remote_share` 远程/混合占比 | ✅ | ✅ | 进阶 | |
-| `contract_share` 合同制占比 | ✅ | ✅ | 进阶 | |
-| `skills_per_ad` 单岗要求技能数 | ❌ | ✅ | 进阶 | |
-| `volatility` 波动率 | ✅ | ✅ | 进阶 | |
-| `seasonality` 季节性 | ✅ | ✅ | C | 需 ≥ 2 年数据 |
+| `ad_count` Job ads | ✅ | ✅ | ✅ | |
+| `share_of_ads` Share of all ads | ✅ Default | ✅ | ✅ | |
+| `growth_12m` 12-month change | ✅ | ✅ Default | ✅ | Include absolute counts |
+| `entry_level_share` Entry-level share | ✅ | ✅ | ✅ | Differentiating metric |
+| `no_pr_required_share` Ads not requiring PR/citizenship | ✅ | ✅ | ✅ | Essential for international students; extracted from ad text, with method and error disclosed |
+| `employer_concentration` Employer concentration | ✅ | ✅ | ✅ | "How many different employers are hiring" |
+| `salary_median` Median salary | ✅ | ✅ | ✅ | Include skills (user decision, 2026-10-17): median disclosed salary among ads mentioning the skill |
+| `salary_p10_p90` Salary range | ❌ | ✅ | Advanced | |
+| `skill_premium` Skill premium | ✅ | ❌ | Advanced | Enable only with sufficient data |
+| `remote_share` Remote/hybrid share | ✅ | ✅ | Advanced | |
+| `contract_share` Contract share | ✅ | ✅ | Advanced | |
+| `skills_per_ad` Skills per job ad | ❌ | ✅ | Advanced | |
+| volatility Volatility | ✅ | ✅ | Advanced | |
+| seasonality Seasonality | ✅ | ✅ | C | Requires ≥ 2 years of data |
 
-### 7.2 盘面与 Ticker card
+### 7.2 Board and ticker cards
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-M1 | 未登录用户可浏览盘面、搜索标的、查看 ticker card 完整页 | M | 原文档 2d「先给价值再要信息」 | 无需账号即可访问所有公开数据页面 |
-| FR-M2 | Ticker card 三种尺寸：列表行（名称、当前值、变化、sparkline）/ 卡片（+ entry-level 占比、地区、关键基本面）/ 完整页（完整走势、指标切换、同现技能、薪资分位、"找人聊"入口） | M | — | 三种尺寸共用一个组件体系 |
-| FR-M3 | 岗位页展示成分技能及权重；技能页展示哪些岗位需要它；同现技能可点击跳转 | M | — | 任意两跳内可在 skill ↔ role 之间来回 |
-| FR-M4 | 指标切换器只提供有效组合（§7.1 矩阵） | M | — | 无效组合不可选 |
-| FR-M5 | 两个标的并排对比（如两门选修对应的技能、两个方向对应的岗位），显示相关性、可迁移性、学习投入信息 | M | R3、US1 | 学生能说出选择背后的证据与取舍 |
-| FR-M6 | 支持"30 秒速览"（watchlist 摘要）与"15 分钟深入"（对比、筛选、下钻）两种使用模式，移动端优先 | M | 原文档 2c | 移动端 375px 宽度下核心流程可完成 |
+| FR-M1 | Anonymous users can browse the board, search instruments, and view full ticker pages | M | Original 2d: value before information | All public data pages accessible without an account |
+| FR-M2 | Three ticker sizes: row (name, current value, change, sparkline); card (adds entry-level share, location, key fundamentals); full page (history, metric selection, co-occurring skills, salary percentiles, chat entry) | M | — | Shared component system across sizes |
+| FR-M3 | Role pages show component skills and weights; skill pages show roles requiring them; co-occurring skills are linked | M | — | Skill ↔ role navigation within two hops |
+| FR-M4 | Metric selector offers only valid combinations (§7.1 matrix) | M | — | Invalid combinations unavailable |
+| FR-M5 | Compare two instruments side by side (e.g. skills linked to electives or roles linked to career paths), including relevance, transferability, and learning effort | M | R3, US1 | Students can explain evidence and tradeoffs |
+| FR-M6 | Support a 30-second watchlist overview and 15-minute exploration (compare, filter, drill down), mobile first | M | Original 2c | Core flows work at 375px |
 
-### 7.3 筛选器（Filter）
+### 7.3 Filters
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-F1 | 规则式筛选：一条规则 = 工作模式（现场/混合/远程）+ 一组地点；可添加多条，结果取并集 | M | 原文档 3.3 | 能表达"Sydney/Melbourne 现场 ∪ 澳新远程" |
-| FR-F2 | 默认只显示一条规则，复合能力渐进披露 | M | — | 新用户首次看到的是单条规则 |
-| FR-F3 | 筛选条件以自然语言回读（"当前显示：Sydney 或 Melbourne 的现场岗位，加上澳新范围内的远程岗位"） | M | — | 任何筛选状态都有回读文本 |
-| FR-F4 | 地点层级：区域 → 城市 → 州 → 国家，任意层级可选 | M | — | |
-| FR-F5 | 岗位层级（entry-level / graduate / 全部）与工作权利（不要求 PR/公民）与地理筛选同层 | M | R2 | |
-| FR-F6 | 筛选条件保存为 watchlist 条目的一部分（"Rust，entry-level，Sydney 现场或 AU 远程"才是追踪对象） | M | 原文档 3.3(5) | 数据模型中 watchlist 条目包含 filter |
+| FR-F1 | Rule-based filtering: work mode (onsite/hybrid/remote) + locations per rule; multiple rules form a union | M | Original 3.3 | Can express "Sydney/Melbourne onsite ∪ AU/NZ remote" |
+| FR-F2 | Start with one rule; progressively disclose compound filtering | M | — | New users initially see a single rule |
+| FR-F3 | Read filters back in natural language ("Currently showing onsite roles in Sydney or Melbourne, plus remote roles across AU/NZ") | M | — | Every filter state has a textual readback |
+| FR-F4 | Location hierarchy: region → city → state → country; any level selectable | M | — | |
+| FR-F5 | Seniority (entry-level / graduate / all) and work rights (no PR/citizenship requirement) sit alongside geography | M | R2 | |
+| FR-F6 | Save filters within watchlist entries ("Rust, entry-level, Sydney onsite or AU remote" is the tracked object) | M | Original 3.3(5) | Watchlist model includes filters |
 
-### 7.4 Watchlist 与提醒
+### 7.4 Watchlist and alerts
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-W1 | 登录用户可将"标的 + 筛选条件"加入 watchlist，标记为"已持有"或"关注中" | M | — | |
-| FR-W2 | Watchlist 显示自加入以来的变化 | M | — | |
-| FR-W3 | 信号触发时在 watchlist 上高亮，并提供"找人聊聊"入口 | M | R6 | |
-| FR-W4 | 邮件 digest（周/月，可关闭）与信号提醒 | S | — | 用户可在设置中调整频率或退订 |
+| FR-W1 | Signed-in users add instrument + filter to a watchlist as held or watching | M | — | |
+| FR-W2 | Show change since adding an entry | M | — | |
+| FR-W3 | Highlight triggered signals and provide a chat entry | M | R6 | |
+| FR-W4 | Weekly/monthly email digest (optional) and signal alerts | S | — | Users can change frequency or unsubscribe in settings |
 
-### 7.5 Onboarding 与技能画像
+### 7.5 Onboarding and skill profiles
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-O1 | Tier 0（约 10 秒）：大学 + 学位 + 年级 → 推断技能画像 → 立刻看到个性化盘面 | M | R8 | 3 个字段内完成 |
-| FR-O2 | Tier 1（约 60 秒）：从预填列表勾选修过的课程（unit code），补充技能 | M | — | 首发学校的课程目录可选 |
-| FR-O3 | 任何一层都可以跳过或中途停止 | M | R8 | |
-| FR-O4 | 推断的技能明确标为"建议"并带置信度；一次操作即可确认或删除 | M | R8、SR4、US7 | 可用性测试中参与者一步完成纠正 |
-| FR-O5 | 画像以"已确认技能 / 建议探索 / 下一步"的进展方式呈现；不显示百分位、排名、准备度分数 | M | R7、SR4、US2 | 可用性测试中无人将其理解为排名 |
-| FR-O6 | 技能很少的新用户看到的是"起点 + 可行的下一步"，而不是空白或缺口列表 | M | 访谈 E01/E02 | 专门的空状态设计 |
-| FR-O7 | Tier 2 简历导入：解析结果必须人工确认，绝不静默生效；自动剥离姓名、地址、电话、签证状态 | C | 原文档 2d(4) | |
+| FR-O1 | Tier 0 (~10 seconds): university + degree + year → inferred skill profile → immediate personalised board | M | R8 | At most three fields |
+| FR-O2 | Tier 1 (~60 seconds): select completed units from a prefilled list to add skills | M | — | Launch university's unit catalogue available |
+| FR-O3 | Any tier can be skipped or stopped midway | M | R8 | |
+| FR-O4 | Label inferred skills as suggestions with confidence; confirm/remove in one action | M | R8, SR4, US7 | Participants correct an inference in one step |
+| FR-O5 | Frame profiles as confirmed skills / suggested exploration / next steps; no percentiles, rankings, or readiness scores | M | R7, SR4, US2 | No usability participant interprets it as ranking |
+| FR-O6 | New users with few skills see a starting point and feasible next step, not a blank page or gap list | M | Interviews E01/E02 | Dedicated empty states |
+| FR-O7 | Tier 2 resume import requires manual confirmation; never apply silently. Strip names, addresses, phone numbers, and visa status automatically | C | Original 2d(4) | |
 
-### 7.6 缺口诊断
+### 7.6 Gap diagnosis
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-G1 | 选择目标岗位后，比较岗位成分技能与学生画像，给出下一步优先项（少量、可行） | M | SR1、US1 | 最多突出 3 个优先项 |
-| FR-G2 | 每个推荐说明理由（相关性、entry-level 适用性、可迁移性、学习投入） | M | R3 | |
-| FR-G3 | 提供获取途径提示（课程、项目、证书），来源可追溯 | S | — | |
+| FR-G1 | Compare a selected role's component skills with the student's profile and suggest a few feasible priorities | M | SR1, US1 | Highlight at most three priorities |
+| FR-G2 | Explain each recommendation's relevance, entry-level suitability, transferability, and learning effort | M | R3 | |
+| FR-G3 | Suggest traceable ways to acquire skills (units, projects, credentials) | S | — | |
 
-### 7.7 从业者侧（Supply）
+### 7.7 Practitioner supply
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-P1 | 从业者主动注册，通过**工作邮箱域名验证**确认在职身份 | M | 竞品 §4.2(4) 安全 | 未验证者不可被匹配 |
-| FR-P2 | 填写：持有技能、入行年份、当前岗位与行业、愿聊话题、每月上限次数 | M | R4 | |
-| FR-P3 | 发布可约时段（非开放 DM），支持时区 | M | 竞品 ADPList 经验 | |
-| FR-P4 | 收到请求时看到：学生年级/专业、触发信号、具体决策问题、预计时长 | M | US8 | |
-| FR-P5 | 一键接受 / 改期 / 婉拒；婉拒无需理由 | M | US8 | |
-| FR-P6 | 随时暂停接受请求 | M | — | |
+| FR-P1 | Practitioners opt in and verify employment through a **work-email domain** | M | Competitor §4.2(4), safety | Unverified practitioners cannot be matched |
+| FR-P2 | Record skills, industry-entry year, current role/industry, topics, and monthly chat cap | M | R4 | |
+| FR-P3 | Publish bookable slots (not open DMs), with time-zone support | M | ADPList lessons | |
+| FR-P4 | Requests show student year/major, triggering signal, specific decision question, and duration | M | US8 | |
+| FR-P5 | One-click accept / reschedule / decline; no reason required for declining | M | US8 | |
+| FR-P6 | Pause requests at any time | M | — | |
 
-### 7.8 匹配与咖啡聊请求
+### 7.8 Matching and coffee-chat requests
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-C1 | 从 ticker card 或 watchlist 信号发起"找人聊"，自动携带所选信号与筛选条件 | M | R6 | |
-| FR-C2 | 按信号匹配：持有该技能 + 入行时间 + 有开放时段 + 未达当月上限；返回最多 3 位候选人 | M | R4、C7 | |
-| FR-C3 | 每位候选人显示匹配理由、话题、可约时段、入行路径 | M | R4 | |
-| FR-C4 | 基于信号与学生决策问题生成 3 条 conversation starter，学生可编辑 | M | R4、SR6 | |
-| FR-C5 | 学生选择时段、填写决策问题后发出请求 | M | R6、SR5 | |
-| FR-C6 | 匹配为空时降级：放宽到相邻技能 / 加入等待队列 / 转为异步问答（C） | M | 原文档 T4 | 不出现空白死路 |
-| FR-C7 | 请求超时（默认 72 小时）自动释放并静默推荐下一位；不向学生展示"被拒"或回复率 | M | R5、SR6 | |
-| FR-C8 | 婉拒后立即给替代候选人，文案不带评判 | M | R5 | |
-| FR-C9 | 确认后发送会前提醒（含日历文件与准备模板）；会议链接由从业者提供或系统生成 **[待定，见 §14]** | M | — | |
-| FR-C10 | No-show 规则上线即生效：双方确认出席，多次缺席的从业者暂停匹配；规则对双方公开 | M | 竞品 ADPList | |
-| FR-C11 | 学生可见信息由学生逐字段控制（从业者只看到学生允许的字段） | M | R8 | |
+| FR-C1 | Start a chat from a ticker card or watchlist signal, carrying the selected signal and filters | M | R6 | |
+| FR-C2 | Match on skill held + industry-entry time + open slots + monthly capacity; return at most three candidates | M | R4, C7 | |
+| FR-C3 | Show each candidate's match reason, topics, available times, and entry path | M | R4 | |
+| FR-C4 | Generate three editable conversation starters from the signal and student's decision question | M | R4, SR6 | |
+| FR-C5 | Student chooses a slot and enters a decision question before requesting | M | R6, SR5 | |
+| FR-C6 | Empty-match fallback: adjacent skills / waitlist / asynchronous Q&A (C) | M | Original T4 | No blank dead ends |
+| FR-C7 | Timeout (default 72 hours) automatically releases requests and quietly suggests the next person; never show rejection labels or reply rates to students | M | R5, SR6 | |
+| FR-C8 | Declines immediately offer alternatives, without judgemental copy | M | R5 | |
+| FR-C9 | Confirmation sends reminders with calendar files and preparation templates; meeting link supplied by practitioner or generated by system **[Pending; §14]** | M | — | |
+| FR-C10 | No-show rules active at launch: both parties confirm attendance; repeated practitioner absences pause matching; rules visible to both sides | M | ADPList lessons | |
+| FR-C11 | Students control visibility field by field; practitioners see only permitted fields | M | R8 | |
 
-### 7.9 复盘（Debrief）
+### 7.9 Debrief
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-R1 | L0：聊完后一次点击投票"更想学 / 更不想学 / 没变" + 一行可选备注，记入该标的下的个人记录 | M | 原文档 D2 | 一次点击完成 |
-| FR-R2 | L2：从业者一次点击确认"聊了 / 没聊成"，用于出席记录 | M | — | |
-| FR-R3 | L1：会前 conversation starter 会后变成填空，每条一行、可跳过 | S | — | |
-| FR-R4 | 聚合情绪面：展示"聊过该技能的 N 人中 M 人更想学"，N 小于阈值时不展示 | C | — | |
-| FR-R5 | L3：双方同意后，摘要作为该标的下的半公开内容 | C | — | |
+| FR-R1 | L0: one-click more interested / less interested / unchanged vote, plus an optional one-line note, saved in personal instrument history | M | Original D2 | Complete in one click |
+| FR-R2 | L2: practitioner confirms chatted / did not chat in one click for attendance records | M | — | |
+| FR-R3 | L1: pre-chat starters become optional one-line fill-in prompts afterwards | S | — | |
+| FR-R4 | Aggregate sentiment: "M of N people who discussed this skill became more interested"; hide below the N threshold | C | — | |
+| FR-R5 | L3: with both parties' consent, publish a semi-public summary under the instrument | C | — | |
 
-### 7.10 账号、隐私与安全
+### 7.10 Accounts, privacy, and safety
 
-| ID | 需求 | 优先级 | 研究依据 | 验收标准 |
+| ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-A1 | 邮箱（magic link 或密码）与 Google 登录 | M | — | |
-| FR-A2 | 注册时确认年满 18 岁 | M | — | |
-| FR-A3 | 最少必填字段；敏感字段（签证状态、成绩、被拒经历）全部可选，并说明填写的好处 | M | R8、P02 | |
-| FR-A4 | 逐字段可见性控制（仅自己 / 匹配的从业者可见） | M | R8 | |
-| FR-A5 | 账号删除（含全部个人数据）与个人数据导出 | M | Privacy Act | 删除后 30 天内完成物理删除 |
-| FR-A6 | 隐私政策与服务条款页面；收集个人信息前告知目的 | M | APP 1、APP 5 | |
-| FR-A7 | 举报与屏蔽（学生和从业者双向） | M | 陌生人匹配安全 | |
-| FR-A8 | 界面语言：英文为主 **[假设]**；架构需支持后续多语言 | M | — | 文案集中管理，不写死在组件内 |
+| FR-A1 | Email (magic link or password) and Google sign-in | M | — | |
+| FR-A2 | Confirm age 18+ at registration | M | — | |
+| FR-A3 | Minimise required fields; sensitive fields (visa status, grades, rejection experiences) are optional with benefits explained | M | R8, P02 | |
+| FR-A4 | Field-level visibility (self only / matched practitioner) | M | R8 | |
+| FR-A5 | Account deletion with all personal data, plus personal data export | M | Privacy Act | Physical deletion within 30 days |
+| FR-A6 | Privacy policy and terms pages; explain purpose before collecting personal information | M | APP 1, APP 5 | |
+| FR-A7 | Bidirectional reporting and blocking for students and practitioners | M | Stranger-matching safety | |
+| FR-A8 | Primarily English UI **[Assumption]**, with architecture supporting later languages | M | — | Centralised copy, not hardcoded in components |
 
-### 7.11 运营与管理后台
+### 7.11 Operations and administration
 
-| ID | 需求 | 优先级 | 验收标准 |
+| ID | Requirement | Priority | Acceptance |
 |---|---|---|---|
-| FR-X1 | 管理员查看与处理举报、暂停用户 | M | |
-| FR-X2 | 从业者审核队列（邮箱验证失败时人工审核） | M | |
-| FR-X3 | 数据管道运行状态与最近更新时间 | M | 管道失败时通知管理员 |
-| FR-X4 | 核心漏斗与 North Star 指标看板 | S | |
-| FR-X5 | 技能别名与分类维护 | S | |
+| FR-X1 | Admin review/handling of reports and user suspension | M | |
+| FR-X2 | Practitioner review queue when email verification fails | M | |
+| FR-X3 | Data-pipeline status and last update | M | Notify admins of pipeline failures |
+| FR-X4 | Core funnel and North Star dashboard | S | |
+| FR-X5 | Skill alias and classification maintenance | S | |
 
-## 8. 关键用户流程
+## 8. Key journeys
 
-### 8.1 主流程：信号 → 咖啡聊 → 复盘
+### 8.1 Main flow: signal → coffee chat → debrief
 
-1. 学生在 watchlist 看到信号："Rust，Sydney entry-level，12 个月 +38%（120 → 166 个岗位）"
-2. 打开 ticker card 完整页：同现技能、entry-level 占比、地区分布、数据来源与定义
-3. 点击"找一个用 Rust 的人聊聊"
-4. 系统返回最多 3 位候选人，附匹配理由与 3 条 conversation starter
-5. 学生选人、选时段，填写正在纠结的决策（如"下学期选 COMP3xxx 还是 INFO3xxx"），发出请求
-6. 从业者看到上下文，接受 / 改期 / 婉拒
-7. 确认后双方收到邮件与日历邀请；会前提醒附准备模板
-8. 会后学生做 L0 投票，从业者确认出席（L2）
-9. 结果记入该技能下的个人记录
+1. A student sees a watchlist signal: "Rust, Sydney entry-level, 12 months +38% (120 → 166 jobs)".
+2. Open the full ticker page: co-occurring skills, entry-level share, regional distribution, sources, and definitions.
+3. Select "Talk to someone who uses Rust".
+4. Receive at most three candidates with match reasons and three conversation starters.
+5. Choose a person and slot, enter a decision (e.g. "COMP3xxx or INFO3xxx next semester?"), and request.
+6. The practitioner sees context and accepts / reschedules / declines.
+7. Both receive confirmation email and calendar invitations; reminders include preparation templates.
+8. Afterwards, the student casts an L0 vote; the practitioner confirms attendance (L2).
+9. Save the result in the student's history for that skill.
 
-### 8.2 必须设计的失败分支
+### 8.2 Required failure paths
 
-| 情况 | 处理 |
+| Situation | Response |
 |---|---|
-| 匹配为空（冷启动） | 放宽到相邻技能 → 加入等待队列（有人加入时邮件通知）→（Post-MVP）异步问答 |
-| 被婉拒 | 立即展示替代候选人；文案不暗示学生有问题 |
-| 对方不回 | 72 小时自动释放，静默推荐下一位；学生不会一直悬着 |
-| No-show | 双方确认；缺席记入内部可靠度；规则事先公开 |
-| 样本不足 | 不画趋势，提示放宽筛选 |
-| 数据过期 | 显示最后更新时间；超过阈值时标注"数据可能过期" |
+| No matches (cold start) | Adjacent skills → waitlist (email when someone joins) → Post-MVP asynchronous Q&A |
+| Declined | Show alternatives immediately; do not imply a problem with the student |
+| No reply | Release after 72 hours and quietly suggest the next person; no indefinite uncertainty |
+| No-show | Both parties confirm; record absence in internal reliability; disclose rules beforehand |
+| Insufficient sample | Omit trends and suggest broader filters |
+| Stale data | Show last update; label potentially stale data after a threshold |
 
-## 9. 非功能需求
+## 9. Non-functional requirements
 
-| ID | 类别 | 需求 |
+| ID | Category | Requirement |
 |---|---|---|
-| NFR-1 | 性能 | 盘面与 ticker card 页面在 4G 移动网络下 LCP < 2.5s；公开页面可缓存 |
-| NFR-2 | 移动优先 | 所有核心流程在 375px 宽度下可完成 |
-| NFR-3 | 无障碍 | WCAG 2.2 AA；图表提供文字替代和数据表视图；不单靠颜色区分涨跌 |
-| NFR-4 | 隐私合规 | 遵守 Privacy Act 1988 与 APPs；个人数据存储在澳洲区域；数据最小化；目的限定 |
-| NFR-5 | 安全 | 数据库行级权限（RLS）；密钥不入库、不入前端；输入校验；速率限制；依赖漏洞扫描 |
-| NFR-6 | 数据时效 | 每个数据源有明确的更新频率；每个指标显示最后更新时间 |
-| NFR-7 | 可用性 | 目标月可用性 99.5%（托管服务 SLA 范围内） |
-| NFR-8 | 可观测性 | 错误监控、结构化日志、核心事件埋点（不记录敏感字段） |
-| NFR-9 | 成本 | MVP 阶段所有服务使用免费档；唯一预期付费项为域名 |
-| NFR-10 | 可维护性 | 类型安全；核心逻辑（指标计算、匹配、超时）有自动化测试；CI 通过才能合并 |
-| NFR-11 | 可移植性 | 不绑死单一托管商的专有功能（Vercel Hobby 不允许商用，商用前可能迁移） |
+| NFR-1 | Performance | Board/ticker LCP < 2.5s on mobile 4G; public pages cacheable |
+| NFR-2 | Mobile first | All core flows work at 375px |
+| NFR-3 | Accessibility | WCAG 2.2 AA; chart text alternatives and data-table views; colour never the sole indicator of direction |
+| NFR-4 | Privacy | Privacy Act 1988 and APPs; Australian personal-data storage; minimisation and purpose limitation |
+| NFR-5 | Security | Database RLS; secrets excluded from the repository and frontend; input validation, rate limits, dependency scans |
+| NFR-6 | Freshness | Explicit update frequency per source and last update per metric |
+| NFR-7 | Availability | Target 99.5% monthly availability, within hosting SLAs |
+| NFR-8 | Observability | Error monitoring, structured logs, core event tracking without sensitive fields |
+| NFR-9 | Cost | Free tiers throughout MVP; domain is the only expected paid item |
+| NFR-10 | Maintainability | Type safety; automated metric/matching/timeout tests; CI must pass before merge |
+| NFR-11 | Portability | Avoid proprietary hosting dependencies (Vercel Hobby prohibits commercial use; migration may be needed) |
 
-## 10. UX 原则
+## 10. UX principles
 
-来自用户研究，优先级高于视觉偏好：
+Research takes precedence over visual preferences:
 
-1. **每个数字都要解释自己**：定义、分母、来源、时间窗就在数字旁边，一次点击可见（R1）。
-2. **先给价值再要信息**：不登录就能看到真实盘面。
-3. **方向，不是差距**：展示"起点 + 下一步"，永远不展示排名、百分位、准备度分数（R7）。
-4. **推断即建议**：系统猜的东西都标明"建议"，一步可改（R8）。
-5. **需求只是输入**：任何推荐都同时说明相关性和投入成本，不暗示"涨了就该学"（R3）。
-6. **联系要安全**：只展示主动加入的从业者；拒绝和沉默私下处理，永远给下一步（R4、R5）。
-7. **隐喻要轻**：watchlist、走势、ticker card 可以用；"你的组合在跌"不可以用。
-8. **异步是常态**：请求的 pending 状态要让人安心，而不是焦虑地等。
-9. **少即是多**：每种标的只露出少量常用指标，其余放进"进阶"，避免指标崇拜。
+1. **Every number explains itself**: definition, denominator, source, and time window available beside it in one click (R1).
+2. **Value before information**: real board access without sign-in.
+3. **Direction, not deficit**: starting point + next step; never rankings, percentiles, or readiness scores (R7).
+4. **Inferences are suggestions**: label system guesses and allow one-step correction (R8).
+5. **Demand is one input**: recommendations also explain relevance and effort; growth never implies an obligation to learn (R3).
+6. **Safe outreach**: opted-in practitioners only; handle declines and silence privately, always offering a next step (R4, R5).
+7. **Light metaphors**: watchlists, trends, and ticker cards are acceptable; "your portfolio is falling" is not.
+8. **Asynchronous by default**: pending requests should feel reassuring, not anxiety-inducing.
+9. **Less is more**: expose a few common metrics per type and place others under Advanced, avoiding metric worship.
 
-## 11. 数据需求与来源
+## 11. Data requirements and sources
 
-| 来源 | 内容 | 许可 | 用途 | 风险 |
+| Source | Content | Licence | Use | Risk |
 |---|---|---|---|---|
-| JSA — Internet Vacancy Index / NERO | 职业（ANZSCO）× 地区的招聘需求，月度 | CC BY 4.0（需复核） | 岗位级需求骨架；**政府口径的总量标尺**，用来计算覆盖率并给技能级数据重新加权 | **职业级而非技能级** |
-| JSA — Skills Priority List | 职业短缺评级 | CC BY 4.0（需复核） | 岗位基本面（后续，第一版不接） | 年度更新 |
-| ABS | 劳动力统计、ANZSCO 分类 | CC BY 4.0（需复核） | 分类体系、宏观背景 | |
-| 招聘系统（ATS）公开职位接口：第一版只用 Greenhouse、Lever、Ashby | 雇主自己发布的在招职位全文 | 接口公开，但没有明文许可；商业化前要厂商书面答复 | **技能级**计数、entry-level、工作权利、远程等文本派生指标 | 只覆盖用 ATS 的中大雇主，中小企业偏少（用覆盖率说明）；历史从开始采集起累积 |
-| 首发大学课程目录 | Unit code 与课程描述 | 需确认使用条款 | Tier 1 onboarding、技能推断 | |
-| 平台自有数据 | 复盘投票、匹配结果 | 自有 | 情绪面、匹配优化 | 需足够样本 |
+| JSA — Internet Vacancy Index / NERO | Monthly occupation (ANZSCO) × region job demand | CC BY 4.0 (recheck) | Role-demand backbone; **official aggregate benchmark** for coverage and skill-data reweighting | **Occupation-level, not skill-level** |
+| JSA — Skills Priority List | Occupational shortage ratings | CC BY 4.0 (recheck) | Role fundamentals, later; excluded initially | Annual updates |
+| ABS | Labour statistics, ANZSCO classification | CC BY 4.0 (recheck) | Classification and macro context | |
+| Public ATS job APIs: initially Greenhouse, Lever, Ashby only | Full active job ads published by employers | Public APIs without explicit licences; obtain written vendor responses before commercialisation | **Skill-level** counts and text-derived entry-level, work-rights, remote metrics | Bias toward medium/large ATS employers, fewer SMEs (disclose coverage); history accumulates from collection start |
+| Launch university unit catalogue | Unit codes and descriptions | Check terms | Tier 1 onboarding and skill inference | |
+| Platform-owned data | Debrief votes and matching outcomes | Owned | Sentiment and matching improvement | Requires sufficient samples |
 
-**关键数据风险**：公开数据主要是职业级的；**技能级时间序列很可能需要从上线起自建快照逐步积累**（例如每日按技能关键词记录广告数）。架构需要：
+**Key data risk**: public data is predominantly occupational. **Skill-level time series likely require building snapshots from launch onward**, such as daily ad counts by skill keywords. The architecture must:
 
-- 从第一天就开始采集并存档快照，早期用职业级数据 + 短期技能数据支撑界面
-- 所有文本派生指标（entry-level、不要求 PR、远程）标注抽取方法与已知误差
-- 数据源可替换（适配层），不绑死单一来源
-- 覆盖率是一等指标：按职业 × 州对照 IVI 计算，覆盖不足时说明或不显示信号
+- Collect and archive snapshots from day one, initially using occupational data and short skill histories.
+- Disclose extraction methods and known errors for entry-level, no-PR, remote, and all other text-derived metrics.
+- Provide replaceable source adapters rather than dependence on one source.
+- Treat coverage as a first-class metric: compare occupation × state against IVI; disclose low coverage or suppress signals.
 
-**第一版数据来源（2026-10-23 用户决定）**：技能级用 Greenhouse、Lever、Ashby 的公开职位接口，岗位级与校准用 JSA IVI。Adzuna 免费 API 禁止聚合统计商用，第一版不接；Workday 没有公开接口，不用；LinkedIn、SEEK、Indeed 不抓取。付费数据合作等有客户后再谈。
+**Initial sources (user decision, 2026-10-23)**: Greenhouse, Lever, and Ashby public APIs for skills; JSA IVI for roles and calibration. Adzuna's free API prohibits commercial aggregate statistics and is excluded. Workday has no public API. Do not scrape LinkedIn, SEEK, or Indeed. Negotiate paid partnerships after acquiring customers.
 
-**更新节奏**：指标每天结算一次；盘中每小时检查活跃雇主的新职位，喂给行情条和"今日新增"。每个数据面都标出更新时间。依据见 `docs/research/data-sources.md`。
+**Cadence**: settle metrics daily; check active employers for new jobs hourly during the day to feed the ticker and "new today". Show update times on every data surface. Evidence: `docs/research/data-sources.md`.
 
-## 12. 商业与运营
+## 12. Business and operations
 
-### 12.1 商业模式
+### 12.1 Business model
 
-- **付费方不限**：学生、从业者、大学、雇主及其他机构都可以是付费者
-- 可能的收入来源 **[待定]**：大学就业中心的机构合作版、从业者侧增值、面向学生的付费内容或服务（如课程、深度辅导）、面向机构的聚合数据与报告等
-- **中立防火墙**（任何收入来源都必须遵守）：
-  - 收入不影响盘面：指标、信号、排序、匹配理由不接受任何付费方的购买或调整
-  - 利益披露：与某个技能、岗位或课程存在收入关系时，在相关页面明确标注
-  - 隐私不出售：学生个人数据不因任何付费关系提供给第三方；对外只提供聚合、不可识别个人的数据
-- MVP 阶段不收费，不接入支付
+- **Any party may pay**: students, practitioners, universities, employers, or other organisations.
+- Potential revenue **[Pending]**: career-centre partnerships, practitioner upgrades, paid student content/services (courses, deeper coaching), institutional aggregate data/reports.
+- **Neutrality firewall** (applies to all revenue):
+  - Revenue cannot influence the board: no payer can buy or alter metrics, signals, sorting, or match reasons.
+  - Disclose financial relationships with a skill, role, or course on relevant pages.
+  - Never sell privacy: no payment relationship grants third-party access to student personal data; external data is aggregate and non-identifying only.
+- No MVP charging or payment integration.
 
-### 12.2 首发策略（冷启动）
+### 12.2 Launch strategy (cold start)
 
-吸取 Lunchclub"稀疏网络中价值崩塌"的教训：
+Learn from Lunchclub's value collapse in sparse networks:
 
-- **首发限定单校、单学院、单行业**：**[假设]** 悉尼大学工程与 IT 学院 × 软件/数据方向
-- 技能与岗位目录只覆盖该方向，保证每个标的都有足够数据
-- 从业者供给优先来自近 3 年校友，与就业中心和学生社团合作招募
-- 上线前从业者数达到 §4.2 目标值才开放学生预约；之前只开放盘面
+- **One university, one faculty, one industry initially**: **[Assumption]** University of Sydney Engineering and IT × software/data.
+- Limit the skill/role catalogue to that niche so every instrument has enough data.
+- Recruit practitioners primarily from alumni within three years of graduation, via career centres and student societies.
+- Open student bookings only when practitioner supply reaches §4.2's target; offer the board alone beforehand.
 
-## 13. 风险
+## 13. Risks
 
-| 风险 | 影响 | 缓解 |
+| Risk | Impact | Mitigation |
 |---|---|---|
-| 供给侧冷启动：没有从业者 | 核心闭环无法运行 | 首发细分；先开放盘面积累学生；预约功能达到供给阈值才开 |
-| 技能级数据不足或不可商用 | 核心差异化失效 | 从第一天自建快照；职业级数据兜底；数据源适配层 |
-| 学生其实按岗位而非技能思考（U1） | 标的粒度错误 | skill 与 role 双标的并存，看使用数据调整默认 |
-| 隐喻误导或伤人 | 信任与情绪安全 | §10 原则；理解度测试；可关闭隐喻 |
-| 陌生人匹配的安全问题 | 法律与声誉 | 工作邮箱验证、18+、举报屏蔽、行为准则、会议在第三方平台进行 |
-| 复盘无人使用 | 情绪面数据缺失 | L0 压到一次点击；作为数据增益而非核心依赖 |
-| 免费档限制（Vercel 不允许商用、Supabase 闲置暂停、邮件额度） | 上线受阻 | 架构可迁移；上线前评估付费节点 |
-| 研究样本小（问卷 6 人、访谈 4 人、从业者 0 人） | 需求判断偏差 | 所有 [假设] 项上线后验证；埋点与可用性测试 |
+| No practitioners at launch | Core loop cannot work | Narrow niche; build student interest through the board first; gate bookings on supply |
+| Insufficient or commercially unusable skill data | Core differentiation fails | Day-one snapshots; occupation fallback; source adapters |
+| Students think in roles rather than skills (U1) | Wrong instrument granularity | Offer both; adjust defaults using usage data |
+| Misleading or harmful metaphors | Trust and emotional safety | §10 principles, comprehension tests, disable metaphors |
+| Stranger-matching safety | Legal and reputational harm | Work-email verification, 18+, reporting/blocking, conduct rules, third-party meetings |
+| No debrief usage | No sentiment data | One-click L0; treat as enrichment rather than a core dependency |
+| Free-tier limits (commercial restrictions, idle pauses, email quotas) | Launch blocked | Portable architecture; assess upgrade points before launch |
+| Small research sample (6 questionnaire, 4 interviews, 0 practitioners) | Biased requirements | Validate all assumptions after launch; analytics and usability tests |
 
-## 14. 待定问题
+## 14. Open questions
 
-| # | 问题 | 影响 | 建议默认 |
+| # | Question | Impact | Suggested default |
 |---|---|---|---|
-| Q1 | 产品名 | 域名、品牌 | **已定（2026-10-23）**：Brewdex；域名 `brewdex.app` 已买；使用 `APP_NAME` 常量 |
-| Q2 | 会议链接：从业者自带（Zoom/Meet/Teams）还是系统生成（如 Jitsi） | FR-C9 | 从业者自带链接，系统不托管视频 |
-| Q3 | 界面语言：仅英文，还是中英双语 | FR-A8 | 英文上线，架构支持 i18n |
-| Q4 | 首发学校、学院与行业 | 数据范围、课程目录 | 悉尼大学工程与 IT × 软件/数据 |
-| Q5 | 从业者验证：仅工作邮箱，还是加 LinkedIn 链接人工审核 | FR-P1 | 工作邮箱为主，人工审核兜底 |
-| Q6 | 招聘广告数据来源 | §11 | **已定（2026-10-23）**：Greenhouse / Lever / Ashby 公开职位接口 + JSA IVI 校准；商业化前取得书面答复 |
-| Q7 | 是否需要无隐喻模式 | §10 | 先做成设置项，看使用率 |
-| Q8 | 请求超时时长 | FR-C7 | 72 小时，可配置 |
+| Q1 | Product name | Domain, branding | **Decided 2026-10-23**: Brewdex; `brewdex.app` purchased; use `APP_NAME` |
+| Q2 | Practitioner-supplied Zoom/Meet/Teams link or system-generated link such as Jitsi? | FR-C9 | Practitioner supplies the link; no hosted video |
+| Q3 | English only or bilingual Chinese/English? | FR-A8 | Launch in English; support i18n architecturally |
+| Q4 | Launch university, faculty, industry | Data scope, unit catalogue | University of Sydney Engineering and IT × software/data |
+| Q5 | Work-email verification only, or manual review with LinkedIn link? | FR-P1 | Work email, manual fallback |
+| Q6 | Job-ad sources | §11 | **Decided 2026-10-23**: Greenhouse / Lever / Ashby public APIs + JSA IVI calibration; written responses before commercialisation |
+| Q7 | Metaphor-free mode needed? | §10 | Add a setting first; observe usage |
+| Q8 | Request timeout | FR-C7 | Configurable 72 hours |
 
-## 附录 A：需求追溯
+## Appendix A: Requirements traceability
 
-| 研究需求 | 内容摘要 | 对应功能需求 |
+| Research requirement | Summary | Functional requirements |
 |---|---|---|
-| R1 / SR2 / SR3 | 指标透明可解释 | FR-D2、FR-D3、FR-D5 |
-| R2 | 按专业/层级/地点/资格过滤 | FR-F1 – FR-F6 |
-| R3 | 相关性、投入、对比 | FR-M5、FR-G2 |
-| R4 | 只展示主动加入的从业者、匹配理由、话题、开场问题 | FR-P1 – FR-P3、FR-C2 – FR-C4 |
-| R5 / SR6 | 超时与拒绝私下处理并给替代 | FR-C6 – FR-C8 |
-| R6 / SR5 | 从信号到请求，携带决策上下文 | FR-C1、FR-C5、FR-W3 |
-| R7 / SR4 | 进展框架，不排名 | FR-O5、FR-O6 |
-| R8 / SR4 | 最少字段、推断可改、逐字段可见性 | FR-O3、FR-O4、FR-A3、FR-A4、FR-C11 |
-| SR1 | 缺口诊断与下一步 | FR-G1 |
+| R1 / SR2 / SR3 | Transparent, interpretable metrics | FR-D2, FR-D3, FR-D5 |
+| R2 | Filter by major/seniority/location/eligibility | FR-F1 – FR-F6 |
+| R3 | Relevance, effort, comparison | FR-M5, FR-G2 |
+| R4 | Opted-in practitioners, match reasons, topics, starters | FR-P1 – FR-P3, FR-C2 – FR-C4 |
+| R5 / SR6 | Private timeout/decline handling with alternatives | FR-C6 – FR-C8 |
+| R6 / SR5 | Signal-to-request with decision context | FR-C1, FR-C5, FR-W3 |
+| R7 / SR4 | Progress framing, no rankings | FR-O5, FR-O6 |
+| R8 / SR4 | Minimal fields, editable inferences, field visibility | FR-O3, FR-O4, FR-A3, FR-A4, FR-C11 |
+| SR1 | Gap diagnosis and next steps | FR-G1 |
 
-## 附录 B：研究材料索引
+## Appendix B: Research index
 
-研究材料是写 PRD 时的依据，只读、不再更新；结论有变时改 PRD，不改研究文件。
+Research was the basis for this PRD and remains a read-only snapshot. Update the PRD when conclusions change, not research files.
 
-| 文件 | 内容 |
+| File | Content |
 |---|---|
-| `docs/research/competitor-analysis.md` | 竞品对比、差距分析、可复用资产、研究问题 |
-| `docs/research/interview-findings.md` | 访谈编码分析，6 个主要发现与设计含义 |
-| `docs/research/cross-validation.md` | 问卷与访谈的交叉验证 |
-| `docs/research/cross-validation-matrix.csv` | 逐构念的交叉验证矩阵 |
-| `docs/research/requirements-traceability.csv` | R1–R8 需求追溯与评估标准 |
-| `docs/research/data-sources.md` | 招聘广告数据来源调研：ATS 公开 API、JSA IVI 校准、覆盖偏差、为什么不用 Adzuna / LinkedIn / SEEK |
+| `docs/research/competitor-analysis.md` | Competitor comparison, gaps, reusable assets, research questions |
+| `docs/research/interview-findings.md` | Interview coding, six key findings, design implications |
+| `docs/research/cross-validation.md` | Questionnaire/interview triangulation |
+| `docs/research/cross-validation-matrix.csv` | Construct-level cross-validation matrix |
+| `docs/research/requirements-traceability.csv` | R1–R8 traceability and evaluation criteria |
+| `docs/research/data-sources.md` | ATS public APIs, JSA IVI calibration, coverage bias, and reasons for excluding Adzuna / LinkedIn / SEEK |

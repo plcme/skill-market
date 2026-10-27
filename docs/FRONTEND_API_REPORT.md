@@ -1,20 +1,20 @@
-# 前端暴露接口报告（frontend-v2）
+# Frontend API report (`frontend-v2`)
 
-> **快照，截至 FE-R2（2026-10-07）。** 之后 FE-R3 到 FE-R7 改过的部分（详情页单图与 `?metric=` / `?by=`、行情表去掉筛选与 `?f=`、Statistics、Watching 标签、held）这里没有同步，以代码为准。开始接后端（M1/M2）前整份刷新一次。
+> **Snapshot through FE-R2, 2026-10-07.** Later FE-R3–R7 detail single-chart metric/by parameters, board filter removal, Statistics, Watching, and held changes are not reflected; code takes precedence. Refresh fully before M1/M2 backend integration.
 
-| 项 | 内容 |
+| Item | Details |
 |---|---|
-| 分支 / worktree | `frontend-v2`，`../skill-market-fe2`，基于 `m0-foundation@a0428bd` |
-| 范围 | PRD M2–M7 的全部用户界面：公开盘面、学生侧、咖啡聊、从业者侧、管理后台、法律页 |
-| 数据 | 市场数字为确定性合成数据（`src/lib/market/engine.ts`）；用户数据存浏览器 `localStorage`（`src/lib/demo/store.ts`）。**不连接 Supabase、不发邮件** |
-| 目的 | 本文列出前端已经在调用的每一个读接口、写接口（action）与后台任务，作为后端（M1–M7）实现时的契约 |
-| 验证 | `pnpm lint`、`pnpm typecheck` 零错误；Vitest 14 个文件 118 项通过；生产构建 45 个路由；Playwright 32 项（1280 / 375 各 16，含 axe 无 serious/critical）通过 |
+| Branch/worktree | `frontend-v2`, `../skill-market-fe2`, based on `m0-foundation@a0428bd` |
+| Scope | All M2–M7 UI: public board, students, chats, practitioners, admin, legal |
+| Data | Deterministic synthetic market engine `src/lib/market/engine.ts`; user data browser `localStorage` `src/lib/demo/store.ts`. **No Supabase or email sending** |
+| Purpose | Every frontend read, action, and job as contract for M1–M7 backend |
+| Verification | lint/typecheck zero errors; 14 Vitest files/118 tests; build 45 routes; 32 Playwright, 16 each at 1280/375, axe no serious/critical |
 
-> 与 `m0-foundation` 工作区里未提交的旧版前端及其报告无关；本分支从 M0 提交重新实现，本报告只描述本分支。
+> Independent of the uncommitted older frontend/report in `m0-foundation`. This branch rebuilt from M0; report describes this branch only.
 
 ---
 
-## 1. 如何运行与演示
+## 1. Running/demonstrating
 
 ```sh
 cd ../skill-market-fe2
@@ -23,275 +23,281 @@ pnpm dev            # http://localhost:3000
 pnpm test:unit && pnpm build && pnpm test:e2e
 ```
 
-右下角（手机为左下）**Preview controls**：切换身份（Visitor / Student / Practitioner / Admin）、一键载入样例学生、模拟时钟（+1h / +24h / +72h / +7d，用于演示 72 小时超时、提醒、复盘）、查看"本应发出的邮件"（outbox）、重置数据。
+Bottom-right **Preview controls** (bottom-left on phone): Visitor/Student/`Practitioner`/Admin, load sample student, advance clock +1h/+24h/+72h/+7d for timeouts/reminders/debriefs, inspect would-be emails/outbox, reset.
 
-## 2. 架构约定（替换后端时不需改组件）
+## 2. Architecture contracts (swap backend without changing components)
 
-| 层 | 现在（预览） | 生产（ARCHITECTURE） |
+| Layer | Preview | Production architecture |
 |---|---|---|
-| 公开读 | `src/lib/queries/market.ts`，RSC 同步调用 fixture engine | RSC 查询 `metric_points` 并对 `expandFilterToCells()` 的 cell 求和；`revalidate=3600` + `revalidateTag('market')` |
-| 用户读 | `src/lib/api/*.ts` 中的 `select*(db, …)` 纯函数 | RSC + Supabase select（RLS） |
-| 写 | `src/lib/api/*.ts` 中的 `async` action：Zod 校验 → `latency()` → `transact()` → `Result<T>` | Server Actions（同名、同 Zod schema、同 `Result<T>`） |
-| 权限 | `guard(db, persona)`（`src/lib/api/client.ts`）+ `RequireSession` 组件 | route group layout 守卫 + RLS + `is_admin()` / `is_verified_practitioner()` |
-| 定时任务 | `runScheduledJobs(db, now)` 在每次读写前执行 | pg_cron → `/api/jobs/*` 与 SQL 函数 |
-| 邮件 | 写入 `db.outbox`（在 Preview controls 中查看） | `notifications_outbox` → Resend |
+| Public reads | queries/market.ts, synchronous RSC fixture engine | RSC `metric_points` sums over expandFilterToCells, `revalidate=3600`/revalidateTag market |
+| User reads | api/*.ts pure `select*(db, …)` | RSC Supabase/RLS |
+| Writes | async Zod → latency → transact → Result | Same-name/schema/result Server Actions |
+| Permissions | `guard(db, persona)`, api/client.ts, `RequireSession` | Route layouts/RLS/is_admin/is_verified_practitioner |
+| Jobs | `runScheduledJobs(db, now)` before reads/writes | pg_cron → jobs/SQL |
+| Email | `db.outbox` preview | `notifications_outbox` → Resend |
 
-**统一返回**：`type Result<T> = { ok: true; data: T } | { ok: false; error: ApiError }`，`ApiError = { code, message, fields? }`。
-`code ∈ unauthenticated | forbidden | validation | not_found | conflict | rate_limited | unavailable`；`message` 是 `messages/en/*.json` 中 `Errors.*` 的 key（UI 直接翻译），`fields` 为字段级错误 key。
+Return: `type Result<T> = { ok: true; data: T } | { ok: false; error: ApiError }`; ApiError = code/message/fields?. Codes unauthenticated/forbidden/validation/not_found/conflict/`rate_limited`/unavailable. Message is an `Errors.*` key in `messages/en/*.json`, translated directly by UI; fields are field-error keys.
 
-实体类型全部在 `src/lib/api/types.ts`（`DemoDB`、`Session`、`StudentProfile`、`StudentSkill`、`WatchlistItem`、`Practitioner`、`Slot`、`ChatRequest`、`ChatEvent`、`Report`、`Block`、`WaitlistEntry`、`OutboxEmail`、`PipelineRun`、`AliasOverride`），市场类型在 `src/lib/market/types.ts`（`FilterSpec`、`MetricReading`、`InstrumentSnapshot`、`Signal`、`SeriesPoint`、`DataSource`）。
+Entities in `src/lib/api/types.ts`: `DemoDB`, `Session`, `StudentProfile`, `StudentSkill`, `WatchlistItem`, `Practitioner`, `Slot`, `ChatRequest`, `ChatEvent`, `Report`, `Block`, `WaitlistEntry`, `OutboxEmail`, `PipelineRun`, `AliasOverride`. Market types in `src/lib/market/types.ts`: `FilterSpec`, `MetricReading`, `InstrumentSnapshot`, `Signal`, `SeriesPoint`, `DataSource`.
 
-## 3. 路由清单
+## 3. Routes
 
-| 路由 | 身份 | 主要 FR | 数据来源 |
+| Route | Identity | FRs | Data |
 |---|---|---|---|
-| `/` | 公开 | FR-M1、R7 | `getIndustryHeatmap`（hero 行业热力图）、`getMovers`（信号轮播）、`getBoard`、`getTape` |
-| `/market?type=all\|skill\|role\|industry&metric&f&sort=value\|change&view&q&layer=tool\|task`（`layer` 仅 Skills 页生效） | 公开 | FR-M1/M2/M4/M6、FR-F1–F5 | `getBoard`、`getSignalsNow` |
-| `/s/[slug]`、`/r/[slug]`、`/i/[slug]`（`?by=experience\|rights\|mode` 选择 breakdown 维度；类型不符时 308 重定向到正确前缀；未知 slug 若恰为核心能力别名，如 `/s/communication`，307 到 `/metrics#competency-…`，否则 404） | 公开 | FR-M2/M3、FR-D2–D5、FR-R1（本人复盘记录） | `getInstrumentDetail`、`selectDebriefsFor` |
-| `/compare?a&b&f` | 公开 | FR-M5 | `getComparison` |
-| `/search?q` | 公开 | FR-D6 | `searchWithSnapshots` |
-| `/metrics`、`/metrics/[key]` | 公开 | FR-D2、FR-M4 | registry、`getMetricExamples`；`/metrics#core-competencies`（ASC 核心能力说明，`#competency-<slug>` 锚点） |
-| `/sources` | 公开 | FR-D1/D5、§11 | `getSources` |
-| `/people` | 公开 | §8.1、R4 | `getBoard`、`selectSupply` |
-| `/auth/login`、`/auth/callback`、`/auth/signout` | 公开 | FR-A1/A2/A6 | auth actions |
-| `/onboarding?step=start\|units\|done` | 公开（登录后合并） | FR-O1–O6 | onboarding actions |
-| `/me` | 学生 | FR-M6、FR-W1–W3 | `selectWatchlistGroups`、`selectSkillBoard`、`db.requests` |
-| `/me/skills` | 学生 | FR-O4–O6、US7 | `selectSkillBoard` |
-| `/me/gap?role&f` | 学生 | FR-G1–G3 | `diagnoseGap` |
-| `/me/requests` | 学生 | FR-C7/C8、R5 | `selectStudentRequests` |
-| `/me/settings` | 学生 | FR-A3–A5、FR-W4、Q7 | privacy actions |
-| `/chat/new?instrument&f&signal` | 学生 | FR-C1–C6、FR-C11 | `findCandidates`、`generateStarters`、`createRequest` |
-| `/chat/[id]` | 学生 / 从业者（双视角） | FR-C7–C10、FR-R1/R2、FR-A7 | `selectRequest` + chat/safety actions |
-| `/practitioner/join` | 登录用户 | FR-P1–P3 | practitioner actions |
-| `/practitioner` | 从业者 | FR-P4–P6 | `selectPractitionerInbox` 等 |
-| `/admin/{reports,review,pipeline,metrics,taxonomy}` | 管理员 | FR-X1–X5 | admin actions / selectors |
-| `/legal/{privacy,terms,conduct,reliability}` | 公开 | FR-A6、FR-C10 | 静态草稿 |
+| / | Public | FR-M1, FR-R7 | `getIndustryHeatmap` hero, `getMovers` carousel, `getBoard`, `getTape` |
+| `/market?type=all\|skill\|role\|industry&metric&f&sort=value\|change&view&q&layer=tool\|task` (layer for Skills only) | Public | FR-M1/FR-M2/FR-M4/FR-M6, FR-F1–FR-F5 | `getBoard`, `getSignalsNow` |
+| `/s/[slug]`, `/r/[slug]`, `/i/[slug]`; by=experience/rights/mode; wrong type 308 to correct prefix; competency alias e.g. `/s/communication` 307 to `/metrics#competency-…`, otherwise unknown 404 | Public | FR-M2/FR-M3, FR-D2–FR-D5, FR-R1 own history | `getInstrumentDetail`, `selectDebriefsFor` |
+| `/compare?a&b&f` | Public | FR-M5 | `getComparison` |
+| `/search?q` | Public | FR-D6 | `searchWithSnapshots` |
+| `/metrics`, `/metrics/[key]` | Public | FR-D2, FR-M4 | Registry/`getMetricExamples`; #core-competencies and `#competency-<slug>` |
+| `/sources` | Public | FR-D1/FR-D5, §11 | `getSources` |
+| `/people` | Public | §8.1, FR-R4 | `getBoard`, `selectSupply` |
+| `/auth/login`, callback, signout | Public | FR-A1/FR-A2/FR-A6 | Auth actions |
+| `/onboarding?step=start\|units\|done` | Public, merge after sign-in | FR-O1–FR-O6 | Onboarding actions |
+| `/me` | Student | FR-M6, FR-W1–FR-W3 | `selectWatchlistGroups`, `selectSkillBoard`, `db.requests` |
+| `/me/skills` | Student | FR-O4–FR-O6, US7 | `selectSkillBoard` |
+| `/me/gap?role&f` | Student | FR-G1–FR-G3 | `diagnoseGap` |
+| `/me/requests` | Student | FR-C7/FR-C8, FR-R5 | `selectStudentRequests` |
+| `/me/settings` | Student | FR-A3–FR-A5, FR-W4, Q7 | Privacy actions |
+| `/chat/new?instrument&f&signal` | Student | FR-C1–FR-C6, FR-C11 | `findCandidates`/`generateStarters`/`createRequest` |
+| `/chat/[id]` | Student/practitioner | FR-C7–FR-C10, FR-R1/FR-R2, FR-A7 | `selectRequest`/chat/safety |
+| `/practitioner/join` | Authenticated | FR-P1–FR-P3 | `Practitioner` actions |
+| `/practitioner` | `Practitioner` | FR-P4–FR-P6 | `selectPractitionerInbox` etc. |
+| `/admin/{reports,review,pipeline,metrics,taxonomy}` | Admin | FR-X1–FR-X5 | Admin selectors/actions |
+| `/legal/{privacy,terms,conduct,reliability}` | Public | FR-A6, FR-C10 | Static drafts |
 
-URL 构造统一用 `src/lib/links.ts`：`chatHref(slug, filter?, signalKind?)`、`instrumentPath(type, slug, filter?)`、`loginHref(next)`。
+Build URLs through `src/lib/links.ts`: `chatHref(slug, filter?, signalKind?)`, `instrumentPath(type, slug, filter?)`, `loginHref(next)`.
 
-## 4. 筛选条件（FilterSpec）与 URL 编码
+## 4. `FilterSpec`/URL encoding
 
 ```ts
 type FilterSpec = { rules: { work_modes: ('onsite'|'hybrid'|'remote')[]; location_ids: string[] }[]; seniority: 'all'|'entry'|'graduate'; work_rights: 'all'|'no_pr_required' };
 ```
 
-- `?f=` 编码（`encodeFilter` / `decodeFilter`，只用表单编码不转义的字符）：`ohr.au-nsw-sydney*r.au.nz_entry_npr` = 规则用 `*` 分隔，每条规则 `工作模式字母.地点id…`，后缀 `_层级_工作权利`。默认值省略参数。
-- 规则取并集，最多 4 条（`MAX_RULES`）；`normaliseFilter` 去掉未知 id 和"祖先 + 子孙"重复。
-- `expandFilterToCells(spec)` → `{ pairs: {leaf, mode}[], seniority: bucket[], rights: bucket[] }`，与 ARCHITECTURE §6.3 cell 模型一致，后端求和直接复用。
-- `describeFilter(spec, copy)` 生成回读文本（FR-F3），copy 来自 `messages/en/market.json` 的 `Filter.readback`。
-- 地点树：`src/lib/filters/locations.ts`（AU 8 州/领地 + NZ；国家 → 州 → 城市 → 区域，悉尼/墨尔本细分到区域）。后端 `locations` 种子应沿用这些 id。
+- `encodeFilter`/`decodeFilter` ?f uses form-safe characters: `ohr.au-nsw-sydney*r.au.nz_entry_npr`; * separates rules, each work-mode letters.location IDs, suffix seniority/rights. Omit defaults.
+- Union, max four `MAX_RULES`; `normaliseFilter` removes unknown IDs and ancestor/descendant duplication.
+- expandFilterToCells → pairs leaf/mode, seniority buckets, rights buckets; architecture §6.3, reusable backend sums.
+- `describeFilter(spec, copy)`, FR-F3, `messages/en/market.json` `Filter.readback`.
+- `src/lib/filters/locations.ts`: AU eight states/territories + NZ; country/state/city/area, Sydney/Melbourne areas. Preserve IDs in seeds.
 
-## 5. 公开读接口（`src/lib/queries/market.ts`）
+## 5. Public reads (`src/lib/queries/market.ts`)
 
-| 函数 | 返回 | 说明 |
+| Function | Return | Notes |
 |---|---|---|
-| `getBoard({type: 'all'\|'skill'\|'role'\|'industry', metric?, filter, sort?: 'value'\|'change', q?, layer?: SkillLayer \| null})` | `Board { type, metric, sort, layer, rows: InstrumentSnapshot[], signals, as_of }` | 不再有 category 与 name（A–Z）排序；旧 `?sort=az\|name` 回退为 `value`。无效或不可选 metric 回退到默认（skill→`ad_count`，role→`growth_12m`，industry→`ad_count`，all→`ad_count`，all 只接受三类共同适用的 `sharedMetrics()`） |
-| `getInstrumentDetail(slug, filter, metric?, by: BreakdownDimension = 'experience')` | `InstrumentDetail \| null` | 含 `breakdown: Breakdown`（见 §11.4）、`readings`（该类型全部有效指标）、104 周 `series`、`composition`（role→技能权重，即 Top holdings / industry→技能权重 / skill→岗位）、`heatmap`（仅 industry：行业内技能热力图，其他类型为 `null`）、`related`、`locations`（按州）、`signal` |
-| `getComparison(a, b, filter)` | `Comparison \| null` | `correlation`（近 52 周 Pearson）、`overlap`、`shared/onlyA/onlyB` |
-| `search(q)` / `searchWithSnapshots(q, filter)` | 按 `skills`/`roles`/`industries` 分组的命中，含 `matched`、`via: name\|alias\|symbol\|prefix`；另有 `competencies: CompetencyHit[]` | 别名归一（FR-D6）；核心能力不是标的，只链接到说明页 |
-| `getSignalsNow(filter, limit=12)` | `InstrumentSnapshot[]` | 当前筛选下有信号的标的，按幅度排序 |
-| `getTape(limit=16)` | `TapeEntry[]` | 顶部行情条：全国 4 周变化，信号优先 |
-| `getIndustryHeatmap(filter)` | `Heatmap`（`kind='industries'`） | 全部行业，按 job ads 降序 |
-| `getIndustrySkillHeatmap(industrySlug, filter)` | `Heatmap`（`kind='industry_skills'`, `parent`） | 行业内技能；面积 = 该行业中提到该技能的广告数 |
-| `getMovers(filter, limit=4)` | `Mover { instrument, change: MetricReading(change_4w), sparkline }[]` | 首页轮播选取规则：三类标的统一用 `change_4w`，要求 `from ≥ min_sample`，按 \|相对变化\| 降序，平手按 `from` 大者、再按 slug（`pickMovers`，纯函数） |
-| `getMetricExamples(key, filter)` | `{instrument, reading}[]` | 指标定义页示例 |
-| `getSources()` | `DataSource[]` | `/sources` 与 admin |
+| `getBoard({type: 'all'\|'skill'\|'role'\|'industry', metric?, filter, sort?: 'value'\|'change', q?, layer?: SkillLayer \| null})` | Board type/metric/sort/layer/rows `InstrumentSnapshot[]`/signals/as_of | No category or A–Z; legacy az/name → value. Invalid metrics default skill `ad_count`, role `growth_12m`, industry/all `ad_count`; All accepts sharedMetrics only |
+| `getInstrumentDetail(slug, filter, metric?, by: BreakdownDimension = 'experience')` | InstrumentDetail or null | Breakdown §11.4, all valid readings, 104-week series, role/industry skill-weight composition or skill roles; industry-only heatmap else null; related/state locations/signal |
+| `getComparison`(a,b,filter) | Comparison or null | 52-week Pearson correlation, overlap, `shared/onlyA/onlyB` |
+| `search(q)`/`searchWithSnapshots`(q,filter) | Grouped skills/roles/industries, matched/via name/alias/symbol/prefix, competencies | FR-D6 alias normalisation; competencies explanations only |
+| `getSignalsNow`(filter,limit=12) | `InstrumentSnapshot[]` | Current-filter signals by magnitude |
+| `getTape(limit=16)` | `TapeEntry[]` | National four-week changes, signals first |
+| `getIndustryHeatmap(filter)` | `Heatmap` kind industries | All industries by job ads descending |
+| getIndustrySkillHeatmap(industrySlug,filter) | `Heatmap` kind industry_skills, parent | Area = industry ads mentioning skill |
+| `getMovers`(filter,limit=4) | Mover instrument/`change_4w` reading/sparkline | All three types use `change_4w`; `from ≥ min_sample`; descending absolute relative change, tie larger from then slug, pure `pickMovers` |
+| `getMetricExamples`(key,filter) | instrument/reading[] | Definition examples |
+| `getSources()` | `DataSource[]` | Sources/admin |
 
-**`MetricReading`（每个数字的解释载体，FR-D2）**：`metric, status ('ok'|'insufficient_sample'|'unavailable'), value, numerator, denominator, from, to, low, high, sample_n, min_sample, window {start,end,days}, source ('official'|'ads'|'practitioner'), source_id, updated_at`。
-- `status='insufficient_sample'` 时 `value=null`，前端不画趋势线并给出放宽建议（FR-D4）。
-- 变化类指标必须带 `from/to`（FR-D3）。
-- 指标注册表 `src/lib/metrics/registry.ts` 定义适用类型、默认/常用/进阶、窗口、`min_sample`（默认 30）、`available_after_days`、`text_derived`、`ignores`、来源；文案在 `Metrics.<key>`。后端 `metric_definitions` 应由同一文件生成（ARCHITECTURE A6）。
-- **行业（industry）**：`ActiveInstrumentType = 'skill' | 'role' | 'industry'`。行业 = ANZSIC Division（`Instrument.anzsic` 为 Division 字母；`Instrument.parent_id` 为细分行业预留，当前恒为 `null`，界面不展示）。适用指标：除 `salary_median`、`salary_p10_p90`、`skill_premium`、`skills_per_ad` 外全部；默认 `ad_count`（Demand），列表变化列 `signalMetric('industry') = 'change_4w'`。
-- **行业 → 技能**：`INDUSTRY_COMPONENTS: Record<industrySlug, IndustryComponent[]>`，`IndustryComponent` 与 `RoleComponent` 同形 `{skill_slug, weight}`，`weight` = 该行业广告中提到该技能的比例（0–1）。`componentsOf(slug)` 统一读取 role / industry 构成；`industriesForSkill(skill)` 反查。后端建议：`instrument_components(parent_id, skill_id, weight, window)` 一张表同时服务 role 与 industry。
-- **行业 × 技能分段计数**（fixture 近似，`segmentCounts`）：周计数 = 行业周计数 × weight × 技能相对全市场占比的走势（以近 8 周均值归一）。真实数据应直接对"行业 ∩ 技能"的 cell 求和。`industrySkillReadings` 返回该分段的 `ad_count`（`denominator` = 行业广告数）与 `change_4w`。
-- **`Heatmap`**：`{ kind: 'industries'|'industry_skills', parent: string|null, tiles: HeatTile[], as_of }`；`HeatTile { slug, type, name, symbol, ads: MetricReading(ad_count), change: MetricReading(change_4w) }`。面积取 `ads.numerator`（样本不足时 `value` 为 null，但仍按计数画面积）；颜色按 `heatStep`：\|变化\| < 2% 中性、2–10% 浅、≥ 10% 深（蓝升 / 橙降），`change.status !== 'ok'` 灰色斜纹。布局由 `squarify()`（`src/lib/market/treemap.ts`，纯函数）计算。
-- 信号（`detectSignal`）：`rise`/`fall` = `change_4w` 绝对值 ≥ 25% 且变化 ≥ 10 条，`entry_open` = entry-level 占比 8 周内上升 ≥ 10 个百分点，均要求样本充足；`since_added` 仅在 watchlist 上由 `selectWatchlist` 计算。
+**`MetricReading`, FR-D2**: metric, status ok/insufficient_sample/unavailable, value, numerator, denominator, `from/to`, low/high, sample_n/`min_sample`, window start/end/days, source official/ads/practitioner, source_id, updated_at.
+- Thin value null, no trend, suggest broader filters (FR-D4).
+- Changes require `from/to` (FR-D3).
+- Registry: applicable types/default-common-advanced/windows/minimum 30/`available_after_days`/`text_derived`/ignores/source; `Metrics.<key>` copy. Generate DB definitions from same file (A6).
+- **Industry**: ActiveInstrumentType skill/role/industry, ANZSIC Division letter in anzsic; `parent_id` reserved/null/hidden. All metrics except `salary_median`/p10_p90/`skill_premium`/`skills_per_ad`. Default Demand `ad_count`, `change_4w` signalMetric.
+- **Industry skills**: INDUSTRY_COMPONENTS Record<industrySlug, `IndustryComponent`[]>; `RoleComponent`-shaped skill_slug/weight, fraction of industry ads 0–1. componentsOf handles both; industriesForSkill reverse. Suggested backend `instrument_components(parent_id, skill_id, weight, window)`.
+- **Segment counts**, fixture approximation: industry weekly count × weight × skill-relative-market-share trend, normalised by eight-week mean. Real data sums industry ∩ skill cells. `industrySkillReadings` returns `ad_count` with industry denominator and `change_4w`.
+- **`Heatmap`**: kind industries/industry_skills, parent string/null, tiles, as_of; tiles slug/type/name/symbol, ads `ad_count`, change `change_4w`. Area uses numerator even when thin value null. `heatStep` absolute change <2% neutral, 2–10 light, ≥10 dark, blue up/orange down; non-ok grey hatch. Pure squarify in `src/lib/market/treemap.ts`.
+- Signals: rise/fall absolute change ≥25% and ≥10 ads; `entry_open` +10pp within eight weeks; sufficient samples. `since_added` only `selectWatchlist`.
 
-## 6. 写接口（actions）
+## 6. Actions
 
-每行：action → 输入（Zod）→ 输出 → 主要错误 → 对应 ARCHITECTURE §5.2 / 表。所有 action 先 `guard`，未列出的错误只有 `unauthenticated` / `forbidden` / `validation`。
+Rows show input Zod → output → errors → architecture/table mapping. All actions guard first; unlisted errors only unauthenticated/forbidden/validation.
 
-### 6.1 认证（`src/lib/api/auth.ts`）
-| action | 输入 | 输出 | 错误 | 映射 |
+### 6.1 Auth (`src/lib/api/auth.ts`)
+
+| Action | Input | Output | Errors | Mapping |
 |---|---|---|---|---|
-| `requestMagicLink` | `{email, age_confirmed: true, privacy_acknowledged: true, next?}` | `{email, token, expires_at}` | `validation`（`emailInvalid\|ageRequired\|privacyRequired`）、`rate_limited`（每地址 10 分钟 3 次） | Supabase `signInWithOtp` + `consents` |
-| `completeSignIn(token)` | token | `{redirect}`（`next` → 未完成 Tier 0 时 `/onboarding` → `/me`） | `linkInvalid`、`linkUsed`、`linkExpired`（1 小时） | `/auth/callback`；建 `profiles`/`student_profiles`，合并匿名 onboarding |
-| `signInWithGoogle` | `{age_confirmed, privacy_acknowledged, next?}` | `{redirect}` | 同上 | Google OAuth |
-| `signOut()` | — | `{signed_out: true}` | — | `/auth/signout` |
+| `requestMagicLink` | email, age_confirmed true, privacy_acknowledged true, next? | email/token/`expires_at` | emailInvalid/ageRequired/privacyRequired; three/address/10 min | `signInWithOtp`, consents |
+| `completeSignIn(token)` | token | redirect: next → onboarding if Tier0 incomplete → me | `linkInvalid`/Used/Expired, one hour | Callback, profiles/`student_profiles`, merge anonymous |
+| `signInWithGoogle` | age/privacy/next | redirect | Same | OAuth |
+| signOut | — | signed_out true | — | Signout |
 
-### 6.2 Onboarding 与技能（`onboarding.ts`、`skills.ts`）
-| action | 输入 | 输出 | 说明 / 映射 |
+### 6.2 Onboarding/skills (`onboarding.ts`, `skills.ts`)
+
+| Action | Input | Output | Mapping |
 |---|---|---|---|
-| `completeTier0` | `{university_id, degree_id, year}` | `{saved_to_profile, suggestions}` | **未登录可用**：存 `localStorage['sm-onboarding:v1']`，登录时 `mergeAnonymousOnboarding` 合并（对应架构"存 cookie，登录后合并"） |
-| `completeTier1` | `{unit_codes: string[]}` | 同上 | 只替换 `source='inferred'` 行，不动已确认/自填 |
-| `skipOnboarding` | `{tier: 'tier0'\|'tier1'\|'all'}` | 各 tier 状态 | FR-O3 |
-| `confirmSkill(id)` / `removeSkill(id)` | id | `StudentSkill` | 删除即删，不留"拒绝"记录（R7） |
-| `addSkill` | `{skill_slug}` | `StudentSkill` | `instrumentNotFound`、`skillAlreadyAdded` |
-| `restoreSkill(skill)` | 原行 | `StudentSkill` | Undo |
-| 读：`selectSkillBoard(db)` → `{confirmed, suggestions, next_steps, starting_out}`；`selectOnboarding`；`suggestNextSteps` | | | `student_skills` |
+| `completeTier0` | university_id/degree_id/year | saved_to_profile/suggestions | **Anonymous** `localStorage` sm-onboarding:v1, `mergeAnonymousOnboarding` on login; architecture cookie equivalent |
+| `completeTier1` | unit_codes string[] | Same | Replace inferred only, preserve confirmed/self-reported |
+| `skipOnboarding` | tier0/tier1/all | Tier states | FR-O3 |
+| confirmSkill/removeSkill | id | `StudentSkill` | Hard removal, no rejection record, R7 |
+| `addSkill` | skill_slug | `StudentSkill` | `instrumentNotFound`/`skillAlreadyAdded` |
+| restoreSkill | Original row | `StudentSkill` | Undo |
+| Reads: `selectSkillBoard` → confirmed/suggestions/next_steps/starting_out; `selectOnboarding`; `suggestNextSteps` | | | `student_skills` |
 
-推断数据：`src/lib/demo/education.ts`（5 所大学，USyd 带 18 个 unit；8 个学位；`inferSkillProfile` 置信度上限 0.9、低于 0.3 丢弃）。**后端需要真实的 `universities` / `course_units` / `course_unit_skills` 种子**，现在的映射是示意。
+demo/education.ts: five universities, USyd 18 units, eight degrees; `inferSkillProfile` cap 0.9, discard below0.3. **Backend needs real universities/`course_units`/`course_unit_skills` seeds**; current mappings illustrative.
 
-### 6.3 Watchlist（`watchlist.ts`）
-| action | 输入 | 输出 | 错误 |
+### 6.3 Watchlist (`watchlist.ts`)
+
+| Action | Input | Output | Errors/notes |
 |---|---|---|---|
-| `addWatchlistItem` | `{instrument_slug, status: 'held'\|'watching', filter, metric?}` | `WatchlistItem`（写入 `baseline_value`） | `instrumentNotFound`、`rolesCannotBeHeld`（现适用于 role 与 industry：只有 skill 可 held）、`alreadyWatching`（同标的 + 同 filter）、`watchlistFull`（30） |
-| `updateWatchlistItem` | `{id, status?, filter?, metric?}` | `WatchlistItem` | filter / metric 变化会重置基线 |
-| `removeWatchlistItem(id)` / `restoreWatchlistItem(item)` | | | Undo |
-| 读：`selectWatchlist(db)` → `WatchlistRow {item, current, since_added, signal}`；`selectWatchlistGroups` → `{signals, held, watching}`；`findWatchItem` | | | `watchlist_items` + `signals` |
+| `addWatchlistItem` | instrument_slug/status held or watching/filter/metric? | `WatchlistItem`, `baseline_value` | `instrumentNotFound`, `rolesCannotBeHeld` (roles/industries; skill only held), `alreadyWatching` same instrument/filter, watchlistFull30 |
+| `updateWatchlistItem` | id/status?/filter?/metric? | Item | Filter/metric resets baseline |
+| remove/restoreWatchlistItem | id/item | | Undo |
+| Reads: `selectWatchlist` → item/current/`since_added`/signal; `selectWatchlistGroups` → signals/held/watching; `findWatchItem` | | | `watchlist_items`/signals |
 
-### 6.4 缺口诊断（`gap.ts`，纯函数）
-`diagnoseGap(roleSlug, skills, filter = DEFAULT_FILTER, universityId?)` → `{role, filter, priorities (≤3), have, later} | null`。排序权重 `GAP_WEIGHTS = {relevance 0.5, entry 0.2, transfer 0.15, effort 0.15}`；每个优先项带相关性、entry-level 占比（`MetricReading`）、可迁移性、学习投入、获取途径（unit 来源可追溯；项目建议标注"非来源"）。不输出任何"准备度"分数。
+### 6.4 Gap (`gap.ts`, pure)
 
-### 6.5 隐私与设置（`privacy.ts`）
-| action | 输入 | 输出 | 说明 |
+`diagnoseGap`(roleSlug,skills,filter=DEFAULT_FILTER,universityId?) → role/filter/priorities≤3/have/later or null. GAP_WEIGHTS relevance0.5/entry0.2/transfer0.15/effort0.15. Each priority includes relevance, entry share `MetricReading`, transferability, effort, traceable unit paths; project suggestions labelled unsourced. No readiness score.
+
+### 6.5 Privacy/settings (`privacy.ts`)
+
+| Action | Input | Output | Notes |
 |---|---|---|---|
-| `updateProfile` | `{display_name, university_id, degree_id, year, visa_status}` | `StudentProfile` | 教育信息变化会重新推断；`visa_status` 可选（FR-A3） |
-| `updateFieldVisibility` | `{field, visibility: 'private'\|'matched_practitioner'}` | 可见性表 | FR-A4 / FR-C11 |
-| `updateEmailPreferences` | `{digest?, signal_alerts?}` | `email_prefs` | 请求类事务邮件不可关闭 |
-| `setUiMode(mode)` | `'market'\|'plain'` | | Q7 无隐喻模式（关闭行情条、改用 Track 等字面措辞） |
-| `requestExport()` | — | `StudentExport`（JSON，前端 Blob 下载）+ outbox `export_ready` | 生产：Storage + 24h 签名 URL |
-| `requestDeletion` | `{confirmation: 'DELETE'}` | `{requested_at, purge_after}`（+30 天） | 取消未结请求、清空个人数据、登出、outbox `deletion_scheduled`；错误 `deleteConfirmMismatch` |
-| 读：`selectConsents`、`buildExport` | | | `consents`、`account_deletions`、`data_exports` |
+| `updateProfile` | display_name/university_id/degree_id/year/`visa_status` | `StudentProfile` | Education triggers reinference; optional visa FR-A3 |
+| `updateFieldVisibility` | field/private or matched_practitioner | Visibility map | FR-A4/FR-C11 |
+| `updateEmailPreferences` | digest?/signal_alerts? | `email_prefs` | Transactional request emails mandatory |
+| setUiMode | market/plain | | Plain hides ticker, uses Track etc., Q7 |
+| requestExport | — | `StudentExport` JSON Blob, `export_ready` outbox | Production private Storage/24h URL |
+| `requestDeletion` | confirmation DELETE | requested_at/purge_after +30d | Cancel pending, clear personal data, signout, `deletion_scheduled`; `deleteConfirmMismatch` |
+| Reads: `selectConsents`/`buildExport` | | | consents/`account_deletions`/`data_exports` |
 
-### 6.6 匹配与咖啡聊（`matching.ts`、`starters.ts`、`chat.ts`）
+### 6.6 Matching/chats (`matching.ts`, `starters.ts`, `chat.ts`)
 
-**`findCandidates({instrument_slug, filter, decision_question?, student_state?, student_id?, exclude_ids?}, db, now)`** → `{candidates (≤3), fallback: null | 'adjacent' | 'waitlist'}`（ARCHITECTURE §7.1）：
-- 硬过滤：已验证、未暂停、未停权、双方未互相屏蔽、本月已接受数 < `monthly_cap`、有 ≥ 48 小时后的 open slot。
-- 技能匹配：持有该技能；role 需持有前 5 个成分技能中的 ≥ 2 个或当前岗位即该 role。
-- 打分（每项都生成 `MatchReason`）：持有 +40、入行 1–3 年 +25 / 4–6 年 +10、当前岗位属 top 岗位 +15、话题与决策问题关键词重合 +10、同州 +10、本月已接受 −5×n。
-- 不足 3 人时用相邻技能（co-occurrence ≥ 0.3）补足并标 `adjacent_skill`；仍为空 → `waitlist`（前端给等待队列 + 从业者招募，永不出现空白页）。
+`findCandidates({instrument_slug, filter, decision_question?, student_state?, student_id?, exclude_ids?}, db, now)` → candidates≤3, fallback null/adjacent/waitlist, architecture §7.1:
+- Verified/unpaused/unsuspended, no mutual blocks, below monthly cap, open slot ≥48h.
+- Holds skill, or ≥2 of top-five role components/current same role.
+- `MatchReason` factors: holds40; 1–3 years25/4–6 years10; top role15; topic-keyword10; same state10; monthly load −5n.
+- Fewer than three: co-occurrence≥0.3 adjacent skills labelled `adjacent_skill`; empty → waitlist/recruitment, never blank.
 
-**`generateStarters(ctx)`** → 恰好 3 条 `{id, vars}`，来自 18 条模板（文案在 `Starters.*`），确定性、无 LLM。
+`generateStarters(ctx)` returns exactly three id/vars from 18 deterministic `Starters.*` templates, no LLM.
 
-| action | 输入 | 输出 | 错误 |
+| Action | Input | Output | Errors |
 |---|---|---|---|
-| `createRequest` | `{instrument_slug, filter, signal, decision_question (15–500), practitioner_id, slot_id, starters (1–3, ≤280), shared_fields, agree_conduct: true}` | `ChatRequest`（slot `held`，`expires_at = min(created+72h, slot−12h)`，outbox `request_received`） | `slotTaken`、`candidateUnavailable`、`studentPaused`、`rateLimited`（每天 5 个） |
-| `acceptRequest(id)` | | 状态 `accepted`，slot `booked`，outbox `request_accepted` | `chatStateChanged` |
-| `declineRequest(id)` | 无理由字段 | 立即静默替换下一位（学生侧显示 "still looking"） | |
-| `proposeReschedule` | `{id, slot_id}` | `reschedule_proposed` | |
-| `acceptReschedule(id)` / `declineReschedule(id)` | | `accepted` / `cancelled` | |
-| `cancelRequest` | `{id, as: 'student'\|'practitioner'}` | `cancelled` | `tooLateToCancel`（已确认的需提前 ≥ 24h） |
-| `confirmAttendance` | `{id, as, attended: boolean}` | 出席 → 等对方或 7 天后 `completed`；缺席 → `no_show_*` | `tooEarlyToConfirm` |
-| `submitDebrief` | `{id, vote: 'more_keen'\|'no_change'\|'less_keen', note ≤140}` | 一次点击完成 L0（FR-R1） | |
-| `joinWaitlist` / `leaveWaitlist` | `{instrument_slug, filter}` / id | `WaitlistEntry` | |
+| `createRequest` | instrument_slug/filter/signal/question15–500/practitioner_id/slot_id/starters1–3 each≤280/`shared_fields`/agree_conduct true | Held slot, expires min(created+72h,slot−12h), `request_received` | `slotTaken`/`candidateUnavailable`/`studentPaused`/`rateLimited` five/day |
+| acceptRequest | id | accepted/booked/`request_accepted` | `chatStateChanged` |
+| declineRequest | id, no reason | Quiet immediate replacement; still looking | |
+| `proposeReschedule` | id/slot_id | `reschedule_proposed` | |
+| accept/declineReschedule | id | accepted/cancelled | |
+| `cancelRequest` | id/as student or practitioner | cancelled | `tooLateToCancel`, accepted ≥24h notice |
+| `confirmAttendance` | id/as/attended boolean | Wait for other, or complete after 7d; absence `no_show_*` | `tooEarlyToConfirm` |
+| `submitDebrief` | id/vote more_keen,no_change,less_keen/note≤140 | One-click L0 | |
+| join/`leaveWaitlist` | instrument_slug/filter or id | `WaitlistEntry` | |
 
-读：`selectStudentRequests(db, now)` → `{needs_you, upcoming, waiting, past}`（无拒绝计数、无回复率）；`selectPractitionerInbox(db, practitionerId, now)`；`selectRequest(db, id)`；`openRequestFor`；`selectDebriefsFor(db, slug)`（技能页"你的咖啡聊记录"，仅本人可见）；`canCancel`。
+Reads: `selectStudentRequests`(db,now) → needs_you/upcoming/waiting/past, no rejection counts/reply rates; `selectPractitionerInbox`(db,practitionerId,now); `selectRequest`(db,id); `openRequestFor`; `selectDebriefsFor`(db,slug), own-only history; `canCancel`.
 
-**状态机**（`src/lib/chat/machine.ts`，对应 SQL `transition_chat_request`）：
+State machine `src/lib/chat/machine.ts` ↔ SQL `transition_chat_request`:
 
-| from | event | 允许的 actor | to |
+| From | Event | Actor | To |
 |---|---|---|---|
 | — | create | student, system | pending |
-| pending | accept / decline / propose_reschedule | practitioner | accepted / declined / reschedule_proposed |
+| pending | accept / decline / propose_reschedule | practitioner | accepted / declined / `reschedule_proposed` |
 | pending | expire | system | expired |
 | pending | cancel | student | cancelled |
-| reschedule_proposed | accept_reschedule / decline_reschedule / cancel | student | accepted / cancelled / cancelled |
-| reschedule_proposed | expire | system | cancelled |
-| accepted | confirm_attended | student, practitioner | accepted（等待另一方） |
+| `reschedule_proposed` | accept_reschedule / decline_reschedule / cancel | student | accepted / cancelled / cancelled |
+| `reschedule_proposed` | expire | system | cancelled |
+| accepted | confirm_attended | student, practitioner | accepted, awaiting other |
 | accepted | complete | system | completed |
 | accepted | confirm_absent | practitioner / student | no_show_student / no_show_practitioner |
 | accepted | cancel | student, practitioner | cancelled |
 
-`studentStatus()` 把 `declined`、`expired`、从业者取消统一映射为 `still_looking`（FR-C7/C8）。
+studentStatus maps declined/expired/practitioner cancellation to `still_looking` (C7/C8).
 
-### 6.7 从业者（`practitioner.ts`）
-| action | 输入 | 说明 |
+### 6.7 Practitioners (`practitioner.ts`)
+
+| Action | Input | Notes |
 |---|---|---|
-| `joinAsPractitioner` | `{agree_18: true, agree_conduct: true}` | 建草稿记录 |
-| `sendWorkEmailCode` | `{email}` | 6 位码，10 分钟有效、30 秒重发间隔；免费邮箱域名（gmail、outlook 等）拒绝并引导人工审核。**预览中验证码写在 outbox 里**，生产应哈希存 `work_email_verifications` |
-| `verifyWorkEmailCode` | `{code: /^\d{6}$/}` | 最多 3 次；成功 → `verified` |
-| `requestManualReview` | `{email, linkedin_url, note?}` | → `manual_review`，进入 `/admin/review` |
-| `updatePractitionerProfile` | `{current_title, current_role_slug, employer, entry_year, location_id, skills (1–12), topics (1–5), path, bio?, meeting_link (https) \| null}` | FR-P2 |
-| `updateAvailabilityTemplate` | `{timezone, windows: {weekday 1–7, start, end}[] ≤14}` | 每段 ≥ 20 分钟、同日不重叠（`availabilityProblems`）；slot 由模板生成未来 28 天 |
-| `setPaused(bool)` / `updateCap(1–4)` | | FR-P6 |
-| `finishPractitionerSetup()` | | 加入 practitioner 身份并切换 |
-| `setActingPractitioner(id)` | | **仅预览**：让演示者以种子从业者身份处理请求 |
-| 读 | `selectMyPractitioner`、`selectActingPractitioner`、`joinStepFor`、`selectDeskStats`（仅本人可见）、`selectPractitionerSlots` | |
+| `joinAsPractitioner` | agree_18/agree_conduct true | Draft |
+| `sendWorkEmailCode` | email | Six digits,10 min,30s resend; free domains denied/manual review. **Preview code in outbox**; production hash verification table |
+| `verifyWorkEmailCode` | code /^\d{6}$/ | Three attempts; success verified |
+| `requestManualReview` | email/linkedin_url/note? | `manual_review`/admin queue |
+| `updatePractitionerProfile` | current_title/current_role_slug/employer/entry_year/location_id/skills1–12/topics1–5/path/bio?/https meeting_link or null | FR-P2 |
+| `updateAvailabilityTemplate` | timezone/windows weekday1–7,start,end,≤14 | Each≥20 min, same-day non-overlap via `availabilityProblems`;28d slots |
+| setPaused/updateCap | boolean/1–4 | FR-P6 |
+| finishPractitionerSetup | — | Add/switch practitioner identity |
+| setActingPractitioner | id | **Preview only** seeded identity |
+| Reads | `selectMyPractitioner`, `selectActingPractitioner`, `joinStepFor`, `selectDeskStats` own-only, `selectPractitionerSlots` | |
 
-### 6.8 安全（`safety.ts`）
-`reportUser({target_kind, target_id, request_id, reason: harassment|inappropriate|no_show|spam|safety|other, details})`（other 需 ≥ 10 字；每天 10 次）；`blockUser({target_id})`（关闭双方之间的未结请求，学生侧显示 still looking）；`unblockUser(id)`；读 `selectMyBlocks`、`hasBlocked`。被屏蔽者不再出现在候选人中。
+### 6.8 Safety (`safety.ts`)
 
-### 6.9 管理后台（`admin.ts`，仅 admin）
-`resolveReport({id, status: resolved|dismissed, resolution})`、`suspendUser({practitioner_id, report_id})`（30 天）、`liftSuspension(id)`、`approvePractitioner(id)`、`rejectPractitioner({id, note})`、`rerunJob(job)`、`upsertAlias({alias, instrument_slug})`（与已有别名/名称冲突时报 `conflict`）、`removeAlias(id)`；读 `selectReports`、`selectReviewQueue`、`selectPipeline`、`selectFunnel(db, now)`（North Star 与漏斗，含定义与分子分母，样本 < 10 时警示）、`selectAliases`。
+reportUser target_kind/target_id/request_id/reason harassment,inappropriate,no_show,spam,safety,other/details; other≥10 chars,10/day. blockUser target_id closes mutual pending requests, student still looking; `unblockUser(id)`; `selectMyBlocks`/`hasBlocked`. Exclude blocked candidates.
 
-## 7. 后台任务（`src/lib/api/jobs.ts`、`chat-jobs.ts`）
+### 6.9 Administration (`admin.ts`, admin only)
 
-| 任务 | 规则 | 生产对应 |
+resolveReport id/status resolved|dismissed/resolution; suspendUser practitioner_id/report_id for30d; liftSuspension; approvePractitioner; rejectPractitioner id/note; rerunJob; upsertAlias alias/instrument_slug, conflicts with existing names/aliases; removeAlias. Reads `selectReports`, `selectReviewQueue`, `selectPipeline`, selectFunnel(db,now) North Star/funnel definitions/numerators/denominators, warn n<10; `selectAliases`.
+
+## 7. Jobs (`src/lib/api/jobs.ts`, `chat-jobs.ts`)
+
+| Job | Rules | Production |
 |---|---|---|
-| `refreshSlots` | 按每位从业者的模板生成未来 28 天的 20 分钟 slot，删除过期或模板外的 open slot | `availability_slots` 生成 job |
-| `runChatJobs` | pending 到 `expires_at` → `expired` 并**静默替换**下一位（跳过 `tried_practitioner_ids`，记 `replaced_by`，邮件 `request_still_looking`）；reschedule 72h 未答 → `cancelled`；slot 前 24h 提醒（一次）；slot 结束 1h 后发出席/复盘邮件（一次）；一方确认出席 7 天后 → `completed`；从业者 30 天内 ≥ 2 次缺席 → 停止匹配 30 天，学生同理暂停发起 | `expire_chat_requests()`、reminder / reliability jobs |
+| `refreshSlots` | 28d of20 min template slots; remove expired/out-of-template open slots | Availability job |
+| `runChatJobs` | Expire pending at `expires_at` and **quietly replace** next, skip `tried_practitioner_ids`, record `replaced_by`, `request_still_looking` email; unanswered reschedule72h cancels; once-only 24h reminder and +1h debrief/attendance; one-side attendance completes after 7d; ≥2 no-shows/30d suspends30d for both roles | SQL expiry/reminder/reliability jobs |
 
-常量：`REPLY_WINDOW_MS=72h`、`EXPIRY_BEFORE_SLOT_MS=12h`、`CANCEL_NOTICE_MS=24h`、`AUTO_COMPLETE_MS=7d`、`NO_SHOW_LIMIT=2`、`NO_SHOW_PAUSE_MS=30d`。
+Constants REPLY_WINDOW_MS72h, EXPIRY_BEFORE_SLOT_MS12h, CANCEL_NOTICE_MS24h, AUTO_COMPLETE_MS7d, NO_SHOW_LIMIT2, NO_SHOW_PAUSE_MS30d.
 
-## 8. 邮件模板（outbox）
+## 8. Email outbox templates
 
-`magic_link`、`work_email_code`、`request_received`、`request_accepted`、`request_rescheduled`、`request_still_looking`、`reminder_24h`、`debrief_prompt`、`attendance_prompt`、`waitlist_match`、`signal_alert`、`digest`、`export_ready`、`deletion_scheduled`。主题行文案在 `messages/en/common.json` 的 `Outbox.templates`，变量见各 action 的 `enqueue` 调用。
+`magic_link`, `work_email_code`, `request_received`, `request_accepted`, `request_rescheduled`, `request_still_looking`, `reminder_24h`, `debrief_prompt`, `attendance_prompt`, `waitlist_match`, `signal_alert`, digest, `export_ready`, `deletion_scheduled`. Subjects: common.json `Outbox.templates`; vars in enqueue calls.
 
-## 9. 后端需要补的字段 / 与架构的差异（待拍板）
+## 9. Backend gaps/architecture differences, pending decisions
 
-| # | 问题 | 现状（预览的临时做法） | 建议 |
+| # | Issue | Preview workaround | Proposal |
 |---|---|---|---|
-| 1 | `blocks` 缺 `blocker_id` | 从业者屏蔽把 id 编进行 id（`blk:<practitioner>:…`） | 表加 `blocker_id uuid` |
-| 2 | `chat_requests` 没有学生共享字段的快照 | 从业者视图读实时资料 | 加 `shared_snapshot jsonb`（创建请求时按 `shared_fields` 冻结，FR-C11 更严格） |
-| 3 | 人工审核证据（LinkedIn URL、备注） | 类型扩展 `PractitionerRecord` | `practitioner_profiles.review_evidence jsonb` 或独立表 |
-| 4 | 学生停权 | 只能停权从业者；学生缺席仅暂停发起请求 | `profiles.suspended_until` |
-| 5 | 取消没有邮件模板 | 取消不通知对方 | 新增 `request_cancelled` 模板 |
-| 6 | magic link token / 频率限制 | 存在 outbox 的 `vars` 中 | 生产由 Supabase Auth 处理；频率用 `rate_limits` 表 |
-| 7 | 技能 `growth_12m` | fixture 追踪起点设为 2024-06，所以技能也显示 12 个月变化 | 真实数据按 `available_after_days=730` 自动隐藏（机制已在 registry 与 engine 中） |
-| 8 | ANZSCO 代码 | 只填了有把握的 11 个，其余显示"无单一代码" | M1 种子时核对 |
-| 9 | 学习投入 / 可迁移性 | catalog 中的编辑估计，界面已注明"不是测量值" | 需人工维护或数据支撑 |
-| 10 | 环境变量 | 无新增 | — |
-| 11 | 行业与细分行业 | 10 个 ANZSIC Division fixture；`parent_id` 预留 | 上线补齐 19 个 Division；细分颗粒度（Subdivision / Group）待拍板（GLOSSARY §5） |
-| 12 | 行业 ↔ 技能权重 | 编辑估计的 fixture | 由广告的行业字段（ANZSIC 映射）× 技能抽取计算 |
+| 1 | Blocks lacks `blocker_id` | `Practitioner` encoded into `blk:<practitioner>:…` ID | Add `blocker_id uuid` |
+| 2 | No shared-field snapshot | `Practitioner` reads live profile | `shared_snapshot jsonb` frozen by `shared_fields` at create, stricter C11 |
+| 3 | Manual LinkedIn/note evidence | Extended `PractitionerRecord` | review_evidence jsonb or table |
+| 4 | Student suspension | Only practitioner suspension; student no-shows pause requests | `profiles.suspended_until` |
+| 5 | No cancellation template | Other party not notified | `request_cancelled` |
+| 6 | Magic tokens/rate limits | Outbox vars | Supabase Auth/`rate_limits` |
+| 7 | Skill growth | Fixture tracking starts2024-06, shows12m | Hide until available_after_days730, mechanism exists |
+| 8 | ANZSCO | Eleven confident codes, others no single code | Verify M1 seeds |
+| 9 | Effort/transferability | Editorial estimates disclosed as unmeasured | Manual maintenance/evidence |
+| 10 | Env | None added | — |
+| 11 | Industries | Ten Division fixtures,parent reserved | All19 at launch; Subdivision/Group pending |
+| 12 | Industry/skill weights | Editorial fixture | ANZSIC ad industry × extraction |
 
-## 10. 已知限制
+## 10. Limitations
 
-- 全部数据为演示：市场数字合成，人物与雇主虚构（邮箱域名均为 `.example`），没有真实认证、邮件、存储或服务端鉴权；管理后台的权限只在客户端判断。
-- 一个浏览器只有一个演示账号；删除账号后重新登录会新建。
-- "All" 盘面的变化列混合了技能 / 行业的 4 周变化与岗位的 12 个月变化（列头有说明）；首页轮播则对三类统一使用 4 周变化。
-- 法律页为草稿，需法律审阅。
-- 如需与设计稿核对：本分支未更新 Figma。
+- Synthetic data, fictional people/employers and `.example` domains; no real auth/email/storage/server authorisation. Admin checks client only.
+- One demo account/browser; signing in after deletion creates anew.
+- All mixes four-week skill/industry and12m role changes, explained in header; homepage movers consistently four-week.
+- Legal drafts require review.
+- Figma not updated on this branch.
 
-## 11. 前端反馈第 2 轮（分支 `fe-r2`）
+## 11. Frontend round two (`fe-r2`)
 
-### 11.1 数据来源文案中性化（A2）
-- `SOURCE_IDS.ads = 'job-ads-fixture'`（原 `adzuna-au-fixture`）；`Sources.names` 的 key 同步改名。旧 key 不再存在。
-- `getSources()` ads 条目：`name = 'Australian job ads (illustrative fixture)'`，`licence = 'Sources and licences being finalised — see Data & safety'`。`src`、`messages`、`tests`、`e2e` 中不再出现任何具体招聘广告供应商名称。
+### 11.1 Neutral source copy (A2)
+- SOURCE_IDS.ads = job-ads-fixture, formerly `adzuna-au-fixture`; `Sources.names` renamed, old key removed.
+- Ads name Australian job ads (illustrative fixture), licence Sources and licences being finalised — see Data & safety. No named job-ad suppliers in src/messages/tests/`e2e`.
 
-### 11.2 ASC 技能分层（C3）
-- `Instrument.skill_layer: SkillLayer | null`，`SkillLayer = 'technology_tool' | 'specialist_task'`（`SKILL_LAYERS`）；role / industry 恒为 `null`。规则：工作活动或方法 = `specialist_task`，具名软件/平台/语言/框架 = `technology_tool`；`catalog.ts` 中 `SPECIALIST_TASKS` 集合 + `skillLayerOf(slug)`。后端 `instruments` 表需新增 `skill_layer` 列。
-- 盘面 Skills 页：`?layer=tool|task`（`parseLayer` / `layerParam`，`src/features/market/logic.ts`），控件 `SkillLayerSwitch`（`board-controls.tsx`，role="radio" 的 `Segmented`，标签 "All skills · Tools · Tasks"）。技能详情页 kicker 显示层级（"Skill · Technology tool · …"）。
-- **`communication` 不再是标的**（从 catalog、role 构成、演示种子、教育推断、`FIRST_STEPS` 中移除，`FIRST_STEPS` 末项改为 `agile`）。
-- 核心能力：`src/lib/market/competencies.ts`
-  - `CORE_COMPETENCIES: { slug: CompetencySlug; aliases }[]`（10 项，ASC 顺序）；名称与说明在 `messages` 的 `Competencies.items.<slug>.{name,blurb}`。
-  - `competencyLevels(roleSlug) → { slug, level(1–10) }[] | null`（仅 role，**示意 fixture**，非 ASC 数据集）；`COMPETENCY_SCALE_MAX = 10`。
-  - `searchCompetencies(q, limit=3) → { slug, matched }[]`（≥ 3 字符，精确别名优先于前缀）；`competencyHref(slug) = /metrics#competency-<slug>`。
-  - 界面：role 页 "Core competencies" 区块（`CoreCompetencies`，按 ASC 顺序不排序，条形 + "n / 10"）；`/search` 新分组 "Core competencies"（精确命中时排在最前）；⌘K 面板同样返回核心能力条目；`/metrics#core-competencies` 说明 "Every job uses these, so we don't track demand for them."；凡出现处带 "Framework: Australian Skills Classification, Jobs and Skills Australia"。
-- 旧数据降级：`dropUnknownInstruments(db)`（`src/lib/demo/sanitize.ts`）在加载 localStorage 时删除指向不存在标的的 watchlist / skills / waitlist / alias_overrides 行与从业者技能；`selectWatchlist` 也跳过未知 slug。聊天记录保留 slug 文本。
+### 11.2 ASC skill layers (C3)
+- Instrument.`skill_layer` SkillLayer|null, `technology_tool`/`specialist_task` (`SKILL_LAYERS`), roles/industries null. Activities/methods = tasks, named software/platform/language/framework = tools. catalog `SPECIALIST_TASKS`/skillLayerOf; backend needs column.
+- Skills `?layer=tool|task`, `parseLayer`/`layerParam` logic.ts; `SkillLayerSwitch` board-controls, radio `Segmented`, All skills · Tools · Tasks. Detail kicker Skill · Technology tool · ….
+- **communication removed as instrument** from catalogue/components/seeds/education/`FIRST_STEPS`; agile replaces final `FIRST_STEPS`.
+- competencies.ts:
+  - CORE_COMPETENCIES slug/aliases, ten ASC order; Competencies.items.<slug>.name/blurb.
+  - competencyLevels(roleSlug) slug/level1–10[]|null, role only, **illustrative not ASC data**; COMPETENCY_SCALE_MAX10.
+  - searchCompetencies(q,limit3), minimum 3, exact before prefix; competencyHref `/metrics`#competency-<slug>.
+  - Role `CoreCompetencies` ASC order, no sorting, bars/n/10; search exact competency first, palette too; metrics explains every job uses these so demand untracked; attribution Framework: Australian Skills Classification, Jobs and Skills Australia wherever shown.
+- Legacy `dropUnknownInstruments(db)`, demo/sanitize.ts: remove unknown watchlist/skills/waitlist/alias overrides/practitioner skills on `localStorage` load; `selectWatchlist` skips unknown; chat slug text retained.
 
-### 11.3 简单地点筛选 + 远程开关（B2）
-- `FilterSpec` 与 `?f=` 编码**不变**。新增纯函数（`src/lib/filters/spec.ts`）：
-  - `REMOTE_ANYWHERE_RULE = { work_modes: ['remote'], location_ids: ['au'] }`，`isRemoteAnywhereRule(rule)`。
-  - `SimpleFilter = { places: string[]; modes: WorkMode[]; includeRemoteAnywhere: boolean }`。
-  - `toSimpleFilter(spec) → SimpleFilter | null`：单条规则，或"一条主规则 + 远程全澳规则"（顺序不限）可表达；其他返回 `null`。
-  - `fromSimpleFilter(simple, { seniority, work_rights }) → FilterSpec`（不做 normalise，便于表单校验）。
-  - `remoteAnywhereRedundant(places, modes)`：主规则已覆盖全澳远程时为 true，开关禁用并说明原因。
-  - `FilterCopy.ruleRemoteAnywhere`（可选）：第二条及以后的远程全澳规则回读为 "remote roles anywhere in Australia"。
-- 筛选面板：Places（多选、选择某地会替换其祖先/子孙）→ Work mode（三个 checkbox）→ 开关 "Also include remote jobs anywhere in Australia" → Level → Work rights → 回读（`data-testid="filter-readback"`）。原多规则编辑器移入 "Advanced" 折叠区；`toSimpleFilter` 为 `null` 的 URL 打开时自动展开 Advanced，且此时不能切回简单模式。
-- 地点不是 breakdown 维度；详情页"按州分布"面板保留。
+### 11.3 Simple places/remote (B2)
+- `FilterSpec`/encoding **unchanged**. filters/spec.ts:
+  - REMOTE_ANYWHERE_RULE remote + au, isRemoteAnywhereRule.
+  - SimpleFilter places/modes/includeRemoteAnywhere.
+  - `toSimpleFilter` accepts one rule or main+AU remote in either order, otherwise null.
+  - fromSimpleFilter(simple,{seniority,`work_rights`}) no normalisation, for form validation.
+  - remoteAnywhereRedundant true when main covers AU remote; disable/explain.
+  - Optional `FilterCopy.ruleRemoteAnywhere` reads later remote rules as remote roles anywhere in Australia.
+- Panel: Places multiselect replacing ancestors/descendants → three mode checkboxes → remote toggle → Level → Work rights → readback data-testid filter-readback. Multi-rule editor in Advanced; unrepresentable URL auto-opens Advanced, cannot switch simple.
+- Location not breakdown; state panel retained.
 
-### 11.4 Breakdown 原型（B1）
-- 类型（`src/lib/market/types.ts`）：`BreakdownDimension = 'experience' | 'rights' | 'mode'`（`BREAKDOWN_DIMENSIONS`）；`ExperienceBucket = 'entry' | 'mid' | 'senior' | 'expert'`（0–2 / 3–5 / 6–9 / 10+ 年；界面 "Expert · 10+ yrs"）；`BreakdownBucketKey`；
-  `Breakdown { by, kind: 'stack'|'lines', measure, requested, buckets: { key, series: SeriesPoint[], latest: MetricReading, share }[], total: SeriesPoint[] | null, filtered_to: BreakdownBucketKey[] | null, estimated, salary_stated: { with_salary, total } | null, insufficient: BreakdownBucketKey[] }`。
-- 注册表新增 `MetricDefinition.breakdown: 'stack' | 'lines' | null`：`ad_count = 'stack'`，`salary_median = 'lines'`，其余 `null`（breakdown 区显示 Job ads 并注明 "Breakdown shows Job ads"）。
-- `computeBreakdown(slug, metric, filter, by)`（`engine.ts`）：
-  - stack：各桶 4 周滚动广告数，之和 = 不拆分的总线（± 每周取整）；`latest` 为近 4 周 `ad_count`，`share` 为占比。
-  - lines（仅 role）：各桶滚动 52 周薪资中位数；声明薪资的样本 < `min_sample` 时该点为 `null`（断开不插值），`insufficient` 列出最新值不足的桶。
-  - 筛选优先：`seniority`、`work_rights`、规则里实际出现的工作方式会限制可见桶，`filtered_to` 非空时界面写 "Filtered to …"。
-  - Experience：把原 `other` 资历桶按 `experienceSplit(entryShare)` 拆为 mid / senior / expert（entry 占比越低越偏资深，fixture）。`Seniority` 筛选类型不变。
-  - Experience 与 Work rights 为文本抽取 → `estimated: true`，界面显示 "Estimated" 与方法弹层。
-- 界面：`BreakdownSection`（`src/features/market/breakdown-section.tsx`，`section#breakdown`，紧接主图之下，skill / role / industry 三类页面都有）+ `BreakdownChart`（`src/components/market/breakdown-chart.tsx`：堆叠面积 / 多线、右端直接标注、下方图例含最新值与占比、"Show data table"）。维度切换写入 `?by=`（默认 experience 时省略）。
-- 颜色 token（`theme.css`，浅/深两套，Tailwind 工具类 `fill-/stroke-/bg-series-ord-1..4`、`series-cat-1..3`）：Experience 用有序色阶；Work rights = cat-1 / `faint`（Not stated）/ cat-2；Work mode = cat-1..3；堆叠带之间 1px `surface` 描边；多线另以虚线样式区分。
-- 后端需要：按 cell 再细分"经验年限桶"（目前 cell 只有 graduate / entry_other / other），以及按桶的薪资样本计数。
-
+### 11.4 Breakdown prototype (B1)
+- Types.ts BreakdownDimension experience/rights/mode, `BREAKDOWN_DIMENSIONS`; ExperienceBucket entry/mid/senior/expert,0–2/3–5/6–9/10+, UI Expert · 10+ yrs; `BreakdownBucketKey`.
+  `Breakdown { by, kind: 'stack'|'lines', measure, requested, buckets: { key, series: SeriesPoint[], latest: MetricReading, share }[], total: SeriesPoint[] | null, filtered_to: BreakdownBucketKey[] | null, estimated, salary_stated: { with_salary, total } | null, insufficient: BreakdownBucketKey[] }`.
+- MetricDefinition.breakdown stack/lines/null: `ad_count` stack, `salary_median` lines, others null with Breakdown shows Job ads.
+- computeBreakdown(slug,metric,filter,by), `engine.ts`:
+  - Stack four-week rolling buckets sum to total ±weekly rounding; latest `ad_count`, share fraction.
+  - Role-only lines: rolling52w salary medians; disclosed n below minimum → null gaps, no interpolation; insufficient lists latest thin buckets.
+  - `Seniority`/rights/actual modes restrict buckets; `filtered_to` displays Filtered to ….
+  - `experienceSplit(entryShare)` divides other into mid/senior/expert, lower entry means more senior, fixture; `Seniority` unchanged.
+  - Text-derived Experience/rights estimated true, Estimated/method popup.
+- `BreakdownSection` under main chart, `section#breakdown`, all three types; `BreakdownChart` stacked/multiple lines, direct labels/right, legend latest/share, table. ?by omitted for default experience.
+- Light/dark series-ord1..4 ordered experience; rights cat1/faint Not stated/cat2; mode cat1..3; fill/stroke/bg tools,1px surface boundaries, dashed line differentiation.
+- Backend needs finer experience cells than graduate/entry_other/other and salary sample counts by bucket.

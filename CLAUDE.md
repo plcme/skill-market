@@ -1,105 +1,105 @@
-# CLAUDE.md — skill-market
+# CLAUDE.md — `skill-market`
 
-## 项目是什么
+## About the project
 
-一个面向澳洲大学生的可商用 Web 产品：把劳动力市场需求做成可追踪的"盘面"（skill / role 两类标的），并由市场信号触发，把学生匹配给持有该技能的在职从业者做 20 分钟咖啡聊。产品名已确定为 **Brewdex**（2026-10-23），仓库代号 `skill-market`。域名已买：`brewdex.app`（2026-10-23）；代码里不写死域名，绝对链接一律读 `NEXT_PUBLIC_APP_URL`。
+A commercial web product for Australian university students: it presents labour-market demand as a trackable market board (with skill and role instruments), then uses market signals to match students with employed practitioners who hold those skills for 20-minute coffee chats. The product name is **Brewdex** (confirmed 2026-10-23); the repository codename is `skill-market`. The domain `brewdex.app` was purchased on 2026-10-23. Never hardcode the domain; read `NEXT_PUBLIC_APP_URL` for all absolute links.
 
-**唯一需求来源是 `docs/PRD.md`。** 研究依据在 `docs/research/`。**术语以 `docs/GLOSSARY.md` 为准**（所有 agent 必读；界面文案、变量命名、需求讨论都按它的用词）。PRD 与研究冲突时以 PRD 为准；PRD 没说清的，做合理假设并记录到 `docs/PROGRESS.md` 的"待拍板"，不要停下来问。
+**The sole source of requirements is `docs/PRD.md`.** Research evidence lives in `docs/research/`. **Use the terminology in `docs/GLOSSARY.md`** (required reading for every agent; use it for UI copy, variable names, and requirements discussions). The PRD takes precedence over research. Where the PRD is unclear, make a reasonable assumption and record it under "Pending decisions" in `docs/PROGRESS.md`; do not stop to ask.
 
-这不是课程作业，按真实上线、真实用户、真实合规的标准做。
+This is not coursework. Build to standards appropriate for a real launch, real users, and real compliance.
 
-## 语言与命名规范
+## Language and naming conventions
 
-- **与用户的所有对话回复一律用中文**（包括汇报、提问、总结）；代码块、命令、文件路径保持原样
-- 文档正文用中文；术语、字段名、变量名、API 路径、命令用英文（如"ticker card 展示 `skill` 的 `share_of_ads`"）
-- 代码、代码注释、commit message 用英文
-- 产品界面文案默认英文，集中管理，不写死在组件里（为 i18n 预留）
-- 产品名只能从配置常量 `APP_NAME` 读取，任何地方都不许写死
+- **All conversations with the user must be in Chinese** (including updates, questions, and summaries); leave code blocks, commands, and file paths unchanged.
+- Repository documentation, instructions, code, comments, and UI copy use English. Commit messages are outside the scope of the repository translation; retain their existing convention below.
+- Code, code comments, and commit messages use English.
+- Product UI copy defaults to English and is centrally managed rather than hardcoded in components, allowing future i18n.
+- Read the product name only from the `APP_NAME` configuration constant; never hardcode it.
 
-## 已定约束（不要推翻，除非在"待拍板"里说明理由）
+## Agreed constraints (do not overturn without explaining why under "Pending decisions")
 
-- 技术栈：Next.js（TypeScript）+ Supabase（Postgres、Auth、Storage，区域 ap-southeast-2 Sydney）+ Vercel + Resend + GitHub Actions
-- **全部使用免费档**；唯一付费项是域名（已买 `brewdex.app`）
-- Vercel Hobby 不允许商用 → 不要依赖 Vercel 专有功能，保持可迁移到 Cloudflare 等平台
-- 数据只用许可允许的来源；禁止抓取禁止抓取的平台（LinkedIn、SEEK 等）
-- 第一版数据来源：技能级只用 Greenhouse、Lever、Ashby 三家招聘系统（ATS）的公开职位接口；岗位级与覆盖率校准用 JSA IVI；分类用 ASC、ANZSCO。不接 Adzuna，不用 Workday（没有公开接口），其余 ATS 核实条款后再加（见架构 §6.2、§6.7、§6.8）。付费数据合作（Adzuna、Indeed 等）等有客户后由用户去谈
-- 遵守澳洲 Privacy Act / APPs；个人数据存放在澳洲区域
-- 付费方不限（见 PRD §12.1），但收入永远不影响盘面数据与展示；MVP 不做付费功能与雇主侧功能
+- Stack: Next.js (TypeScript), Supabase (Postgres, Auth, Storage; ap-southeast-2 Sydney), Vercel, Resend, and GitHub Actions.
+- **Use free tiers throughout**; the only paid item is the domain (`brewdex.app`, already purchased).
+- Vercel Hobby prohibits commercial use. Avoid Vercel-specific dependencies and preserve portability to platforms such as Cloudflare.
+- Use only sources whose licences permit the intended use. Do not scrape platforms that prohibit scraping, such as LinkedIn and SEEK.
+- Initial data sources: skill-level data uses only the public job APIs from Greenhouse, Lever, and Ashby; role-level data and coverage calibration use JSA IVI; classification uses ASC and ANZSCO. Do not integrate Adzuna or Workday (no public API). Add other ATS sources only after checking their terms (architecture §§6.2, 6.7, 6.8). The user will negotiate paid partnerships with Adzuna, Indeed, and others after acquiring customers.
+- Comply with the Australian Privacy Act / APPs; store personal data in Australia.
+- Any party may pay (PRD §12.1), but revenue must never influence market data or its presentation. The MVP excludes paid features and employer-facing features.
 
-## 工作流（主会话负责调度；子 agent 一律用 Opus）
+## Workflow (the main session coordinates; all subagents use Opus)
 
-用户已授权主会话按下面的流程使用子 agent，无需每次再问。
+The user has authorised the main session to use subagents in the workflow below without asking each time.
 
-### 阶段 1：架构（主会话自己做）
+### Phase 1: Architecture (handled by the main session)
 
-1. 读 `docs/PRD.md` 与 `docs/research/`
-2. 写 `docs/ARCHITECTURE.md` 和 `docs/MILESTONES.md`（要求见启动 prompt）
-3. 更新 `docs/PROGRESS.md`
-4. **停下，等用户确认架构。** 未经确认不得进入阶段 2
+1. Read `docs/PRD.md` and `docs/research/`.
+2. Write `docs/ARCHITECTURE.md` and `docs/MILESTONES.md` (requirements are in the launch prompt).
+3. Update `docs/PROGRESS.md`.
+4. **Stop and wait for the user to approve the architecture.** Do not enter phase 2 without approval.
 
-### 阶段 2：按里程碑循环
+### Phase 2: Iterate through milestones
 
-对 `docs/MILESTONES.md` 中的每个里程碑 M{n}，按顺序：
+For each milestone M{n} in `docs/MILESTONES.md`, in order:
 
-1. **前置检查**：该里程碑"需要人类完成的事项"是否已完成（查 `docs/SETUP.md`，由用户和 Codex 维护）。未完成 → 停下，给用户一份逐步操作清单，等完成后再继续
-2. **实现**：派 `implementer` 子 agent（Opus），只给它这一个里程碑。它在从 `main` 切出的分支 `m{n}-<slug>` 上工作
-3. **审查**：派 `reviewer` 子 agent（Opus），审查该分支相对 `main` 的改动
-4. **结论**：
-   - 通过 → push 分支并开 PR（CI 与 Vercel 预览自动跑），更新 `docs/PROGRESS.md`，**如本次会话尚未授权合并，则请用户确认；已有授权时不重复确认**；合并后从新的 `main` 切下一个分支
-   - 退回 → 把 `docs/reviews/M{n}.md` 的问题清单交给 implementer 修复，再审
-   - **同一里程碑退回 3 次 → 停下找用户**
-5. 每个里程碑结束时向用户简短汇报：完成了什么、审查结论、有无待拍板事项
+1. **Prerequisites**: check whether its "Human prerequisites" are complete in `docs/SETUP.md`, maintained by the user and Codex. If incomplete, stop, provide a step-by-step checklist, and wait for completion.
+2. **Implementation**: assign an implementer subagent (Opus) only this milestone. It works on branch `m{n}-<slug>` created from main.
+3. **Review**: assign a reviewer subagent (Opus) to review the branch against main.
+4. **Outcome**:
+   - Pass: push the branch and open a PR (CI and Vercel previews run automatically), update `docs/PROGRESS.md`, and **ask for merge approval if this session has not already authorised it; do not ask again when approval exists**. After merging, create the next branch from the updated main.
+   - Return for changes: give the implementer the issue list in `docs/reviews/M{n}.md`, then review again.
+   - **After three returns for the same milestone, stop and consult the user.**
+5. After each milestone, briefly report what was completed, the review outcome, and any pending decisions.
 
-前端反馈轮次（FE-R{n}）走同样的实现 → 审查 → 合并流程：分支 `fe-r{n}`，审查记录 `docs/reviews/FE-R{n}.md`。
+Frontend feedback rounds (FE-R{n}) follow the same implement → review → merge workflow, using branch `fe-r{n}` and review record `docs/reviews/FE-R{n}.md`.
 
-### 必须停下来找用户的情况
+### When to stop and consult the user
 
-- 阶段 1 架构完成后（等确认）
-- 需要开账号、填密钥、买域名、做任何需要人类身份的操作
-- 合并到 `main` 前尚未获得本次会话的授权，或打 / 推送发布标签前尚未获得发布授权
-- 同一里程碑审查退回 3 次
-- 任何不可逆或对外可见的操作：删除数据、改动生产数据库、发送真实邮件给非测试用户、修改 DNS
-- 需要推翻"已定约束"时
+- After completing phase 1 architecture, to obtain approval.
+- When an account, key, domain purchase, or other action requiring human identity is needed.
+- Before merging into main without authorisation in the current session, or before creating/pushing a release tag without release authorisation.
+- After three review returns for one milestone.
+- Before an irreversible or externally visible action: deleting data, changing the production database, sending real email to non-test users, or changing DNS.
+- When an agreed constraint must be overturned.
 
-### 省用量
+### Conserve usage
 
-- 主会话不亲自写大段实现代码；给子 agent 的任务说明要完整自包含，避免它反复摸索；审查只看 diff 和相关文件，不重读整个仓库
+- The main session does not write large implementations itself. Give subagents complete, self-contained tasks to avoid repeated exploration. Reviews inspect only the diff and relevant files, rather than rereading the entire repository.
 
-## 本机开发环境
+## Local development environment
 
-用户的 Mac（8GB）跑不动全量本地 Supabase。数据库、pgTAP / RLS 测试、集成测试等重型任务经 Mac → Windows 桥接在 Windows 开发机的 Docker 里执行；Mac 只负责编辑、lint、typecheck、单测和前端预览。
+The user's 8GB Mac cannot run the full local Supabase stack. Database work, pgTAP / RLS tests, integration tests, and other heavy tasks run in Docker on the Windows development machine through the Mac → Windows bridge. The Mac handles editing, lint, type checking, unit tests, and frontend previews.
 
-- `bash scripts/windows-backend status|start|stop|test|build`：操作 Windows 上的独立开发数据库（`test` = pgTAP + 健康检查）
-- `bash scripts/remote-dev probe|ready|status|run`：底层桥接
-- 远端代码不会自动同步：测试新代码前先把改动同步过去
-- 细节（目录、端口、注意事项）见 `docs/REMOTE_DEVELOPMENT.md`。这三个文件只在本机，已加入 `.git/info/exclude`，不提交
+- `bash scripts/windows-backend status|start|stop|test|build`: manage the isolated Windows development database (test = pgTAP + health check).
+- `bash scripts/remote-dev probe|ready|status|run`: low-level bridge.
+- Remote code is not synchronised automatically; sync changes before testing them.
+- See `docs/REMOTE_DEVELOPMENT.md` for directories, ports, and caveats. These three files are local only, excluded through `.git/info/exclude`, and must not be committed.
 
-## Git 约定
+## Git conventions
 
-- 只有一条长期分支 `main`，流程是：**分支 → PR → `main`（仅集成）→ 经用户授权推送 `v*` tag → 上线**（2026-10-23 起不再使用 `dev`）
-- 合进 `main` 不上线，也不自动打 tag。只有推送指向 `main` 历史提交的 `v*` tag，`Brewdex release` workflow 才检查并发布到 Cloudflare（`brewdex.app`）；手动运行 workflow 仅验证
-- PR 合并到 `main` **需用户授权；同一会话已授权的范围内可连续执行，不重复确认**
-- 每项工作一个短分支，从 `main` 切出：里程碑 `m{n}-<slug>`，前端轮次 `fe-r{n}`，其他 `feat/…`、`fix/…`、`chore/…`；合并后先列出分支和 worktree 清理清单，经用户确认再删除
-- Vercel 只用来看 PR 的预览链接，不承担生产
-- commit 小而清晰，英文，conventional commits 风格（`feat:`、`fix:`、`chore:`…）
-- 永远不提交 `.env*`（`.env.example` 除外）；永远不在输出中打印密钥
+- There is one long-lived branch, main: **branch → PR → main (integration only) → push a `v*` tag with user authorisation → release**. dev has been discontinued since 2026-10-23.
+- Merging into main neither deploys nor creates a tag. Only pushing a `v*` tag pointing to a commit in main history makes the `Brewdex release` workflow validate and deploy to Cloudflare (`brewdex.app`). Manual workflow runs validate only.
+- Merging a PR into main **requires user authorisation; within the scope already authorised in the same session, proceed without asking again**.
+- Use one short-lived branch per task, created from main: `m{n}-<slug>` for milestones, `fe-r{n}` for frontend rounds, and `feat/…`, `fix/…`, or `chore/…` otherwise. After merging, list branches and worktrees proposed for cleanup and obtain approval before deleting them.
+- Vercel is used only for PR previews, not production.
+- Keep commits small and clear, with English conventional commit messages (`feat:`, `fix:`, `chore:`, etc.).
+- Never commit `.env*` except `.env.example`; never print secrets.
 
-## 文件分工（避免与 Codex 冲突）
+## File ownership (avoid conflicts with Codex)
 
-| 文件 | 负责方 |
+| Files | Owner |
 |---|---|
-| `docs/PRD.md` | 用户（agent 只能在"待拍板"里提修改建议） |
-| `docs/ARCHITECTURE.md`、`docs/MILESTONES.md`、`docs/PROGRESS.md`、`docs/DESIGN.md`、`docs/GLOSSARY.md` | 主会话 |
-| `docs/reviews/*.md` | reviewer |
-| `docs/SETUP.md`、`.env.example` | 用户 + Codex（agent 只读；需要新增环境变量时在 PROGRESS.md 里提出） |
-| `docs/research/*`、`docs/FRONTEND_API_REPORT.md` | 只读快照（接后端前刷新 API 报告） |
-| 代码 | implementer |
+| `docs/PRD.md` | User; agents may only propose changes under "Pending decisions" |
+| `docs/ARCHITECTURE.md`, `docs/MILESTONES.md`, `docs/PROGRESS.md`, `docs/DESIGN.md`, `docs/GLOSSARY.md` | Main session |
+| `docs/reviews/*.md` | Reviewer |
+| `docs/SETUP.md`, `.env.example` | User + Codex; other agents read only and propose new environment variables in PROGRESS.md |
+| `docs/research/*`, `docs/FRONTEND_API_REPORT.md` | Read-only snapshots; refresh the API report before backend integration |
+| Code | Implementer |
 
-## 质量底线
+## Quality requirements
 
-- TypeScript strict；lint 与类型检查零错误
-- 核心逻辑（指标计算、筛选规则、匹配、请求超时、权限）必须有自动化测试
-- Supabase 所有表启用 RLS，并有对应测试
-- 每个里程碑的验收命令必须能在本地一条命令跑通
-- UX 必须遵守 `docs/PRD.md` §10 的原则（每个数字有定义与来源、不排名、推断即建议等）
-- 前端：**Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.**（定义与来源放进 ⓘ 等一键可达处，不在界面上铺说明文字）
+- TypeScript strict mode; zero lint and type-checking errors.
+- Automated tests for core logic: metric calculation, filtering, matching, request timeouts, and permissions.
+- RLS enabled and tested for every Supabase table.
+- Each milestone's acceptance checks must run locally with one command.
+- UX follows `docs/PRD.md` §10: every number has a definition and source, no rankings, and inferences are suggestions.
+- Frontend: **Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.** Put definitions and sources behind a one-click control such as ⓘ rather than spreading explanatory text across the interface.

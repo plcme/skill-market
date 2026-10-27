@@ -1,126 +1,126 @@
-# 全站模糊搜索调研
+# Site-wide fuzzy-search research
 
-调研日期：2026-10-23，悉尼时间。代码基线：`main` 的 `ec02399f1c4507e90e37169c50bd5aa3fe281b01`。
+Research date: 2026-10-23, Sydney. Baseline: main `ec02399f1c4507e90e37169c50bd5aa3fe281b01`.
 
-后续实现已完成，覆盖与验证结果见 [全站模糊搜索实现与验证](FUZZY_SEARCH_IMPLEMENTATION.md)。下文保留调研时的现状与候选方案。
+Implementation is complete; see [implementation and verification](FUZZY_SEARCH_IMPLEMENTATION.md). This document preserves the original findings and candidates.
 
-本项目适合先使用 Fuse.js 构建共享的模糊匹配层（fuzzy matching），再为不同入口设置搜索策略。保留准确名称、缩写和别名的优先级，增加拼写容错（typo tolerance）。行情榜保留业务排序；课程代码、短缩写和后台精确筛选使用更严格的策略。
+Use Fuse.js initially as a shared matcher with entry-specific policies. Preserve exact names, abbreviations, and aliases while adding typo tolerance. Keep business sorting on the board and stricter course-code, short-abbreviation, and admin policies.
 
-本文覆盖现有全部可输入文字的搜索与筛选入口，也比较全文搜索（full-text search）、缩写检索（subsequence matching）、数据库相似度检索和语义搜索（semantic search）的适用边界。本次只增加调研文档，未安装依赖、修改产品行为或运行服务。候选库尚未在本项目数据上做效果与性能实测。
+All existing text-search/filter inputs are covered, including the boundaries of full-text, subsequence, database similarity, and semantic search. This research change added documentation only: no dependencies, product changes, or services. Candidates have not yet been benchmarked against project data.
 
-## 现有搜索入口
+## Existing search inputs
 
-路径均相对于本工作树根目录。顶部和移动端按钮共用命令面板，不重复计数。
+Paths are relative to this worktree. Header/mobile buttons share one command palette, counted once.
 
-| 入口 | 代码位置 | 当前规则 | 建议 |
+| Input | Location | Current rules | Recommendation |
 | --- | --- | --- | --- |
-| 顶部搜索、移动端搜索、⌘K 与 `/` 命令面板（command palette） | `src/components/shell/command-palette.tsx:57`；`src/lib/market/catalog.ts:329` | 名称精确、符号精确、别名精确、名称前缀、别名前缀、名称子串；总共最多 8 条 | 使用共享匹配层；准确项优先，模糊项补充；保留键盘与打开完整结果页的行为 |
-| 完整搜索结果页 `/search` | `src/app/search/page.tsx:73`；`src/lib/queries/market.ts` 的 `search`、`searchWithSnapshots` | 与命令面板共用目录匹配，先取 40 条，再分技能、岗位、行业；另查核心能力 | 与命令面板共用规则；保留分组、筛选参数与快照；明确全局上限与分组上限 |
-| 行情榜文字筛选及 Watching 标签 | `src/features/market/board-controls.tsx:40`；`src/lib/queries/market.ts:51`；`src/features/market/watching-board.tsx` | 名称与别名子串、符号精确；先按类型和技能层级筛选；按数值或变化排序；关注列表再取交集 | 用同一匹配层确定候选集合，继续按数值或变化排序；关注项限制必须保留；保留 URL 同步、清空和 280ms 防抖（debounce） |
-| 比较页面选择器（comparison picker） | `src/features/market/instrument-picker.tsx:33` | 共享目录搜索取 40 条，然后限制类型、排除已选项，最终取 10 条 | 先限定合法候选，再搜索排序和截断；同类约束和排除规则保留 |
-| 学生添加技能 | `src/features/student/skills/add-skill.tsx:29` | 共享搜索先取 20 条，再筛技能 | 先限定技能范围；保留已添加状态与重复添加约束 |
-| 课程选择 | `src/features/student/onboarding/onboarding-flow.tsx:195`；`src/lib/demo/education.ts:117` | 当前大学范围内，课程代码或英文标题子串匹配 | 大学范围先限定；代码准确或前缀优先，标题可容错；建议统一 `DATA 3406` 与 `DATA3406` 的代码格式，不静默纠正数字 |
-| 地点选择器 | `src/components/market/filter-builder.tsx:82`；`src/lib/filters/locations.ts` | 可选地点的名称或短名称子串；国家层级不列出 | 名称支持保守容错；`NSW` 等缩写准确优先；保留层级说明、已选禁用和原地点 ID |
-| 从业者资料中的技能筛选 | `src/features/community/profile-form.tsx:44` | 只查技能名称子串；已勾选技能始终保留 | 复用技能名称、别名和符号匹配；已选项继续可见，不能因搜索消失 |
-| 后台别名列表筛选 | `src/features/admin/taxonomy.tsx:33`；`src/lib/api/admin.ts:224` | 查别名与所属目录名称的子串；含静态别名与浏览器内覆盖项 | 默认保留精确文字筛选；可另外提供明确标记的近似建议，避免影响查错与冲突判断 |
+| Header/mobile/⌘K/`/` palette | `src/components/shell/command-palette.tsx:57`; `src/lib/market/catalog.ts:329` | Exact name/symbol/alias, name/alias prefix, name substring; max eight | Shared matcher; exact first, fuzzy supplement; preserve keys/full-results navigation |
+| `/search` | `src/app/search/page.tsx:73`; `src/lib/queries/market.ts` search/`searchWithSnapshots` | Shared catalogue, global 40 then skill/role/industry groups; separate competencies | Shared rules, groups/filters/snapshots; distinguish global/group limits |
+| Board/Watching text | `src/features/market/board-controls.tsx:40`; `src/lib/queries/market.ts:51`; `src/features/market/watching-board.tsx` | Name/alias substring, exact symbol; type/layer first; value/change sort; watched intersection | Shared candidates, existing sorting/subset; URL/clear/280ms debounce |
+| Compare picker | `src/features/market/instrument-picker.tsx:33` | Global 40, then same type/exclusions, final ten | Restrict legal candidates before matching/limit |
+| Student add skill | `src/features/student/skills/add-skill.tsx:29` | Global 20 then skills | Skills first; preserve added/duplicate rules |
+| Course picker | `src/features/student/onboarding/onboarding-flow.tsx:195`; `src/lib/demo/education.ts:117` | Selected-university code/title substring | University first; exact/prefix codes, typo titles; normalise `DATA 3406`/`DATA3406`, never silently fix digits |
+| Places | `src/components/market/filter-builder.tsx:82`; `src/lib/filters/locations.ts` | Selectable name/short-name substring; no country | Conservative typos, exact `NSW` priority; hierarchy/disabled selections/IDs unchanged |
+| Practitioner skills | `src/features/community/profile-form.tsx:44` | Skill-name substring; selected always retained | Names/aliases/symbols; selected remain visible |
+| Admin aliases | `src/features/admin/taxonomy.tsx:33`; `src/lib/api/admin.ts:224` | Alias/owner-name substring; static/browser overrides | Literal default; clearly marked approximate suggestions, preserving conflict checks |
 
-核心能力（core competencies）是前两种入口中的独立结果类型：`src/lib/market/competencies.ts:105` 只支持别名精确和前缀，少于 3 字符不返回。模糊能力结果仍应跳到 `/metrics#competency-…`，不能生成可交易技能或行情数据。精确能力别名仍优先于目录结果。
+Core competencies are separate results in the first two entries: `src/lib/market/competencies.ts:105` supports exact/prefix aliases, minimum three characters. Fuzzy hits must still link to `/metrics#competency-…`, never invent tradable skills or metrics. Exact competency aliases precede catalogue hits.
 
-其他表单中的原生下拉框（native select），例如大学、学位、岗位和资料地点，目前没有自定义文字搜索框。若以后改成可搜索组合框（combobox），可以复用领域策略；不应仅因本次调研改变全部控件。聊天、法律文档、消息列表目前未发现独立的文字搜索入口；本次不将它们扩展成新的全站索引。
+Other university/degree/role/profile-place native selects have no custom search. Future comboboxes may reuse domain policies, but this research does not justify changing every control. No separate chat/legal/message text-search input was found; do not create a new whole-site index for them.
 
-## 当前规则的具体缺口
+## Gaps
 
-1. **没有拼写容错。** 目录、课程、地点和资料筛选都依赖精确、前缀或子串规则，不能根据相似度处理 `pyhton`、`javascrpt` 等输入。
-2. **入口规则不一致。** 行情榜支持别名任意位置子串，目录搜索只支持别名前缀；从业者资料只查名称。相同输入可能在不同入口得到不同结果。
-3. **先截断再按领域筛选可能漏项。** 比较选择器和添加技能先调用全目录限量搜索，再限定类型。完整结果页也先限量再分组。新增模糊结果后，这种召回损失更容易出现。
-4. **后台覆盖别名与公共搜索脱节。** `selectAliases` 读取 `DemoDB.alias_overrides`，但公共 `searchInstruments` 只遍历静态 `INSTRUMENTS` 的别名。接入时需确定覆盖别名是浏览器预览范围，还是未来服务端统一数据；不能让浏览器内覆盖项被误认为已同步到服务端。
-5. **英文界面不等于跨语言搜索。** `src/i18n/request.ts` 当前固定 `en`，目录搜索字段以英文为主。中文检索需要经审核的中文标签或别名，模糊算法本身不会翻译“数据分析”。
+1. **No typo tolerance**: catalogue/course/place/profile rules cannot recover pyhton/javascrpt.
+2. **Inconsistent rules**: board aliases support arbitrary substring, catalogue aliases prefix only, profiles names only; results differ by entry.
+3. **Limits before domain restrictions lose results**: compare/add-skill search globally then restrict types; full results limit before groups. Fuzzy expansion worsens loss.
+4. **Admin overrides disconnected**: `selectAliases` reads `DemoDB.alias_overrides`; public search uses static aliases only. Define browser-preview versus future server scope; never imply local overrides reached servers.
+5. **English UI is not cross-language search**: `src/i18n/request.ts` fixes en, catalogue fields mostly English. Chinese queries need reviewed labels/aliases; fuzzy algorithms do not translate the Chinese phrase for data analysis.
 
-## 开源候选比较
+## Open-source candidates
 
-以下功能依据官方仓库或文档；适配判断是针对本项目的建议，未采用供应商基准作为本项目实测。
+Capabilities from official sources; fit is a project-specific recommendation, not a project benchmark based on vendor claims.
 
-| 候选 | 官方能力 | 对本项目的适配判断 |
+| Candidate | Official capabilities | Fit |
 | --- | --- | --- |
-| [Fuse.js](https://github.com/krisk/Fuse) | 浏览器与 Node.js 可用；零外部依赖；支持拼写容错、加权字段和匹配位置 | 首选验证。适合目前这种结构化名称与别名目录；可共享纯函数包装层，无需增加服务。当前仓库显示 Apache-2.0，接入时仍需核对所选版本的 LICENSE |
-| [MiniSearch](https://github.com/lucaong/minisearch) | MIT；内存索引；前缀、模糊匹配、字段加权、自动建议；支持增删文档 | 第二候选。若重点变成多词标题、课程描述或文档检索，其分词索引更值得评测；需特别保留 `C++`、`C#`、`Node.js` 和课程代码 |
-| [FlexSearch](https://github.com/nextapps-de/flexsearch) | 当前仓库显示 Apache-2.0；全文索引、分词、语音编码匹配、后台线程（Web Worker）及字符集配置 | 候选扩展。灵活但配置面更广；语音匹配不等同于任意换字、漏字或相邻字符颠倒，必须用实际查询集验证 |
-| [fuzzysort](https://github.com/farzher/fuzzysort) | MIT；类似编辑器的缩写检索，支持多字段与高亮 | 更适合命令名称等字符顺序缩写；不能凭“fuzzy”名称假定其具备所需的全部错拼能力。若独立引入，需要解释其与其他入口的不同规则 |
-| [PostgreSQL pg_trgm](https://www.postgresql.org/docs/current/pgtrgm.html) | 三元组相似度（trigram similarity），可通过 GiST 或 GIN 索引支持相似检索 | 真实目录迁到数据库后可评估，避免为名称检索单独增加搜索服务。标点会影响三元组提取，技术名称和短符号需要独立准确匹配 |
-| [Meilisearch](https://www.meilisearch.com/blog/typo-tolerance) | 可按字段与词长配置拼写容错 | 数据量与产品需求需要独立搜索服务时再评估；当前会增加服务部署、索引同步和访问控制工作 |
-| [Typesense](https://typesense.org/docs/28.0/api/search.html) | 支持字段级容错、前缀及筛选；可限制最大错字和最短词长 | 同属服务端备选。接入前核验实际版本、许可证和运行资源；不作为当前研究的默认部署方案 |
+| [Fuse.js](https://github.com/krisk/Fuse) | Browser/Node, no dependencies, typos, weighted fields, match positions | First to validate; structured names/aliases, pure shared wrapper, no service. Repo shows Apache-2.0; verify selected version LICENSE |
+| [MiniSearch](https://github.com/lucaong/minisearch) | MIT, memory index, prefixes/fuzzy/weights/suggestions, updates | Second choice; assess for multiword titles/descriptions/documents; preserve `C++`, C#, `Node.js`, course codes |
+| [FlexSearch](https://github.com/nextapps-de/flexsearch) | Repo Apache-2.0; full-text/tokenisation/phonetic/Workers/character sets | Extension option, wider configuration; phonetic matching does not guarantee substitution/deletion/transposition recovery |
+| [fuzzysort](https://github.com/farzher/fuzzysort) | MIT, editor-style subsequences, fields/highlighting | Good for command abbreviations; fuzzy name does not guarantee required typos; justify different rules if introduced |
+| [PostgreSQL pg_trgm](https://www.postgresql.org/docs/current/pgtrgm.html) | Trigram similarity with GiST/GIN | Assess after DB migration; avoids separate service; punctuation/short symbols need exact paths |
+| [Meilisearch](https://www.meilisearch.com/blog/typo-tolerance) | Per-field/length typo settings | Later if scale needs service; adds deployment/index sync/access controls |
+| [Typesense](https://typesense.org/docs/28.0/api/search.html) | Field typos/prefix/filter, maximum typos/minimum lengths | Server alternative; verify version/licence/resources; not default deployment |
 
-[Supabase 全文检索](https://supabase.com/docs/guides/database/full-text-search)提供文本搜索与排序路径；全文检索本身不等于拼写容错。若以后迁移，应分别设计词项检索、名称相似度和权限过滤。
+[Supabase full-text search](https://supabase.com/docs/guides/database/full-text-search) provides retrieval/ranking, not automatic typo tolerance. Design term search, name similarity, and permission filters separately.
 
-语义搜索（semantic search）处理意思相近的查询，通常还需要嵌入（embeddings）和检索架构。它不能代替 `JS → JavaScript` 的准确别名或课程代码匹配。本阶段不需要为错拼召回引入这套基础设施。
+Semantic search needs embeddings/retrieval architecture; it cannot replace exact `JS → JavaScript` aliases or course codes. Do not introduce it merely for typos.
 
-## Fuse.js 接入建议
+## Fuse.js integration proposal
 
-### 版本与参数
+### Version and parameters
 
-本次查看的[发布页](https://github.com/krisk/Fuse/releases)将 `v7.5.0` 标记为 Latest，`v7.6.0-beta.0` 标记为预发布（prerelease）。接入时核验包注册表与选定标签，固定经过验证的稳定版本。发布说明明确指出评分修复会改变结果顺序，升级时需重新验证排序。
+The inspected [releases](https://github.com/krisk/Fuse/releases) marked `v7.5.0` Latest and `v7.6.0-beta.0` prerelease. Recheck registry/tag and pin a validated stable version. Scoring fixes can reorder results; rerun ordering checks on upgrades.
 
-建议最小原型（prototype）从 `includeScore: true`、`ignoreLocation: true`、`threshold: 0.30` 起步，字段权重先用名称 0.6、别名 0.3、符号 0.1。阈值和权重是待验证的初始假设，不能视为已经达到准确率目标。符号与代码的准确匹配必须先由领域策略处理，而不是依赖这些权重。
+Prototype with includeScore true, ignoreLocation true, threshold 0.30; tentative name/alias/symbol weights 0.6/0.3/0.1. These are assumptions, not achieved accuracy. Domain rules must handle exact codes/symbols first.
 
-[官方文档](https://www.fusejs.io/)列出多词搜索（token search）与加权字段；[多词说明](https://www.fusejs.io/token-search.html)提供分词策略。接入前用选定稳定版本确认 API；默认不要把用户输入当扩展查询语法（extended query syntax），防止 `C++` 或标点被解释成操作符。
+[Official docs](https://www.fusejs.io/) list token search and weighting; [token details](https://www.fusejs.io/token-search.html) describe strategies. Verify APIs on the chosen stable version; do not treat user input as extended syntax by default, lest punctuation/`C++` become operators.
 
-### 共享逻辑与入口策略
+### Shared logic and entry policies
 
-建议新增 `src/lib/search/`，将匹配器与目录适配器分开。稳定输入包括数据集合、领域范围、查询、上限和策略；输出保留实体 ID、匹配类型（match kind）、匹配字段及可选高亮范围。现有 `searchInstruments`、`searchCompetencies`、`searchUnits` 作为兼容包装，逐步迁移调用方。
+Separate matcher/catalogue adapters in src/lib/search. Stable inputs: dataset, domain, query, limit, policy. Outputs: entity ID, match kind/field, optional highlight ranges. Keep `searchInstruments`/`searchCompetencies`/`searchUnits` compatibility wrappers and migrate callers gradually.
 
-处理顺序建议如下：
+Order:
 
-1. 规范化查询（normalization）：去首尾空白、合并空白、忽略大小写，按字段考虑 Unicode 规范化；保留 `C++`、`C#`、`.NET` 等有意义标点。
-2. 先限定可见数据、大学、类型、技能层级和排除项，再执行匹配。认证或领域范围不能被模糊算法扩大。
-3. 将准确名称、准确符号与准确别名作为确定性结果层；继续保留前缀与原有子串命中；模糊结果作为较低优先层补充，按稳定 ID 去重。
-4. 在最终合法候选集合上应用上限。比较与技能选择器不能先限量再限定类型。
-5. 搜索结果页和选择器按相关性（relevance）排序；行情榜仅用搜索筛集合，仍按用户所选指标排序。别名和实体同分时增加稳定的次级排序。
+1. Trim/collapse whitespace, ignore case, consider field-specific Unicode normalisation; retain meaningful `C++`/C#/`.NET` punctuation.
+2. Restrict visibility/university/type/layer/exclusions first. Fuzzy search must not broaden auth or domain scope.
+3. Deterministic exact name/symbol/alias tiers, then existing prefix/substring, then fuzzy; deduplicate stable IDs.
+4. Limit final legal candidates; compare/add-skill cannot limit before type filters.
+5. Results/pickers sort relevance; boards use matching only to filter, preserving metric sorting. Add stable tie-breaks.
 
-共享逻辑可以统一召回规则，但不要求各入口的显示数量、空查询行为或业务排序完全相同。命令面板的建议项、完整页的空查询提示、课程与地点的全量浏览等现有行为应分别保留。
+Unify retrieval, not every result count, empty-query behaviour, or business ordering. Preserve palette suggestions, results-page prompts, and course/place browsing independently.
 
-### 不同字段的容错边界
+### Tolerance boundaries
 
-| 输入类别 | 建议策略 |
+| Input | Policy |
 | --- | --- |
-| 1 至 2 字符、`R`、`JS`、`QA`、`C#`、`C++` | 保留准确、既有前缀和子串规则；不新增通用错字扩展，避免大量无关结果 |
-| 中长英文名称与别名 | 允许保守的插入、删除、替换；相邻字符交换另设样例验证，因为不同算法的编辑距离（edit distance）定义不同 |
-| 多词查询 | 评估要求所有有效词命中（AND）的策略，支持跨名称和别名匹配；明确词序变化的行为，避免只匹配一个词即大量返回 |
-| 课程代码 | 单独处理大小写与空格；数字不同的代码不自动当同一门课；近似代码可作为明确标注的建议 |
-| 地点短名 | 准确短名优先；长名称可容错，但必须显示城市或州上下文并由用户选择 |
-| 中文、拼音及跨语言 | 需要明确的标签与别名字典，以及专门查询集；不要声称引入英文模糊库后已支持 |
-| 后台别名冲突与保存 | 保持准确验证；近似检索不能更改实体 ID、自动合并或改变别名归属 |
+| 1–2 chars, R, JS, QA, C#, `C++` | Existing exact/prefix/substring; no generic typo expansion |
+| Medium/long English names/aliases | Conservative insertion/deletion/substitution; test transposition separately because distance definitions vary |
+| Multiword | Assess AND matching across name/alias; define reversed-order behaviour; avoid broad single-word matches |
+| Course codes | Case/space normalisation separately; differing digits are not the same course; label approximate suggestions |
+| Place short names | Exact priority; longer-name typos with city/state context and user selection |
+| Chinese/pinyin/cross-language | Explicit labels/aliases and dedicated queries; do not claim English library provides them |
+| Admin conflicts/saving | Exact validation; approximate retrieval cannot change IDs, merge entities, or reassign aliases |
 
-## 验证样例与验收条件
+## Validation cases and acceptance
 
-以下是后续实现需要验证的目标，不是已经跑通的结果。
+These are future targets, not completed results.
 
-| 查询或操作 | 目标与判定 |
+| Query/action | Target |
 | --- | --- |
-| `Python`、`PYTHON`、首尾空格 | 目录实体一致，准确名称优先 |
-| `JS`、`k8s`、`r`、`C++` | 原有准确别名、符号与技术名称保持可达；不因短词模糊扩展被淹没 |
-| `pyhton`、`javascrpt`、`kubernets` | 对应实体进入前 3 项；检查无关结果率，不只检查非空 |
-| `software enginer` 与倒序词查询 | 对照数据集中实际名称与别名评估多词错拼与词序策略 |
-| 名称、符号、多个别名同时命中 | 同一实体只显示一次；准确结果始终优先于近似结果 |
-| `communication`、`communciation` | 准确核心能力仍置前；错拼可找到说明页；不出现虚构行情 |
-| 比较选择器与添加技能的宽泛查询 | 大量其他类型命中时，合法技能或同类型候选仍可出现；排除项仍排除 |
-| 行情榜与 Watching 使用错拼查询 | 集合召回改善，同时保留类型、技能层级、关注集合、指标与变化排序 |
-| 资料技能筛选时更改查询 | 已选技能始终可见且不会被清除 |
-| `DATA 3406` 与 `DATA3406` | 在所选大学且实际有该课程的条件下返回相同课程；数字错输不静默映射 |
-| 地点名称错拼与 `NSW` | 原地点 ID、层级与已选状态不变；缩写准确优先 |
-| 后台增加或删除覆盖别名 | 精确冲突检测不变；在明确的数据作用域内更新索引，不假装已同步到服务器 |
-| 空白、随机乱码、无关短词、超长输入 | 各入口保留空状态或浏览行为；控制误报和运算量，设定经验证的输入上限 |
-| 键盘、屏幕阅读器与中文输入法 | 上下箭头、Enter、Escape、焦点恢复、结果计数和标签可用；不在输入法组合（IME composition）中途提交 |
+| `Python`/`PYTHON`/outer spaces | Same entity, exact priority |
+| JS/`k8s`/r/`C++` | Exact aliases/symbols remain reachable, not buried |
+| pyhton/javascrpt/kubernets | Correct entity top three; check irrelevant results, not just nonempty |
+| `software enginer`/reversed words | Test actual names/aliases and multiword order |
+| Multiple name/symbol/alias hits | Deduplicate; exact before approximate |
+| communication/communciation | Exact competency first, typo reaches explanation, no fabricated metrics |
+| Broad compare/add-skill | Legal candidates survive many other-type matches; exclusions persist |
+| Board/Watching typo | Improved retrieval; preserve type/layer/watch set/value/change |
+| Profile query changes | Selected skills visible and retained |
+| `DATA 3406`/`DATA3406` | Same actual course within selected university; no silent digit correction |
+| Place typo/`NSW` | IDs/hierarchy/selection preserved; exact abbreviation first |
+| Override add/remove | Exact conflicts unchanged; scoped invalidation without pretending server sync |
+| Empty/random/irrelevant short/too long | Existing empty/browse states, bounded false positives/cost, validated input cap |
+| Keyboard/screen reader/Chinese IME | Arrows/Enter/Escape/focus/count/labels; no submission during composition |
 
-复用现有测试位置：`tests/market-pages-logic.test.ts`、`tests/market-competencies.test.ts`、`tests/industry.test.ts`、`tests/student-education.test.ts` 和地点相关测试。重点断言目标实体、排序层级、作用域与反例，不固定第三方库的浮点评分。
+Reuse `tests/market-pages-logic.test.ts`, market-competencies.test.ts, industry.test.ts, student-education.test.ts, and place tests. Assert entity, tier, scope, counterexamples, not vendor floating scores.
 
-性能评估应在当前目录及可重复生成的 1,000 和 10,000 条合成数据上测量索引构建时间、查询中位数、P95、内存增量与客户端产物体积。记录硬件、运行时、库版本、查询集和冷暖状态；供应商 README 的速度不能代替这项验证。缓存静态目录索引，避免每次按键重建；只有实际出现阻塞后再评估后台线程。无需为这一步启动 Docker。
+Benchmark current catalogue and reproducible 1K/10K synthetic records: build, median/P95 queries, heap delta, client size; record hardware/runtime/version/queries/cold-warm. Vendor README speeds are not project evidence. Cache static indexes, never rebuild on each key; consider Workers only after measured blocking. No Docker needed.
 
-## 实施顺序
+## Implementation order
 
-1. 用实际查询集对比 Fuse.js 与 MiniSearch，确认短符号、错拼、多词和标点表现，再确定版本和阈值。
-2. 迁移公共目录与核心能力匹配，接通命令面板、完整结果页、比较与添加技能，并修正先截断的问题。
-3. 将行情榜与资料技能筛选接入共享层，保留各自排序和已选行为。
-4. 增加课程、地点适配器；后台保持准确默认筛选，近似建议独立呈现。
-5. 单独解决覆盖别名的数据来源与索引失效规则，验证浏览器与服务端一致性。
+1. Compare Fuse/MiniSearch on actual short-symbol/typo/multiword/punctuation queries; choose version/threshold.
+2. Migrate catalogue/competencies, palette/full results/compare/add-skill, fix premature limits.
+3. Board/profile adapters preserving order/selection.
+4. Course/place adapters; admin literal default plus distinct approximate suggestions.
+5. Resolve override source/invalidation and browser/server consistency separately.
 
-最终选型条件是查询质量和现有行为均达标；若多词与长文本成为主要需求，则优先重新评估 MiniSearch。数据库或独立服务方案应等真实数据架构与运行资源确定后再推进。
+Choose based on query quality and preserved behaviour. Reassess MiniSearch if multiword/long text dominates. Defer database/services until real-data architecture/resources are settled.

@@ -1,118 +1,118 @@
-# ARCHITECTURE — skill-market
+# ARCHITECTURE — `skill-market`
 
-| 项 | 内容 |
+| Item | Details |
 |---|---|
-| 状态 | v0.2 — 架构已确认；2026-10-23 数据源改为 ATS 公开 API + JSA IVI 校准 |
-| 依据 | `docs/PRD.md` v0.1、`docs/research/*`、`CLAUDE.md` 已定约束 |
-| 维护方 | 主会话。implementer / reviewer 只读 |
-| 配套 | `docs/MILESTONES.md`（实施顺序）、`docs/PROGRESS.md`（待拍板与进度） |
+| Status | v0.2 — architecture approved; sources changed to ATS public APIs + JSA IVI calibration on 2026-10-23 |
+| Basis | PRD v0.1, `docs/research/*`, agreed `CLAUDE.md` constraints |
+| Maintainer | Main session; implementer/reviewer read only |
+| Companion documents | MILESTONES (implementation order), PROGRESS (decisions/progress) |
 
-> 阅读指南：§1 是给产品负责人看的"一页纸"；§2–§11 是给 implementer / reviewer 的实施依据；§12 是所有 PRD 没说清、本文替它做了决定的地方。implementer 只需读与自己里程碑相关的章节，`docs/MILESTONES.md` 里每个里程碑都标了对应章节。
+> §1 is a one-page product-owner overview; §§2–11 guide implementers/reviewers; §12 records decisions made where the PRD was unclear. Read only sections relevant to the milestone, as indicated in MILESTONES.
 
 ---
 
-## 1. 一页纸总览
+## 1. One-page overview
 
-**产品**：把澳洲劳动力市场做成可追踪的"盘面"（`skill` / `role` 两类 `instrument`），并由市场信号触发，把学生匹配给持有该技能的在职从业者做 20 分钟咖啡聊。产品名从常量 `APP_NAME` 读取。
+**Product**: a trackable Australian labour-market board (skill / role instruments), using signals to match students with employed practitioners holding the skill for 20-minute coffee chats. Product name comes from `APP_NAME`.
 
-**核心架构决策（10 条）**
+**Ten core decisions**
 
-| # | 决策 | 一句话理由 |
+| # | Decision | Rationale |
 |---|---|---|
-| A1 | Next.js App Router 全栈：RSC 渲染公开页 + Server Actions 处理写操作，无独立 API 服务 | 免费档只有一个运行时；Server Actions 自带 CSRF 与类型安全 |
-| A2 | Supabase = Postgres + Auth + Storage + **pg_cron 调度**；schema 用纯 SQL migration 管理 | RLS 与调度都放在数据库里，迁移托管商时零改动 |
-| A3 | 所有后台任务是幂等、可分片的 HTTP job（`/api/jobs/*`），由 pg_cron + pg_net 定时调用 | 不依赖 Vercel Cron（Hobby 只能每日一次且锁定平台） |
-| A4 | **广告级存储 + 可加总的 filter cell** 模型：每条广告归入唯一 (location, work_mode, seniority, work_rights) 格子，指标存 numerator/denominator，任意规则式筛选靠加总得到精确值 | PRD 要求筛选条件是 watchlist 条目的一部分；预计算全部组合不可能，加总模型让任意组合 O(cells) |
-| A5 | 数据源适配层：`AdsSource`（ATS 公开职位接口，第一版只接 Greenhouse / Lever / Ashby，技能级）+ `OfficialSeries`（JSA IVI，岗位级与覆盖率分母；ASC / ANZSCO 作分类；NERO / SPL 后续）+ `fixture`（测试）。第一版只用这两类来源（2026-10-23 用户决定） | 招聘系统公开接口是雇主自己发布的第一手职位；政府口径（IVI）给出总量，用来算覆盖率并重新加权（§6.8） |
-| A6 | 指标注册表（metric registry）是代码 + 数据库双份、单一来源生成：定义、单位、分母、适用标的类型、最小样本、可用时间窗 | FR-D2 "每个数字解释自己"、FR-M4 "只提供有效组合"变成数据而非散落的 if |
-| A7 | 匹配与 conversation starter 全部为**确定性规则**，MVP 不接 LLM | 可解释（FR-C3）、可测试、零 API 成本 |
-| A8 | 咖啡聊请求是显式状态机（`pending → accepted/declined/expired/...`），超时由 pg_cron SQL 函数处理，邮件走 outbox 表 | FR-C7/C8 的"静默换人"需要事务性与可重放 |
-| A9 | 产品分析事件写入自有表（Sydney），不接第三方分析 SDK；错误监控用 Sentry（待拍板） | Privacy Act / APP 8 跨境最小化 |
-| A10 | 测试三层：Vitest（TS 逻辑）+ pgTAP（RLS、SQL 指标函数）+ Playwright（关键流程 + axe 无障碍） | RLS 只能在数据库层验证；核心逻辑一半在 SQL 里 |
+| A1 | Full-stack Next.js App Router: RSC public pages + Server Action writes, no separate API service | One free-tier runtime; built-in CSRF and type safety |
+| A2 | Supabase `Postgres`/Auth/Storage/**pg_cron**; plain SQL migrations | Database RLS/scheduling survive hosting migration unchanged |
+| A3 | Idempotent, shardable HTTP jobs (`/api/jobs/*`), scheduled by pg_cron + pg_net | Avoid proprietary Vercel Cron's daily-only Hobby schedule |
+| A4 | **Ad-level storage + additive filter cells**: each ad has one location/`work_mode`/seniority/`work_rights` cell; metrics retain numerator/denominator and aggregate arbitrary rules exactly | Filters belong to watchlist entries; all combinations cannot be precomputed; cell aggregation is O(cells) |
+| A5 | `AdsSource` adapters: initially Greenhouse/Lever/Ashby public ATS APIs for skills; `OfficialSeries`: JSA IVI roles/coverage, ASC/ANZSCO taxonomy, NERO/SPL later; fixture tests. Only these two source categories initially (user decision, 2026-10-23) | First-party employer jobs plus official totals for coverage/reweighting (§6.8) |
+| A6 | One generated source for code/database metric registries: definition, units, denominator, types, sample minimum, windows | Make FR-D2 explanations and FR-M4 validity data-driven |
+| A7 | **Deterministic** matching and starters; no MVP LLM | Explainable FR-C3, testable, no API costs |
+| A8 | Explicit request state machine (`pending → accepted/declined/expired/...`); SQL timeouts, email outbox | Transactional, replayable quiet replacement for FR-C7/C8 |
+| A9 | Owned Sydney analytics table, no external analytics SDK; Sentry pending | Minimise APP 8 cross-border transfers |
+| A10 | Vitest TS + pgTAP RLS/SQL + Playwright journeys/axe | RLS needs database tests; half the core logic is SQL |
 
-**对 PRD 的调整（详见 §12，已按默认执行，用户可否决）**
+**PRD adjustments (§12; defaults applied, user may veto)**
 
-- 技能级 `growth_12m` 上线时不存在数据，MVP 用 `change_4w`（近 4 周 vs 前 4 周）作为技能的信号指标，`growth_12m` 在累积满 12 个月后自动开放；岗位级 `growth_12m` 从 JSA IVI 历史数据上线即有。
-- `no_pr_required_share` 定义为"未明示要求 PR/公民/完整工作权利的广告占比"，界面必须说明"未提及 ≠ 一定可申请"。
-- 从业者可约时段 = 每周模板 + 系统按模板生成未来 4 周的 20 分钟 slot；会议链接由从业者自带（PRD Q2 默认）。
-- 供给阈值门：`booking_enabled` 特性开关，未开启时"找人聊"入口显示等待队列与从业者招募，不显示空结果。
-- 18+ 只做勾选声明（记录时间与版本），不采集出生日期（数据最小化）。
+- No skill `growth_12m` history at launch: use `change_4w` (latest versus previous four weeks) for MVP signals; enable growth after 12 accumulated months. Roles have IVI history from launch.
+- `no_pr_required_share` means ads without an explicit PR/citizenship/full-work-rights requirement; explain that absence is not eligibility.
+- Weekly availability templates generate four weeks of 20-minute slots; practitioners supply meeting links (Q2 default).
+- `booking_enabled` gates supply; while disabled show waitlist/recruitment, not empty results.
+- Age 18+ declaration records time/version, not birth date.
 
 ---
 
-## 2. 技术选型
+## 2. Technology choices
 
-已定栈：Next.js（TypeScript）+ Supabase（ap-southeast-2）+ Vercel + Resend + GitHub Actions，全部免费档。下表是在此之内的具体选择；每项给出一个被否决的备选。
+Agreed free-tier stack: Next.js TypeScript, Supabase ap-southeast-2, Vercel, Resend, GitHub Actions. Specific choices and rejected alternatives:
 
-| 领域 | 选择 | 理由 | 被否决的备选 | 否决原因 |
+| Area | Choice | Rationale | Alternative | Rejection reason |
 |---|---|---|---|---|
-| 框架版本 | Next.js 16（App Router、RSC、Server Actions、`proxy.ts`）+ React 19 + Node 22 LTS + pnpm | 当前稳定版；`output: 'standalone'` 保证可打包到任何 Node/容器平台 | Pages Router | 无 RSC，公开页数据获取要走客户端，LCP 与缓存都更差 |
-| 数据访问 | **Supabase CLI 纯 SQL migrations** 作为 schema 唯一来源 + `supabase gen types` 生成类型 + `@supabase/ssr` / `supabase-js` 访问（用户请求走 RLS；job 走 service role） | schema、RLS、pg_cron、函数都在 SQL 里，一处定义；生成类型保证 strict | Prisma | 需要直连与 shadow DB，与 Supabase `auth` schema 冲突；绕过 RLS；serverless 冷启动更重 |
-| 校验 | Zod（Server Action 输入、环境变量、job payload、适配器输出） | 单一校验库，类型推导 | Valibot | 生态更小，implementer 熟悉度低 |
-| UI | Tailwind CSS v4 + shadcn/ui（Radix 原语，源码拷入仓库） | 可访问性开箱即用；组件可完全定制；无运行时 CSS-in-JS | MUI | 包体大、主题化困难，移动端 LCP 目标难达成 |
-| 图表 | 自研 **服务端渲染 SVG sparkline**（零客户端 JS）+ **Recharts**（完整走势图，`dynamic()` 按需加载）+ 每张图配数据表视图 | 列表行 sparkline 数量多，必须零 JS；完整图需要 tooltip 与切换 | Chart.js | Canvas 渲染，屏幕阅读器无 DOM 可读，主题变量接入困难 |
-| 表单 | 原生 `<form>` + Server Actions + `useActionState`，客户端只做轻量校验 | 渐进增强，JS 未加载也能提交；少一层抽象 | react-hook-form + tRPC | 增加两层客户端抽象，对本产品的表单复杂度不值得 |
-| i18n | `next-intl`（不启用 locale 路由，单 locale 模式），文案在 `messages/en.json` | 满足 FR-A8 "文案集中管理"，日后加语言只需加文件与路由 | react-i18next | 客户端为主，RSC 支持弱 |
-| 邮件 | Resend + React Email 模板；Supabase Auth 的 SMTP 也指向 Resend | 一个发信通道；模板可预览、可测试 | Supabase 默认 SMTP | 仅供测试，每小时个位数配额 |
-| 后台任务 | **pg_cron**（调度）+ **pg_net**（HTTP 调用 `/api/jobs/*`）+ 纯 SQL 函数（DB 内任务） | 免费、在 Supabase 内、不绑定 Vercel；任务代码仍在 Next.js 仓库里 | Vercel Cron | Hobby 只允许每日一次精度；平台专有 |
-| 数据采集运行位置 | 同上：`/api/jobs/ingest-*` 分片 tick（每次 < 50s，游标存表），GitHub Actions 只提供手动触发兜底 | 单一 job 运行时；Vercel 函数时长限制靠分片规避 | GitHub Actions 定时 workflow 跑采集 | 定时精度差（高峰延迟 15–30 分钟），每月 2000 分钟对高频任务不够 |
-| 速率限制 | Postgres 表 + 函数 `check_rate_limit()` | 数据留在 AU；无新供应商 | Upstash Redis | 多一个供应商，且数据出境 |
-| 错误监控 | Sentry（EU region，`sendDefaultPii=false`，自定义 scrub）**待拍板** | 免费 5K 错误/月；Next.js 集成成熟 | 不接任何外部错误监控 | 生产事故只能靠用户反馈发现 |
-| 产品分析 | 自有 `analytics_events` 表 + 管理后台 SQL 看板 | 数据不出 Sydney；事件量小 | PostHog | 免费档托管在 US/EU，需额外跨境披露 |
-| 日志 | `pino` 结构化 JSON 到 stdout（Vercel Logs） | 零成本；字段化便于搜索 | Axiom/Logtail | 额外供应商 |
-| 测试 | Vitest + pgTAP（`supabase test db`）+ Playwright（Chromium）+ `@axe-core/playwright` | 见 A10 | Jest | ESM/TS 配置繁琐，慢 |
-| 密钥扫描 | gitleaks（CI）+ Dependabot | 私有仓库无免费 push protection | GitHub Secret Protection | 付费 |
-| 日历文件 | `ics` npm 包生成 `.ics` 附件 | 小、纯函数 | 接 Google Calendar API | 需要额外 OAuth scope，违背最小权限 |
+| Framework | Next.js 16 App Router/RSC/Actions/`proxy.ts`, React 19, Node 22 LTS, pnpm | Current stable; standalone portable to Node/containers | Pages Router | No RSC; client fetching harms LCP/cache |
+| Data | **Supabase CLI SQL migrations** as schema source, generated types, `@supabase/ssr` / `supabase-js`; user RLS, job service role | One SQL definition for schema/RLS/cron/functions; strict generated types | Prisma | Direct/shadow DB, auth-schema conflicts, bypasses RLS, heavier cold starts |
+| Validation | Zod for actions/env/jobs/adapters | One library/type inference | Valibot | Smaller ecosystem, less implementer familiarity |
+| UI | Tailwind v4 + local shadcn/ui/Radix | Accessible, customisable, no runtime CSS-in-JS | MUI | Larger bundle, difficult theming/mobile LCP |
+| Charts | Server SVG sparklines, **zero client JS**, + dynamically loaded **Recharts**, tables for all | Many sparklines; full charts need tooltips | Chart.js | Canvas lacks readable DOM; harder theme variables |
+| Forms | Native form + Actions + `useActionState`, light client validation | Progressive enhancement, fewer abstractions | react-hook-form + tRPC | Two unnecessary client layers |
+| i18n | Single-locale `next-intl`, no locale routes; `messages/en.json` | Central FR-A8 copy; add files/routes later | react-i18next | Client-oriented, weaker RSC |
+| Email | Resend + React Email; Auth SMTP also Resend | One channel, previewable/testable templates | Default Supabase SMTP | Testing only, single-digit hourly quota |
+| Jobs | **pg_cron** schedules, **pg_net** HTTP calls, SQL DB tasks | Free, Supabase-contained, hosting-independent | Vercel Cron | Hobby daily only, proprietary |
+| Ingestion runtime | `/api/jobs/ingest-*` ticks < 50s, stored cursors; Actions manual fallback | One runtime; sharding avoids function limits | Scheduled Actions ingestion | Peak delays 15–30 min; 2,000 monthly minutes insufficient |
+| Rate limits | `Postgres` table/`check_rate_limit()` | AU data, no supplier | Upstash Redis | Extra supplier/cross-border data |
+| Error monitoring | Sentry EU, `sendDefaultPii=false`, scrub; **pending** | Free 5K/month, mature Next integration | No external monitoring | Incidents discovered only through users |
+| Analytics | Owned `analytics_events`, SQL admin views | Small volume; stays Sydney | PostHog | US/EU free hosting, more disclosure |
+| Logs | pino JSON stdout/Vercel Logs | Free, searchable fields | Axiom/Logtail | Extra supplier |
+| Tests | Vitest, pgTAP, Chromium Playwright, axe | A10 | Jest | Complex ESM/TS, slower |
+| Secret scans | gitleaks CI, Dependabot | No free private-repo push protection | GitHub Secret Protection | Paid |
+| Calendar | Pure small ics package | Generates attachments | Google Calendar API | Extra OAuth scopes violate least privilege |
 
 ---
 
-## 3. 系统图
+## 3. System diagrams
 
-### 3.1 系统上下文
+### 3.1 Context
 
 ```mermaid
 flowchart LR
-    subgraph users[用户]
-        S["学生 / 应届生"]
-        P[从业者]
-        A["管理员 = 产品负责人"]
+    subgraph users[Users]
+        S["Students / graduates"]
+        P[Practitioners]
+        A["Admin = product owner"]
     end
-    subgraph ext[外部系统]
-        ATS["ATS 公开职位接口<br/>Greenhouse / Lever / Ashby"]
-        JSA["JSA 开放数据<br/>IVI / ASC<br/>许可待核实"]
+    subgraph ext[External systems]
+        ATS["Public ATS job APIs<br/>Greenhouse / Lever / Ashby"]
+        JSA["JSA open data<br/>IVI / ASC<br/>Licence verification pending"]
         GOOG[Google OAuth]
-        RES[Resend 邮件]
-        VID["从业者自带会议链接<br/>Meet / Zoom / Teams"]
-        SEN[Sentry 待拍板]
+        RES[Resend email]
+        VID["Practitioner meeting link<br/>Meet / Zoom / Teams"]
+        SEN[Sentry pending]
     end
     SYS[("APP_NAME<br/>Next.js on Vercel<br/>+ Supabase Sydney")]
-    S -- 浏览盘面 / watchlist / 请求咖啡聊 --> SYS
-    P -- 验证 / 时段 / 接受婉拒 --> SYS
-    A -- 举报处理 / 审核 / 管道状态 --> SYS
-    SYS -- 每日采集 --> ATS
-    SYS -- 每月导入 --> JSA
-    SYS -- 登录 --> GOOG
-    SYS -- 交易邮件 + ics --> RES
-    SYS -. 只传链接 .-> VID
-    SYS -. 脱敏错误 .-> SEN
+    S -- Browse / watchlist / chat requests --> SYS
+    P -- Verify / slots / accept or decline --> SYS
+    A -- Reports / review / pipeline --> SYS
+    SYS -- Daily collection --> ATS
+    SYS -- Monthly import --> JSA
+    SYS -- Sign in --> GOOG
+    SYS -- Transactional email + ics --> RES
+    SYS -. Links only .-> VID
+    SYS -. Scrubbed errors .-> SEN
 ```
 
-### 3.2 容器 / 组件图
+### 3.2 Containers/components
 
 ```mermaid
 flowchart TB
     subgraph vercel["Vercel Hobby, functions region syd1"]
-        WEB["Next.js App<br/>RSC 页面 + Server Actions"]
+        WEB["Next.js App<br/>RSC pages + Server Actions"]
         JOBS["/api/jobs/* route handlers<br/>(header: x-jobs-secret)"]
         WEB --- LIB
         JOBS --- LIB
-        LIB["共享领域库 src/lib<br/>metrics registry · filters · matching<br/>extraction · starters · email templates"]
+        LIB["Shared domain library src/lib<br/>metrics registry · filters · matching<br/>extraction · starters · email templates"]
     end
     subgraph supa[Supabase ap-southeast-2]
-        PG[("Postgres<br/>public schema + RLS<br/>SQL 函数: compute_metrics, expire_requests ...")]
+        PG[("Postgres<br/>public schema + RLS<br/>SQL functions: compute_metrics, expire_requests ...")]
         AUTH[Auth<br/>magic link + Google]
         STO[Storage<br/>data exports, ics]
-        CRON["pg_cron + pg_net<br/>调度器"]
+        CRON["pg_cron + pg_net<br/>Scheduler"]
         VAULT["Vault<br/>jobs_url, jobs_secret"]
     end
     subgraph ci[GitHub]
@@ -123,143 +123,143 @@ flowchart TB
     JOBS -- service role --> PG
     JOBS --> STO
     CRON -- HTTP POST --> JOBS
-    CRON -- 直接调用 SQL 函数 --> PG
+    CRON -- SQL functions --> PG
     CRON --> VAULT
-    JOBS -- fetch --> ATS[ATS 公开 API]
+    JOBS -- fetch --> ATS[Public ATS APIs]
     JOBS -- fetch --> JSA[JSA files]
     JOBS -- send --> RES[Resend]
     GH -- supabase db push --> PG
-    GH -. workflow_dispatch: 手动触发 job .-> JOBS
+    GH -. workflow_dispatch: manual job .-> JOBS
 ```
 
-### 3.3 部署与环境
+### 3.3 Deployment/environments
 
 ```mermaid
 flowchart LR
-    subgraph dev[本地 dev]
+    subgraph dev[Local dev]
         D1[next dev :3000]
-        D2["supabase start<br/>Docker: Postgres, Auth, Inbucket 邮件收件箱, Storage"]
+        D2["supabase start<br/>Docker: Postgres, Auth, Inbucket inbox, Storage"]
         D1 --> D2
     end
     subgraph preview["Preview = PR"]
         V1[Vercel Preview Deployments]
-        S1[("Supabase 项目 2: skill-market-dev<br/>Sydney")]
+        S1[("Supabase project 2: skill-market-dev<br/>Sydney")]
         V1 --> S1
-        R1["Resend onboarding 域名<br/>仅能发到所有者邮箱"]
+        R1["Resend onboarding domain<br/>Owner mailbox only"]
         V1 --> R1
     end
-    subgraph prod["Production = main 上的 v* tag"]
+    subgraph prod["Production = v* tag on main"]
         V2[Cloudflare Worker<br/>brewdex.app]
-        S2[("Supabase 项目 1: skill-market<br/>Sydney")]
+        S2[("Supabase project 1: skill-market<br/>Sydney")]
         V2 --> S2
-        R2[Resend 自有域名 SPF/DKIM]
+        R2[Resend owned domain SPF/DKIM]
         V2 --> R2
     end
-    GIT["GitHub<br/>只有 main 一条长期分支 · 短分支经 PR 合入"]
+    GIT["GitHub<br/>Only main long-lived; short branches via PR"]
     GIT -- PR --> V1
-    GIT -- 经用户授权推送 v* tag<br/>检查 tag 属于 main 后发布 --> V2
-    CI["GitHub Actions<br/>ci.yml: lint typecheck vitest pgTAP build playwright<br/>migrate.yml 手动: PR 分支→项目2, main→项目1 需审批"]
+    GIT -- Authorised v* tag push<br/>Verify tag belongs to main before release --> V2
+    CI["GitHub Actions<br/>ci.yml: lint typecheck vitest pgTAP build playwright<br/>migrate.yml manual: PR to project2, main to project1 with approval"]
     GIT --> CI
     CI --> S1
     CI --> S2
 ```
 
-环境约定：
+Environment conventions:
 
-| 环境 | 代码 | 数据库 | 邮件 | 登录 | 用途 |
+| Environment | Code | Database | Email | Auth | Purpose |
 |---|---|---|---|---|---|
-| local | `next dev` | `supabase start`（Docker） | Inbucket（本地收件箱） | magic link（本地）；Google 需真实 client 可选 | 开发、全部自动化测试 |
-| preview | Vercel Preview（PR） | Supabase 项目 2 `skill-market-dev` | Resend `onboarding@resend.dev` | Google Testing 模式（≤100 测试用户） | 集成验收、可用性测试 |
-| production | Cloudflare Worker（`main` 历史上的 `v*` tag，推送 tag 发布） | Supabase 项目 1 `skill-market` | Resend 自有域名 | Google Production | 真实用户 |
+| local | `next dev` | Docker Supabase | Inbucket | Local magic links; optional real Google client | Development, automated tests |
+| preview | Vercel PR Preview | Sydney project 2 `skill-market-dev` | `onboarding@resend.dev` | Google Testing ≤ 100 users | Integration/usability tests |
+| production | Cloudflare Worker, v* tag in main history | Sydney project 1 `skill-market` | Owned Resend domain | Google Production | Real users |
 
-Supabase 免费档允许 2 个项目，正好一 prod 一 dev。migration 通过 `supabase db push` 由 GitHub Actions 执行；生产 push 放在 GitHub `production` environment 下需人工审批；代码合并授权与生产数据库操作授权分别取得。
+Two Supabase free projects cover prod/dev. Actions runs `supabase db push`; production uses the approval-gated production environment. Obtain separate authorisation for code merges and production database changes.
 
 ---
 
-## 4. 前端架构
+## 4. Frontend architecture
 
-### 4.1 路由与信息架构
+### 4.1 Routes and information architecture
 
-> 现状（2026-10-25，FE-R8）：前端是完整可交互的原型，数据来自合成市场引擎 + 浏览器内演示后端（`src/lib/demo/store.ts`，localStorage），尚未接 Supabase。前后端契约见 `docs/FRONTEND_API_REPORT.md`；视觉与交互以 `docs/DESIGN.md` 为准，本节只记路由。
+> As of FE-R8, 2026-10-25: fully interactive prototype, synthetic market engine and browser localStorage demo backend (`src/lib/demo/store.ts`), no Supabase. Contract: FRONTEND_API_REPORT; design: DESIGN. This section records routes only.
 
 ```
-/                                  307 → /market（保留查询参数，同一跳去掉旧 ?f=）；没有单独的首页
+/                                  307 → /market (preserve query, remove legacy ?f= in same hop); no separate homepage
 /market?type=watching|all|skill|role|industry&metric=&layer=&q=
-                                   行情表。没有筛选，固定 All Australia · All levels · 任意 work rights；
-                                   旧链接的 ?f= 重定向去掉。Watching 标签在最前（书签 + 数量）
-                                   不带参数时盘面上方永远有开场区块（标语 + 行业热力图，DESIGN.md §4）；
-                                   wordmark → /market 顶部，nav 的 Market → /market#board
-/s/[slug] · /r/[slug] · /i/[slug]  技能 / 岗位 / 行业详情页：一张图 + Statistics。
-                                   ?metric= 同时驱动 Right now 与大图；?by= 拆分（默认不拆）；?f= 筛选，
-                                   入口是标题里的 "in …"
-/compare?a=<slug>&b=<slug>         两标的并排对比（上限 2）
-/search?q=                         搜索（别名归一）
-/metrics · /metrics/[key]          指标定义页（ⓘ 的落地页版本）
-/sources                           数据来源、许可、抽取方法与已知误差、更新时间
-/bot                               采集说明：我们采集什么、频率、联系方式、雇主如何退出（User-Agent 指向这里）
-/people                            咖啡聊入口与从业者招募
-/onboarding                        Tier 0 → Tier 1（可随时跳过）
-/me                                My desk：watchlist + 信号高亮 + 待处理请求（与头像菜单合并）
+                                   Board; fixed All Australia / All levels / any work rights, no filters.
+                                   Redirect removes legacy ?f=. Watching first, bookmark/count.
+                                   Parameter-free visits always show opening (tagline/industry heatmap, DESIGN §4).
+                                   Wordmark → /market top; Market nav → /market#board.
+/s/[slug] · /r/[slug] · /i/[slug]  Skill/role/industry detail: one chart + Statistics.
+                                   ?metric= drives Right now/chart; ?by= split (default none); ?f= filter.
+                                   Title's "in …" opens filters.
+/compare?a=<slug>&b=<slug>         Side-by-side comparison, maximum two
+/search?q=                         Alias-normalised search
+/metrics · /metrics/[key]          Metric definitions; full-page equivalent of ⓘ
+/sources                           Sources/licences/extraction/errors/update times
+/bot                               Collection scope/frequency/contact/opt-out, linked by User-Agent
+/people                            Coffee-chat entry and practitioner recruitment
+/onboarding                        Tier 0 → Tier 1, skippable
+/me                                My desk: watchlist/signals/pending requests, merged with avatar menu
 /me/skills · /me/gap?role= · /me/requests · /me/settings
-/practitioner/join · /practitioner 从业者注册与面板
-/chat/new · /chat/[id]             "找人聊"流程与请求详情
+/practitioner/join · /practitioner Registration/dashboard
+/chat/new · /chat/[id]             Matching flow/request details
 /admin · /admin/{reports,review,pipeline,metrics,taxonomy}
 /legal/[doc]                       privacy · terms · conduct · reliability
 /auth/login · /auth/callback · /auth/signout
-/api/jobs/[job]                    后台任务入口（POST，`x-jobs-secret`；M1 实现）
-/api/health                        健康检查（查询 DB，一并用于保活）
+/api/jobs/[job]                    POST x-jobs-secret background jobs, M1
+/api/health                        DB health check/keepalive
 ```
 
-路由组：`(public)`、`(student)`、`(practitioner)`、`(admin)`，各自的 `layout.tsx` 做鉴权守卫；`proxy.ts` 只做 Supabase session 刷新，不做业务判断。
+Route groups `(public)`, `(student)`, `(practitioner)`, `(admin)` use layout auth guards; `proxy.ts` refreshes Supabase sessions only, without business decisions.
 
-### 4.2 核心组件
+### 4.2 Core components
 
-下表是阶段 1 的组件设计；现有实现在 `src/components/` 与 `src/features/`，命名以代码和 `docs/DESIGN.md` §5 为准。所有组件文案一律来自 `messages/en.json`（`useTranslations` / `getTranslations`），`APP_NAME` 通过 `src/config/app.ts` 注入。
+Phase-1 design below; actual names follow `src/components/`, `src/features/`, DESIGN §5. All copy from `messages/en.json` via `useTranslations`/`getTranslations`; inject `APP_NAME` through `src/config/app.ts`.
 
-| 组件 | 说明 |
+| Component | Description |
 |---|---|
-| `TickerRow` / `TickerCard` / `TickerPage` | 三种尺寸共用一个数据形状 `InstrumentSnapshot`（当前值、变化、sparkline 序列、样本量、来源、更新时间）和一个 `TickerCore` 子组件；尺寸只决定露出哪些字段 |
-| `ChangeBadge` | 强制同时显示相对值与绝对值（`+38% (120 → 166 ads)`），上下方向用图标 + 文字 + 颜色三重编码（NFR-3） |
-| `MetricDefinitionPopover` | 任意数字旁的 ⓘ；内容来自 metric registry：定义、单位、分母、时间窗、地理、层级、来源、更新时间、抽取方法与误差 |
-| `SourceBadge` | 官方统计 / 广告聚合 / 从业者经验 三种固定标识（FR-D5） |
-| `MetricSwitcher` | 只列出 registry 中对该 `instrument_type` 有效且当前数据窗口可用的指标；分 默认 / 常用 / 进阶 三组 |
-| `FilterRuleBuilder` | 规则式：一条规则 = `work_mode` + 地点多选（层级树）；"再加一条规则"渐进披露；`seniority`、`work_rights` 同层 |
-| `FilterReadback` | 任何筛选状态的自然语言回读（FR-F3），由 `describeFilter()` 纯函数生成，可单测 |
-| `SparklineSvg` | RSC 渲染的内联 SVG，带 `<title>`/`<desc>` 与隐藏数据表 |
-| `TrendChart` | 客户端 Recharts，`dynamic(() => import(...), { ssr: false })`；旁边有"查看数据表"切换 |
-| `SampleWarning` | `sample_n < min_sample` 时替代趋势线，给出放宽筛选的建议按钮 |
-| `CompositionList` | 岗位 → 成分技能与权重；技能 → 持有它的岗位；同现技能，全部可点 |
-| `SkillProfileBoard` | 已确认 / 建议（带置信度、一键确认或删除）/ 下一步 三栏；无排名、无分数 |
-| `GapDiagnosis` | 最多 3 个优先项，每项附相关性、entry-level 适用性、可迁移性、学习投入 |
-| `CandidateCard` | 匹配理由（来自可解释因子）、话题、时段、入行路径 |
-| `RequestStatus` | pending 状态的安心文案 + 超时后的"我们在找下一位" |
-| `DebriefVote` | 三个按钮一次点击 + 可选一行备注 |
+| `TickerRow` / `TickerCard` / `TickerPage` | Shared `InstrumentSnapshot` (value/change/sparkline/sample/source/update) and `TickerCore`; size determines visible fields |
+| `ChangeBadge` | Relative and absolute values mandatory, `+38% (120 → 166 ads)`; icon/text/colour direction (NFR-3) |
+| `MetricDefinitionPopover` | ⓘ registry definition/unit/denominator/window/geography/seniority/source/update/extraction/error |
+| `SourceBadge` | Fixed official / ads / practitioner markers (FR-D5) |
+| `MetricSwitcher` | Registry-valid instrument/window combinations, default/common/advanced groups |
+| `FilterRuleBuilder` | Work mode + hierarchical location multiselect; progressively add rules; seniority/work rights alongside |
+| `FilterReadback` | Testable pure `describeFilter` natural-language readback, FR-F3 |
+| `SparklineSvg` | RSC inline SVG title/desc and hidden table |
+| `TrendChart` | Client Recharts, `dynamic(() => import(...), { ssr: false })`, table toggle |
+| `SampleWarning` | Replaces trend when `sample_n < min_sample`; broader-filter action |
+| `CompositionList` | Clickable role components/weights, roles requiring skills, co-occurrence |
+| `SkillProfileBoard` | Confirmed/suggested/next steps; confidence and one-click correction; no scores/ranks |
+| `GapDiagnosis` | ≤ 3 priorities with relevance/entry suitability/transferability/effort |
+| `CandidateCard` | Explainable reasons/topics/slots/entry path |
+| `RequestStatus` | Reassuring pending copy; finding another person after timeout |
+| `DebriefVote` | Three one-click options and optional one-line note |
 
-### 4.3 数据获取与缓存
+### 4.3 Fetching and caching
 
-| 页面类型 | 渲染 | 缓存 | 说明 |
+| Pages | Rendering | Cache | Notes |
 |---|---|---|---|
-| 公开盘面、标的页、对比、指标定义、来源页 | RSC，`export const revalidate = 3600` + 管道跑完后 `revalidateTag('market')` | ISR，全站共享 | 筛选参数在 URL 上；常见组合命中缓存，长尾组合按需渲染后缓存 |
-| `/me/*`、`/practitioner/*`、`/chat/*`、`/admin/*` | 动态 RSC（`cookies()` 触发） | 不缓存 | 走用户 session + RLS |
-| 写操作 | Server Actions | — | Zod 校验 → 领域函数 → `revalidatePath` |
-| 搜索 | RSC + `searchParams` | 短 ISR（60s） | 别名表在内存做前缀匹配，数据库做 `ilike` 兜底 |
+| Public board/detail/compare/definitions/sources | RSC, `export const revalidate = 3600`, post-pipeline `revalidateTag('market')` | Shared ISR | URL filters; common cache hits, long-tail on-demand caching |
+| me/practitioner/chat/admin | Dynamic RSC via `cookies()` | None | User session/RLS |
+| Writes | Server Actions | — | Zod → domain → `revalidatePath` |
+| Search | RSC/`searchParams` | 60s ISR | In-memory alias prefixes, DB ilike fallback |
 
-不使用 Vercel KV / Blob / Edge Config / Edge Middleware 专有 API；ISR 与 `revalidateTag` 是 Next.js 标准能力，OpenNext（Cloudflare）与 standalone 部署均支持。
+No Vercel KV/Blob/Edge Config/Edge Middleware APIs. ISR/`revalidateTag` are standard Next.js, supported by OpenNext Cloudflare and standalone.
 
-### 4.4 设计系统与无障碍
+### 4.4 Design system/accessibility
 
-- Tailwind v4 主题 token 在 `src/styles/theme.css`：语义色 `--up`、`--down`、`--flat`、`--warn`，浅色/深色两套；涨跌永不只靠颜色。
-- 字体：`next/font` 自托管系统级无衬线；数字使用 `font-variant-numeric: tabular-nums`。
-- 断点：375px 优先，所有核心流程在 375px 下单列完成；≥768px 双列。
-- 无障碍：所有交互元素来自 Radix（键盘、焦点、ARIA）；图表配 `<title>`/`<desc>` 与数据表；`prefers-reduced-motion` 关闭动画；颜色对比 ≥ 4.5:1；Playwright + axe 对 6 个关键页面做自动检查（见 §10）。
-- 隐喻开关：`ui_mode ∈ market | plain`（登录用户存 profile，匿名存 cookie）；影响的仅是一组术语文案（`watchlist` ↔ `tracking`、`ticker` ↔ `card` 等），通过 `messages/en.json` 的两个命名空间切换实现。
-- 文案原则（§10 UX）在组件层固化：`ChangeBadge` 不允许只传相对值；`SkillProfileBoard` 没有百分位 prop；`RequestStatus` 没有 "declined by" 文案分支。
+- Tailwind theme.css semantic up/down/flat/warn light/dark tokens; never colour-only direction.
+- Self-hosted system-level sans via `next/font`; tabular-nums.
+- 375px single-column core flows; ≥ 768px two columns.
+- Radix keyboard/focus/ARIA; chart title/desc/tables; reduced-motion disables animations; ≥ 4.5:1 contrast; axe checks six key pages (§10).
+- `ui_mode ∈ market | plain`, profile for signed-in users/cookie otherwise; terminology only (watchlist/tracking, ticker/card), two messages namespaces.
+- Enforce UX structurally: `ChangeBadge` requires absolute values; `SkillProfileBoard` has no percentile prop; `RequestStatus` has no declined-by copy branch.
 
 ---
 
-## 5. 后端架构
+## 5. Backend architecture
 
-### 5.1 数据模型（ER）
+### 5.1 Data model (ER)
 
 ```mermaid
 erDiagram
@@ -468,127 +468,127 @@ erDiagram
     }
 ```
 
-**设计要点**
+**Design notes**
 
-- `instruments.instrument_type` 是 Postgres enum：`skill | role | industry | employer | credential`；MVP 只写入前两种，`status = reserved` 的类型在 UI 层被 registry 过滤，新增类型无需改表（FR-D7）。
-- `instrument_relations.relation`：`role_has_skill`（岗位成分，权重来自 ASC 技术工具表 + 广告共现）、`skill_cooccurs`（同现，权重 = 共现率）、`skill_adjacent`（匹配降级用，由共现派生）。
-- `watchlist_items.filter` 是 `FilterSpec` JSON（§6.3），`filter_hash` 为其规范化哈希；`baseline_value` 记录加入时的值，用于 FR-W2。
-- `chat_requests.student_visible_fields` 在发送时快照学生允许从业者看到的字段（FR-C11）；从业者永远只读这个快照，不读 `student_profiles`。
-- 学生敏感字段（签证状态等）单独放在 `student_profiles` 的可选列且默认 `field_visibility` 为仅自己可见；未来若字段增多再拆 `student_sensitive` 表。
-- 所有时间 `timestamptz`；从业者与学生各存 IANA 时区，slot 按各自时区展示。
-- 软删除：`profiles.deleted_at` 置位即刻匿名化展示；`account_deletions.purge_after = now() + 30 days`，pg_cron 到期物理删除（FR-A5）。
+- `instruments.instrument_type` enum: `skill | role | industry | employer | credential`; MVP writes first two only. Registry filters reserved types; adding types needs no schema change (FR-D7).
+- Relations: `role_has_skill` weighted from ASC tools + ad co-occurrence; `skill_cooccurs` weight = co-occurrence rate; `skill_adjacent` derived for matching fallback.
+- Watchlist filter is `FilterSpec` JSON (§6.3), `filter_hash` its normalised hash; baseline records value at addition (FR-W2).
+- Request `student_visible_fields` snapshots permitted fields at sending (FR-C11); practitioners read this, never `student_profiles`.
+- Optional sensitive student columns (visa etc.) default to self-only visibility; split into `student_sensitive` if needed later.
+- All times timestamptz; both users store IANA time zones, with locally displayed slots.
+- Soft deletion immediately anonymises display; `purge_after = now() + 30 days`; cron physically deletes on expiry (FR-A5).
 
-### 5.2 API / Server Actions 概要
+### 5.2 API / Server Actions overview
 
-写操作全部是 Server Actions（`src/actions/*.ts`，每个文件一个领域，输入用 Zod schema 校验，返回 `Result<T, FormError>`），读操作在 RSC 中直接查询。只有三类 route handler：`/api/jobs/*`（后台任务）、`/api/health`、`/auth/callback`。
+Writes are Server Actions under `src/actions/*.ts`, one domain/file, Zod inputs, `Result<T, FormError>` outputs. RSC reads directly. Only three handler categories: jobs, health, auth callback.
 
-| 领域 | Actions | 关键规则 |
+| Domain | Actions | Rules |
 |---|---|---|
-| onboarding | `completeTier0(university, degree, year)`, `completeTier1(unitCodes[])`, `skipOnboarding()` | Tier 0 未登录也可执行：结果存 cookie，登录后合并到 profile |
-| skills | `confirmSkill`, `removeSkill`, `addSkill` | 推断项 `source=inferred` → 确认后 `confirmed`；删除即删，不保留"拒绝"记录用于评分 |
-| watchlist | `addWatchlistItem(instrument, filter, status)`, `updateFilter`, `remove` | 写入 `baseline_value` = 当前指标值 |
-| gap | 无写；`GapDiagnosis` 为纯读取 + 纯函数 | |
-| practitioner | `joinAsPractitioner`, `sendWorkEmailCode`, `verifyWorkEmailCode`, `updateAvailabilityTemplate`, `setPaused`, `updateCap` | 验证码 6 位，哈希存储，10 分钟过期，3 次/小时 |
-| chat | `findCandidates(instrument, filter, signal?)`（读）, `createRequest`, `acceptRequest`, `declineRequest`, `proposeReschedule`, `acceptReschedule`, `cancelRequest`, `confirmAttendance`, `submitDebrief` | 状态机 §7.2；每步写 `chat_request_events` 并入 outbox |
-| privacy | `updateFieldVisibility`, `updateEmailPreferences`, `requestExport`, `requestDeletion` | 导出生成 JSON 到 Storage，签名 URL 24h |
-| safety | `reportUser`, `blockUser` | 被屏蔽者不再出现在候选人中 |
-| admin | `resolveReport`, `suspendUser`, `approvePractitioner`, `rejectPractitioner`, `rerunJob`, `upsertAlias` | 仅 `is_admin()` |
+| onboarding | `completeTier0(university, degree, year)`, `completeTier1(unitCodes[])`, `skipOnboarding()` | Anonymous Tier 0 cookie, merged after sign-in |
+| skills | `confirmSkill`, `removeSkill`, `addSkill` | inferred → confirmed; removal is hard deletion, no rejection record for scoring |
+| watchlist | `addWatchlistItem(instrument, filter, status)`, `updateFilter`, remove | baseline = current metric |
+| gap | No writes; pure read/functions | |
+| practitioner | `joinAsPractitioner`, `sendWorkEmailCode`, `verifyWorkEmailCode`, `updateAvailabilityTemplate`, `setPaused`, `updateCap` | Six-digit hashed code, ten-minute expiry, three/hour |
+| chat | `findCandidates(instrument, filter, signal?)` (read), `createRequest`, `acceptRequest`, `declineRequest`, `proposeReschedule`, `acceptReschedule`, `cancelRequest`, `confirmAttendance`, `submitDebrief` | §7.2 state machine; event/outbox every step |
+| privacy | `updateFieldVisibility`, `updateEmailPreferences`, `requestExport`, `requestDeletion` | Storage JSON, 24h signed URL |
+| safety | `reportUser`, `blockUser` | Exclude blocked candidates |
+| admin | `resolveReport`, `suspendUser`, `approvePractitioner`, `rejectPractitioner`, `rerunJob`, `upsertAlias` | `is_admin` only |
 
-`/api/jobs/[job]`：POST，校验 `x-jobs-secret`（常量时间比较），取 `job_runs` 租约（`status=running` 且 `lease_until > now()` 则拒绝重入），执行 ≤ 50 秒的分片，写回游标与统计，返回 `{ done: boolean }`。pg_cron 以固定频率调用直到 `done`。
+POST jobs compare `x-jobs-secret` in constant time, acquire `job_runs` lease (reject running/unexpired lease), execute ≤ 50s shard, persist cursor/stats, return `{ done: boolean }`. Cron calls at fixed intervals until done.
 
-### 5.3 认证、授权与 RLS
+### 5.3 Authentication, authorisation, RLS
 
-- 登录：Supabase Auth，magic link（默认）+ Google OAuth；密码登录不开放（少一类凭据泄露面；PRD FR-A1 允许 magic link 或密码）。
-- 会话：`@supabase/ssr` cookie；`proxy.ts` 刷新 token。
-- 角色：不用 JWT 自定义 claim，改用数据库函数 `is_admin()`、`is_verified_practitioner()`（`security definer`，读 `profiles` / `practitioner_profiles`），RLS 策略与应用层守卫都调用同一函数。
-- Service role key 只存在于 `/api/jobs/*` 与 CI 的环境变量中，永不进入客户端 bundle（`src/env.ts` 用 Zod 分 `server` / `client` 两组校验，客户端组只允许 `NEXT_PUBLIC_*`）。
+- Supabase magic links default, plus Google; no passwords (reduces credential exposure; FR-A1 allows either).
+- `@supabase/ssr` cookies, `proxy.ts` refresh.
+- No custom JWT claims: security-definer `is_admin()` / `is_verified_practitioner()` read profiles; RLS and app guards use the same functions.
+- Service-role key only in job/CI environments, never client bundles. Zod server/client groups; client allows `NEXT_PUBLIC_*` only.
 
-RLS 策略矩阵（`anon` = 未登录，`auth` = 已登录本人，`pract` = 已验证从业者，`admin`，`svc` = service role）：
+RLS matrix: anon = signed out, auth = authenticated owner, pract = verified practitioner, admin, svc = service role.
 
-| 表 | select | insert | update | delete |
+| Table | select | insert | update | delete |
 |---|---|---|---|---|
-| `instruments`, `instrument_aliases`, `instrument_relations`, `locations`, `metric_cells`, `metric_definitions`, `metric_points`, `data_sources`, `universities`, `course_units`, `course_unit_skills` | anon, auth | svc, admin(taxonomy) | svc, admin(taxonomy) | svc |
+| instruments, `instrument_aliases`, `instrument_relations`, locations, `metric_cells`, `metric_definitions`, `metric_points`, `data_sources`, universities, `course_units`, `course_unit_skills` | anon, auth | svc, admin(taxonomy) | svc, admin(taxonomy) | svc |
 | `job_ads`, `job_ad_skills`, `ingestion_runs`, `job_runs` | admin | svc | svc | svc |
-| `profiles` | 本人；admin | 本人（trigger on auth.users） | 本人（不含 `is_admin`）；admin | svc（purge） |
-| `student_profiles`, `student_skills`, `watchlist_items`, `email_preferences`, `consents` | 本人；admin | 本人 | 本人 | 本人 |
-| `signals` | 本人（经 watchlist_item）；全局信号（`watchlist_item_id is null`）anon | svc | svc | svc |
-| `practitioner_profiles` | 本人；admin；**公开卡片视图** `practitioner_cards`（仅 verified 且未暂停，仅非敏感列）对 auth 可见 | 本人 | 本人（不含 `verification_status`）；admin | 本人 |
-| `practitioner_skills`, `practitioner_topics`, `availability_templates` | 本人；通过 `practitioner_cards` 对 auth 可见 | 本人 | 本人 | 本人 |
-| `availability_slots` | 本人；`status=open` 的对 auth 可见 | 本人, svc | 本人, svc | 本人, svc |
-| `work_email_verifications` | 本人（仅状态列） | svc | svc | svc |
-| `chat_requests` | `student_id = uid()` 或 `practitioner_id = uid()`；admin | 学生（经 action，校验 slot open、cap、未屏蔽） | 双方各自允许的状态转移（由 `transition_chat_request()` 函数强制） | 无 |
-| `chat_request_events`, `attendance_confirmations` | 请求双方 | 请求双方（受限列） | 无 | 无 |
-| `debrief_votes` | 本人学生 | 本人学生 | 本人学生 | 本人学生 |
-| `reliability_records` | admin 只 | svc | svc | svc |
-| `reports` | 举报人（自己的）；admin | auth | admin | 无 |
-| `blocks` | 本人 | 本人 | 无 | 本人 |
+| profiles | Owner/admin | Owner via auth.users trigger | Owner excluding `is_admin`; admin | svc purge |
+| `student_profiles`, `student_skills`, `watchlist_items`, `email_preferences`, consents | Owner/admin | Owner | Owner | Owner |
+| signals | Owner via watchlist; global watchlist_item_id null visible to anon | svc | svc | svc |
+| `practitioner_profiles` | Owner/admin; auth via public `practitioner_cards`, verified/unpaused/non-sensitive columns only | Owner | Owner excluding `verification_status`; admin | Owner |
+| `practitioner_skills`, `practitioner_topics`, `availability_templates` | Owner; auth via `practitioner_cards` | Owner | Owner | Owner |
+| `availability_slots` | Owner; open slots for auth | Owner, svc | Owner, svc | Owner, svc |
+| `work_email_verifications` | Owner, status only | svc | svc | svc |
+| `chat_requests` | Student or practitioner owner; admin | Student via action validating slot/cap/blocks | Party-specific transitions enforced by `transition_chat_request` | None |
+| `chat_request_events`, `attendance_confirmations` | Both parties | Both, restricted columns | None | None |
+| `debrief_votes` | Student owner | Student owner | Student owner | Student owner |
+| `reliability_records` | Admin only | svc | svc | svc |
+| reports | Reporter owns; admin | auth | admin | None |
+| blocks | Owner | Owner | None | Owner |
 | `notifications_outbox`, `rate_limits`, `analytics_events`, `feature_flags`(write) | svc / admin | svc | svc | svc |
 | `feature_flags`(read) | anon | — | — | — |
-| `account_deletions`, `data_exports` | 本人 | 本人 | svc | svc |
+| `account_deletions`, `data_exports` | Owner | Owner | svc | svc |
 
-每张表启用 RLS，每条策略在 `supabase/tests/rls_*.sql` 有 pgTAP 用例（正例 + 反例）。`practitioner_cards` 视图使用 `security_invoker = false` 并显式列出列，绝不暴露 `work_email_domain` 之外的邮箱信息。
+Enable RLS on every table; positive/negative pgTAP cases per policy in `supabase/tests/rls_*.sql`. `practitioner_cards` uses `security_invoker = false`, explicit columns, no email information beyond `work_email_domain`.
 
-### 5.4 后台任务与调度
+### 5.4 Jobs/scheduling
 
-所有任务定义在 `src/jobs/<name>.ts`，导出 `run(ctx): Promise<{ done: boolean; stats }>`；`src/jobs/registry.ts` 列出名称、默认 cron、超时。DB-only 任务直接是 SQL 函数，由 pg_cron 调用；需要网络的任务由 pg_cron 通过 pg_net POST 到 `/api/jobs/<name>`。
+Each src/jobs/name.ts exports `run(ctx): Promise<{ done: boolean; stats }>`; registry lists names/default cron/timeouts. DB tasks run SQL directly; network tasks receive pg_net POSTs.
 
-| 任务 | 类型 | 频率（pg_cron，AEST） | 说明 |
+| Job | Type | Cadence (pg_cron, AEST) | Details |
 |---|---|---|---|
-| `poll-ats` | HTTP 分片 | 每小时，错开发出 | 只拉各雇主职位列表的轻量版本（id、标题、更新时间，不含全文）；按雇主活跃度决定本小时查不查（§6.7）；新 id 入队，消失的 id 写 `closed_at` |
-| `fetch-ats-details` | HTTP 分片 | `poll-ats` 之后 | 只为新 id 拉全文，去重写入 `job_ads` |
-| `extract-features` | SQL + TS | 每次拉到全文后 | 对新广告跑 `seniority` / `work_mode` / `work_rights` 规则与字典技能匹配（title + 职位全文），剥离个人姓名 / 邮箱 / 电话，写 `extraction_version` |
-| `compute-metrics` | SQL 函数 `compute_metric_points(date)` | 每日 04:00 | 按 cell × instrument × metric 写 `metric_points`（day 粒度；month 粒度由 IVI 导入写入） |
-| `compute-relations` | SQL 函数 | 每周日 | 重算共现与岗位成分权重 |
-| `detect-signals` | SQL 函数 `detect_signals()` | 每日 04:30 | 对每个 watchlist item 与每个全局默认 cell 评估阈值（§6.5），写 `signals`，入 outbox（若用户开启提醒） |
-| `ingest-jsa` | HTTP 分片 | 每月 1 日；也可手动 | 下载 IVI 文件，写 month 粒度 `metric_points`（NERO / SPL 后续再接） |
-| `compute-coverage` | SQL 函数 | `ingest-jsa` 之后 | 按 ANZSCO 4 位 × 州 × 月计算 `coverage_ratio` 与重新加权系数（§6.8） |
-| `expire-requests` | SQL 函数 `expire_chat_requests()` | 每 15 分钟 | `pending` 且 `expires_at < now()` → `expired`，释放 slot，入 outbox "we're finding someone else" |
-| `generate-slots` | SQL 函数 | 每日 | 按 `availability_templates` 生成未来 28 天 slot，过期未预订的置 `expired` |
-| `schedule-reminders` | SQL 函数 | 每小时 | 对 `accepted` 且 24h 内开始的请求入 outbox（双方，含 ics 与准备模板）；结束后 1h 入 outbox（L0 / L2 链接） |
-| `dispatch-outbox` | HTTP | 每 5 分钟 | 取 `status=queued` 且到期的记录，经 Resend 发送，指数退避重试 ≤ 5 次；尊重每日 100 封上限（超限顺延） |
-| `purge` | SQL 函数 | 每日 | 删除到期账号数据；清空 > 30 天的 `raw_snippet`；删除 > 90 天的 `analytics_events` 明细（保留聚合） |
-| `health-keepalive` | 外部 | 每 5 分钟（UptimeRobot 等免费拨测，见 `docs/SETUP.md` §7） | `/api/health` 查询 DB，顺带防止 Supabase 免费项目 7 天闲置暂停 |
+| `poll-ats` | HTTP shards | Hourly, staggered | Lightweight IDs/title/update lists without body; employer activity determines due polls (§6.7); enqueue new IDs, close missing IDs |
+| `fetch-ats-details` | HTTP shards | After polling | Fetch/deduplicate new IDs only |
+| `extract-features` | SQL + TS | After details | Seniority/mode/rights/dictionary over title/body; strip names/email/phone; `extraction_version` |
+| `compute-metrics` | `compute_metric_points(date)` SQL | Daily 04:00 | Cell × instrument × metric, daily; monthly IVI imports |
+| `compute-relations` | SQL | Sunday | Recalculate co-occurrence/components |
+| `detect-signals` | `detect_signals()` SQL | Daily 04:30 | Watchlist/global cells, §6.5 thresholds, outbox if alerts enabled |
+| `ingest-jsa` | HTTP shards | First of month/manual | IVI monthly points; NERO/SPL later |
+| `compute-coverage` | SQL | After JSA | ANZSCO4 × state × month coverage/reweighting (§6.8) |
+| `expire-requests` | `expire_chat_requests()` SQL | Every 15 min | Expired pending → expired; release slots; finding-someone-else outbox |
+| `generate-slots` | SQL | Daily | Generate 28 days; expire unbooked past slots |
+| `schedule-reminders` | SQL | Hourly | Accepted within 24h: both-party reminders/ics/preparation; +1h after end: L0/L2 |
+| `dispatch-outbox` | HTTP | Every 5 min | Due queued records, Resend, exponential backoff ≤ 5 retries; defer beyond 100/day |
+| purge | SQL | Daily | Expired accounts, raw snippets > 30d, analytics detail > 90d, retain aggregates |
+| `health-keepalive` | External | Every 5 min, free monitoring, SETUP §7 | Health DB query prevents seven-day Supabase idle pause |
 
-pg_cron 的 schedule 语句写在 migration 中；URL 与 secret 从 Supabase Vault 读取（`vault.decrypted_secrets`），本地开发时 job 直接用 `pnpm job <name>` 手动运行。
+Schedules live in migrations; URL/secret read from Vault decrypted_secrets. Local jobs run via `pnpm job <name>`.
 
 ---
 
-## 6. 数据管道与数据策略
+## 6. Data pipeline and policy
 
-### 6.1 管道图
+### 6.1 Pipeline
 
 ```mermaid
 flowchart LR
-    subgraph sources[数据源适配层 src/data-sources]
-        A1["AtsAdsSource<br/>Greenhouse / Lever / Ashby<br/>按 employers 登记表逐家拉取"]
-        A2["JsaIviSeries<br/>月度 ANZSCO x 州/区域 招聘量"]
-        A3[JsaNeroSeries 后续<br/>月度 就业量 nowcast]
-        A4[JsaSplTable 后续<br/>年度 短缺评级]
-        A5["AscTaxonomy<br/>职业→技术工具/技能"]
-        A6[FixtureSource<br/>测试与本地]
+    subgraph sources[Source adapters src/data-sources]
+        A1["AtsAdsSource<br/>Greenhouse / Lever / Ashby<br/>Fetch by employers registry"]
+        A2["JsaIviSeries<br/>Monthly ANZSCO x state/region ads"]
+        A3[JsaNeroSeries later<br/>Monthly employment nowcast]
+        A4[JsaSplTable later<br/>Annual shortage ratings]
+        A5["AscTaxonomy<br/>Occupation to tools/skills"]
+        A6[FixtureSource<br/>Tests/local]
     end
-    subgraph ingest[采集 ingestion_runs]
-        I1[normalize<br/>统一 NormalizedAd / SeriesPoint]
+    subgraph ingest[Ingestion ingestion_runs]
+        I1[normalize<br/>NormalizedAd / SeriesPoint]
         I2["dedupe by source+external_id<br/>upsert job_ads"]
     end
-    subgraph clean[清洗与抽取 extraction_version]
-        C1[location → locations 层级]
-        C2[seniority 规则]
-        C3[work_mode 规则]
-        C4[work_rights 规则]
-        C5["技能字典匹配 title + 全文"]
+    subgraph clean[Cleaning/extraction extraction_version]
+        C1[location hierarchy]
+        C2[seniority rules]
+        C3[work_mode rules]
+        C4[work_rights rules]
+        C5["Skill dictionary title + body"]
     end
-    subgraph compute[指标计算 SQL]
+    subgraph compute[SQL metrics]
         M1[assign metric_cell]
         M2[compute_metric_points day]
-        M3[IVI → metric_points month<br/>+ coverage_ratio / 重新加权]
-        M4["compute_relations<br/>共现 / 岗位成分"]
+        M3[IVI to metric_points month<br/>+ coverage_ratio / reweighting]
+        M4["compute_relations<br/>Co-occurrence / role components"]
         M5[detect_signals]
     end
-    subgraph serve[服务]
-        S1["aggregateForFilter<br/>cells → 数值 + sample_n"]
-        S2["ISR 页面 / RSC"]
-        S3["watchlist 信号高亮 / 邮件"]
+    subgraph serve[Serving]
+        S1["aggregateForFilter<br/>cells to values + sample_n"]
+        S2["ISR pages / RSC"]
+        S3["Watchlist signals / email"]
     end
     A1 --> I1
     A2 --> I1
@@ -602,151 +602,150 @@ flowchart LR
     M5 --> S3
 ```
 
-### 6.2 数据源与许可
+### 6.2 Sources/licensing
 
-| 源 | 内容 | 粒度 | 历史 | 许可 / 商用 | 在本产品中的用途 | 状态 |
+| Source | Content | Granularity | History | Licence/commercial use | Purpose | Status |
 |---|---|---|---|---|---|---|
-| ATS 公开职位接口：Greenhouse、Lever、Ashby | 单条职位：标题、雇主、地点、部门、全文、申请链接，部分有薪资 | 广告级 → 技能级 | 只有在招职位；从开始采集起自建历史 | 官方文档公开、无需认证；**没有明文许可，也没有明文禁止**（见下方核实现状） | 技能级计数、entry-level / 远程 / 工作权利 / 雇主集中度 / 薪资，全部自建快照 | 第一版主力 |
-| JSA Internet Vacancy Index | 月度在线招聘广告量（来源 SEEK、CareerOne、Workforce Australia），ANZSCO 4 位 × 州 / SA4 | 岗位级 | 2006 起 | JSA 出版物普遍 CC BY 4.0；**IVI 数据集在 data.gov.au 上写的是 "Not Specified"**，需向 JSA 书面确认 | 岗位 `ad_count` / `growth_12m` 上线即有多年历史；`coverage_ratio` 的分母与重新加权的权重（§6.8）；季节性（Post-MVP） | 第一版主力（政府口径） |
-| JSA NERO | 月度就业量 nowcast，355 职业 × 88 区域 | 岗位级 | 2015 起 | CC BY 4.0（需复核） | 岗位基本面面板："该区域约 N 人从事" | 后续（第一版不接） |
-| JSA Skills Priority List | 职业短缺评级 | 岗位级 | 年度 | CC BY 4.0（需复核） | 岗位基本面："全国短缺：是/否" | 后续（第一版不接） |
-| JSA Australian Skills Classification | 职业 → 技术工具 / 专业任务 / 核心能力 | 岗位→技能映射 | 版本化 | CC BY 4.0（需复核） | 岗位成分技能的初始权重；技能字典的种子 | 待复核 |
-| ANZSCO（ABS） | 职业分类 | — | — | CC BY 4.0 | `instruments(type=role).anzsco_code` | 待复核 |
-| 首发大学课程目录 | unit code、名称 | — | — | 人工整理公开事实（不抓取） | Tier 1 勾选、技能推断 | 假设 |
-| Simple Icons（npm `simple-icons`，打包进产物，不走 CDN） | 技术与工具的单色 SVG 标志 | 技能级（显式映射 `src/lib/market/logos.ts`） | — | 图标集 CC0 1.0；标志本身是各所有者的商标，只作识别用途（nominative use） | 技能符号框里的单色标志 | 已用 |
-| 平台自有 | 复盘投票、匹配、出席 | — | 自上线起 | 自有 | 情绪面（Post-MVP）、可靠度（内部） | — |
+| Greenhouse/Lever/Ashby public ATS APIs | Title/employer/location/department/body/application link; some salaries | Ads → skills | Active jobs only; build history from collection start | Public unauthenticated documentation; **no explicit licence or prohibition**, see below | Skill counts, entry/remote/rights/employers/salaries, own snapshots | Initial primary |
+| JSA IVI | Monthly online ads, SEEK/CareerOne/Workforce Australia; ANZSCO4 × state/SA4 | Roles | Since 2006 | JSA publications generally CC BY 4.0; **data.gov.au IVI says Not Specified**; written confirmation needed | Role ads/growth history, coverage denominator/reweighting, later seasonality | Initial official primary |
+| JSA NERO | Monthly employment nowcast, 355 occupations × 88 regions | Roles | Since 2015 | CC BY 4.0, recheck | Regional employment fundamentals | Later |
+| JSA SPL | Shortage ratings | Roles | Annual | CC BY 4.0, recheck | National shortage yes/no | Later |
+| ASC | Occupation → tools/tasks/core competencies | Role/skill map | Versioned | CC BY 4.0, recheck | Component priors, dictionary seeds | Recheck |
+| ABS ANZSCO | Occupations | — | — | CC BY 4.0 | Role anzsco_code | Recheck |
+| University catalogue | Unit code/name | — | — | Manually compile public facts; no scraping | Tier 1/inference | Assumption |
+| Simple Icons npm, bundled not CDN | Monochrome SVG technology/tool logos | Explicit skill mapping `src/lib/market/logos.ts` | — | CC0 1.0 set; owner trademarks, nominative identification only | Symbol boxes | In use |
+| Platform-owned | Votes/matches/attendance | — | Since launch | Owned | Later sentiment, internal reliability | — |
 
-**署名**：`/sources` 页与每个 `SourceBadge` popover 显示各源的署名文本与许可链接；`data_sources.attribution` 字段驱动，不写死。
+**Attribution**: sources page and `SourceBadge` popovers use `data_sources.attribution` text/licence links, never hardcode.
 
-**存储合规**：`job_ads.raw_snippet` 只保留 30 天用于重跑抽取（`purge` 任务）；长期只保留派生字段与聚合。若某家 ATS 条款禁止存储职位内容，则把该来源的 `raw_snippet` 保留期设为 0 天（抽取在采集事务内完成），代码路径不变。入库前剥离招聘人员姓名、邮箱、电话（APP 3）。
+**Retention**: `raw_snippet` retained 30 days for re-extraction, then purge; long-term derived fields/aggregates only. Where terms forbid content storage, source retention = 0 days and extraction occurs within ingestion transaction, without changing code paths. Strip recruiter names/email/phone before storage (APP 3).
 
-**条款核实现状（2026-10-23，查官方文档）**
+**Official-term verification, 2026-10-23**
 
-| 来源 | 官方文档怎么说 | 结论 |
+| Source | Documentation | Conclusion |
 |---|---|---|
-| Greenhouse Job Board API | GET 公开、无需认证；用途是给雇主搭自己的招聘页；没有使用条款、缓存或商用条款 | 没禁止，也没授权 |
-| Lever Postings API | 用途是"帮你搭一个招聘网站"；写明已发布职位 "may be scraped by third parties"；没有许可条款 | 承认第三方读取，不等于授权 |
-| Ashby Public Job Posting API | 用途是拉取本组织职位填充招聘页；没有条款、限速或商用说明 | 没禁止，也没授权 |
-| Workday | 没有公开职位接口，只有招聘页内部用的 JSON | **不用**（等于抓网页） |
-| Workable、SmartRecruiters、Recruitee | Workable 只有非官方 widget 接口；其余没查到条款 | 第一版不接，核实后再加 |
-| JSA IVI | 数据集许可未注明 | 需书面确认 |
+| Greenhouse | Public GET/no auth, for employer career sites; no use/cache/commercial terms | Neither prohibited nor authorised |
+| Lever | For building job sites; published postings may be scraped by third parties; no licence | Acknowledges third parties, not authorisation |
+| Ashby | Own-organisation postings for career sites; no terms/rate/commercial details | Neither prohibited nor authorised |
+| Workday | Internal career-page JSON only, no public API | **Exclude**, equivalent to scraping |
+| Workable/SmartRecruiters/Recruitee | Unofficial Workable widget only; no terms found for others | Exclude initially; verify later |
+| JSA IVI | Dataset licence unspecified | Written confirmation needed |
 
-降低风险的做法（已在本节和 §6.7 落实）：不转载职位原文，只存派生字段与聚合计数，原文 30 天后删；入库前剥离个人信息；礼貌采集；雇主要求退出即从登记表删除。商业化前需要厂商与 JSA 的书面答复，并请澳洲律师审查数据来源、版权与隐私（`docs/SETUP.md` §6）。
+Mitigation (§6.7): no republication, derived fields/counts only, raw text purged after 30d, remove personal information, polite collection, remove employers on opt-out. Before commercialisation obtain vendor/JSA written responses and Australian legal review of sources/copyright/privacy (SETUP §6).
 
-**第一版不用的来源**：Adzuna 免费 API 禁止商业机构以聚合形式（职位计数、平均薪资）持续使用，没有书面授权前不接；LinkedIn、SEEK、Indeed 网站一律不抓取。依据见 `docs/research/data-sources.md`。
+**Excluded initially**: Adzuna free API prohibits ongoing commercial aggregate counts/salaries without written consent; never scrape LinkedIn/SEEK/Indeed. See data-sources research.
 
-### 6.3 筛选模型：FilterSpec 与 metric cell
+### 6.3 Filters: `FilterSpec` and cells
 
 ```ts
 type WorkMode = 'onsite' | 'hybrid' | 'remote';
 type FilterSpec = {
-  rules: Array<{ work_modes: WorkMode[]; location_ids: string[] }>; // 多条取并集
+  rules: Array<{ work_modes: WorkMode[]; location_ids: string[] }>; // Union of rules
   seniority: 'entry' | 'graduate' | 'all';        // entry ⊇ graduate + junior + intern
   work_rights: 'no_pr_required' | 'all';
 };
 ```
 
-- 每条广告在抽取后被分配到**唯一**一个 `metric_cell = (leaf_location_id, work_mode, seniority_bucket, work_rights_bucket)`。`work_mode` 未识别按 `onsite` 计（假设，见 §12）；`seniority_bucket ∈ graduate | entry_other | other`；`work_rights_bucket ∈ requires_pr | not_stated | sponsorship_ok`。
-- `metric_points` 只按 cell 存 `numerator` / `denominator` / `sample_n`。任何 `FilterSpec` 都被 `expandFilterToCells()` 展开成 cell 集合（把地点层级展开到叶子、把规则并集去重），再 `sum` 得到精确值。这样 watchlist 条目上任意组合都可服务，且**加总的正确性可以用纯函数单测**。
-- 非可加指标（`salary_median`、`salary_p10_p90`）不走 cell 加总，而是对 ≤ 12 个月的 `job_ads` 在 SQL 中按展开后的 cell 集合直接 `percentile_cont`。
-- 每个 cell 的 `sample_n` 一起加总；`sum(sample_n) < metric_definitions.min_sample`（默认 30，可配）→ 返回 `insufficient_sample`，UI 不画趋势线（FR-D4）。
-- `describeFilter(spec, locations)` 生成自然语言回读（FR-F3），与 `expandFilterToCells` 共用同一份地点树。
+- Each extracted ad gets **one** `(leaf_location_id, work_mode, seniority_bucket, work_rights_bucket)` cell. Unknown mode defaults onsite (§12); seniority graduate/entry_other/other; rights `requires_pr`/not_stated/`sponsorship_ok`.
+- Points store numerator/denominator/`sample_n` per cell. `expandFilterToCells()` expands location leaves and deduplicates rule unions; sums give exact arbitrary-filter results in watchlists. **Pure tests verify additivity.**
+- Non-additive salary median/percentiles query ≤ 12 months of `job_ads` with `percentile_cont` over expanded cells instead.
+- Sum samples; below configurable default 30 returns `insufficient_sample`; no trend (FR-D4).
+- `describeFilter(spec, locations)` uses the same tree for natural-language readback (FR-F3).
 
-### 6.4 指标注册表（MVP）
+### 6.4 MVP metric registry
 
-| `metric_key` | 定义（白话版在 messages 里） | numerator / denominator | 适用 | 层 | 可用条件 |
+| `metric_key` | Definition (plain wording in messages) | Numerator/denominator | Types | Tier | Availability |
 |---|---|---|---|---|---|
-| `ad_count` | 期内符合条件的广告数 | count / — | skill, role | 常用 | 有数据即可 |
-| `share_of_ads` | 提到该技能（或属于该岗位）的广告占同筛选条件下全部广告的比例 | skill ads / all ads in cells | skill（默认）, role | 常用 | 同上 |
-| `change_4w` | 近 4 周广告数 vs 前 4 周，同时给绝对数 | — | skill, role | 常用（MVP 信号指标） | ≥ 56 天数据 |
-| `growth_12m` | 近 12 个月 vs 前 12 个月 | — | skill, role（默认，来自 IVI） | 常用 | 技能：≥ 730 天自建数据；岗位：IVI |
-| `entry_level_share` | entry-level / graduate 广告占比 | entry ads / all ads | skill, role | 常用 | 有数据 |
-| `no_pr_required_share` | 未明示要求 PR / 公民 / 完整工作权利的广告占比 | not_stated + sponsorship_ok / all | skill, role | 常用 | 有数据；popover 注明抽取规则与误差 |
-| `employer_concentration` | 不同雇主数，以及前 5 家雇主占比 | distinct companies；top5 / all | skill, role | 常用 | 有数据 |
-| `salary_median` | 标注薪资的广告的中位数（仅标注薪资的广告，说明覆盖率） | — | skill, role（skill 自 2026-10-17 起，见 GLOSSARY §3） | 常用 | 标薪广告 ≥ min_sample |
-| `salary_p10_p90` | 薪资 10–90 分位 | — | role | 进阶 | 同上 |
-| `remote_share` | 远程或混合广告占比 | remote+hybrid / all | skill, role | 进阶 | 有数据 |
-| `contract_share` | 合同制广告占比 | contract / all | skill, role | 进阶 | 有数据 |
-| `skills_per_ad` | 单条广告识别出的技能数中位数 | — | role | 进阶 | 有数据 |
-| `volatility` | 近 12 周周度广告数的变异系数 | — | skill, role | 进阶 | ≥ 84 天 |
-| `skill_premium` | 提到该技能的岗位薪资中位数 vs 同岗位不提该技能的 | — | skill | 进阶 | 标薪样本 ≥ 2 × min_sample |
-| `coverage_ratio` | 我们看到的新增广告 ÷ JSA IVI 同职业同州新增广告（§6.8） | ours / IVI | skill, role | 定义弹窗 | IVI 已导入 |
-| `nero_employment` | 区域就业量 nowcast（官方） | — | role | 基本面面板（后续） | NERO |
-| `spl_shortage` | 全国短缺评级（官方） | — | role | 基本面面板（后续） | SPL |
+| `ad_count` | Matching ads in window | count / — | skill, role | Common | Any data |
+| `share_of_ads` | Skill/role ads divided by all filtered ads | skill ads / all cell ads | skill default, role | Common | Any data |
+| `change_4w` | Latest versus previous four weeks, with absolute counts | — | skill, role | Common, MVP signal | ≥ 56 days |
+| `growth_12m` | Latest versus previous 12 months | — | skill, role default via IVI | Common | Skills ≥ 730 own days; roles IVI |
+| `entry_level_share` | Entry/graduate ads | entry / all | skill, role | Common | Any data |
+| `no_pr_required_share` | No explicit PR/citizenship/full-rights requirement | not_stated + `sponsorship_ok` / all | skill, role | Common | Data; extraction/error popover |
+| `employer_concentration` | Distinct employers and top-five share | distinct companies; top5 / all | skill, role | Common | Data |
+| `salary_median` | Disclosed salaries only; explain coverage | — | skill, role; skills since 2026-10-17, GLOSSARY §3 | Common | Disclosed n ≥ minimum |
+| `salary_p10_p90` | 10th–90th salary percentiles | — | role | Advanced | Same |
+| `remote_share` | Remote/hybrid ads | remote+hybrid / all | skill, role | Advanced | Data |
+| `contract_share` | Contract ads | contract / all | skill, role | Advanced | Data |
+| `skills_per_ad` | Median identified skills per ad | — | role | Advanced | Data |
+| volatility | Weekly ad-count coefficient of variation, 12 weeks | — | skill, role | Advanced | ≥ 84 days |
+| `skill_premium` | Within-role salary median with versus without skill | — | skill | Advanced | Salary n ≥ 2 × minimum |
+| `coverage_ratio` | Observed new ads / IVI same occupation/state (§6.8) | ours / IVI | skill, role | Definition popover | IVI imported |
+| `nero_employment` | Official regional employment nowcast | — | role | Later fundamentals | NERO |
+| `spl_shortage` | Official national shortage rating | — | role | Later fundamentals | SPL |
 
-注册表在 `src/lib/metrics/registry.ts` 定义，migration 里的 `metric_definitions` 由 `pnpm metrics:sync` 从同一文件生成（CI 校验两者一致）。`MetricSwitcher` 与 `MetricDefinitionPopover` 都只读 registry。
+Registry in `src/lib/metrics/registry.ts` generates migration `metric_definitions` via `pnpm metrics:sync`; CI checks consistency. Selector and definition popover read registry only.
 
-### 6.5 信号定义（MVP）
+### 6.5 MVP signals
 
-`detect_signals()` 对每个 watchlist item（用其 filter 与 metric）以及每个 instrument 的全局默认 cell（AU、全部工作模式、all）评估：
+`detect_signals()` evaluates each watchlist item's filter/metric and each instrument's global default cells (AU/all modes/all):
 
-| kind | 条件 | 说明 |
+| kind | Condition | Notes |
 |---|---|---|
-| `rise` | `change_4w ≥ +25%` 且绝对增量 ≥ 10 且 `sample_n ≥ min_sample` | 阈值在 `feature_flags.signal_thresholds` 可配 |
-| `fall` | `change_4w ≤ −25%` 且绝对减量 ≥ 10 | 同上；文案中性："fewer ads than 4 weeks ago" |
-| `entry_open` | `entry_level_share` 较 8 周前上升 ≥ 10 个百分点 | 对学生最有行动意义 |
-| `since_added` | watchlist 项相对 `baseline_value` 变化 ≥ 25% | 只在 watchlist 上显示，不发邮件 |
+| rise | `change_4w ≥ +25%`, absolute increase ≥ 10, sample ≥ minimum | Configurable `feature_flags.signal_thresholds` |
+| fall | `change_4w ≤ −25%`, absolute decrease ≥ 10 | Same; neutral "fewer ads than 4 weeks ago" |
+| `entry_open` | Entry share rises ≥ 10 percentage points versus eight weeks ago | Most actionable for students |
+| `since_added` | ≥ 25% change from watchlist baseline | Watchlist only, no email |
 
-**改进方向（接上真实数据后）**：职位发布是低频事件，可以看成泊松到达。用泊松检验替代固定的 25% / 10 条阈值，计算"这次上涨只是随机波动"的概率：小技能不会被随机波动误报，大技能的真实变化也不会漏掉。阈值形态不变，仍从 `feature_flags.signal_thresholds` 读取。
+**After real data**: postings are low-frequency Poisson arrivals. Replace fixed 25%/10 thresholds with a Poisson test of random fluctuation: avoid noisy small skills and missed large-skill changes. Threshold configuration remains in `feature_flags.signal_thresholds`.
 
-信号一律同时携带绝对值（FR-D3），并只在 `sample_n` 足够时产生。信号 → 匹配的桥接：`chat_requests.signal_id` 可空，但 UI 的"找人聊"入口总是携带 `instrument + filter`，信号只是附加上下文。
+Signals always include absolute values (FR-D3) and sufficient samples. `signal_id` is optional on requests, but chat UI always carries instrument/filter; signal is extra context.
 
-### 6.6 技能字典与抽取
+### 6.6 Skill dictionary/extraction
 
-- `instruments(type=skill)` 初始种子：首发方向（软件 / 数据）约 150 项，来自 ASC 技术工具表 + 人工整理，别名在 `instrument_aliases`（如 `JS`、`Javascript` → JavaScript；`Postgres` → PostgreSQL）。种子文件 `supabase/seed/skills.yaml` 版本化，`pnpm seed` 导入。
-- 岗位种子：首发方向约 25 个 ANZSCO 6 位职业（Software Engineer 261313、Data Engineer 、Analyst Programmer 等），`role_has_skill` 初始权重来自 ASC，采集满 8 周后由共现重算并标注 `source`。
-- 抽取规则在 `src/lib/extraction/`，每条规则带 `version` 与人工标注样本上的精确率 / 召回率（首次上线前对 200 条广告人工标注，结果写入 `/sources`）。规则示例：seniority —`graduate|grad program|junior|entry level|intern` 命中且 `senior|lead|principal|manager|head of` 未命中；work_rights —`must have (full )?working rights|australian citizen|permanent resident|pr or citizen|no sponsorship` → `requires_pr`，`sponsorship available|482` → `sponsorship_ok`。
-- ATS 接口返回职位全文，技能标签直接由字典匹配 title + 全文得到（`job_ad_skills.method = 'dictionary'`），fixture 走同一条路径。
+- ~150 launch software/data skill seeds from ASC tools/manual curation, aliases JS/`Javascript` → JavaScript, `Postgres` → PostgreSQL. Versioned `supabase/seed/skills.yaml` via `pnpm seed`.
+- ~25 ANZSCO6 roles: Software Engineer 261313, Data Engineer, Analyst Programmer etc.; ASC component priors, recomputed after eight weeks of co-occurrence, with source labels.
+- src/lib/extraction rules have version/precision/recall on 200 manually labelled prelaunch ads; publish results on sources. Example seniority: `graduate|grad program|junior|entry level|intern` without `senior|lead|principal|manager|head of`; rights: `must have (full )?working rights|australian citizen|permanent resident|pr or citizen|no sponsorship` → `requires_pr`; `sponsorship available|482` → `sponsorship_ok`.
+- ATS body + title dictionary matching, `job_ad_skills.method = 'dictionary'`; fixtures use identical paths.
 
-### 6.7 自建快照策略（回应 PRD §11）
+### 6.7 Building snapshots (PRD §11)
 
-1. **第一天就开始**：M1 完成即在生产 Supabase 项目上开启每日采集，早于任何 UI 上线；上线时已有数周技能级数据。
-2. **先岗位后技能**：岗位页上线即有 IVI 多年月度历史；技能页显示"自 {tracking_since} 起追踪"与 `change_4w`，`growth_12m` 达标后自动出现（registry 的 `available_after_days`）。
-3. **冷启动**：首次运行拉到的是各雇主当前全部在招职位，作为起点；ATS 接口没有已下架职位的历史，技能级历史只能从开始采集那天累积。
-4. **采集节奏**：指标每天结算一次（`compute-metrics`）；采集分两层，节奏由雇主而不是技能决定（一次请求拿回这家雇主的全部职位，技能再热也不多请求）：
-   - **轻量检查**：`poll-ats` 每小时只拉职位列表（id、标题、更新时间），新 id 才去拉全文（`fetch-ats-details`）。Greenhouse 的列表接口可以不带全文；Lever、Ashby 有没有轻量模式在 M1 实现时核实，没有就整份拉取后只处理新 id。
-   - **按活跃度调频**：把每家雇主的发布看成泊松到达，用近 8 周数据估计速率 λ（`employers.post_rate`）。活跃雇主（如一周几十个职位）每小时查，安静雇主（一个月一个）每天查；新登记的雇主先按每小时查，满 2 周后按 λ 调整。变动集中在少数大雇主，这样能抓到大部分小时级变化，请求量远少于全部每小时。
-   - **礼貌**：请求错开发出，不在整点集中；遵守 robots.txt；遇到 429 退避重试；带可识别的 User-Agent（`ATS_USER_AGENT`，形如 `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <联系邮箱>)`），`/bot` 页面说明我们采集什么、怎么联系、怎么退出。
-   - **盘中这一层**只服务"今天发生了什么"：行情条滚动真实职位事件（"Atlassian 新发 3 个 Data Engineer · 2 小时前"）与各标的的"今日新增"计数；正式指标不在盘中重算。每个数据面标出更新时间（`DESIGN.md` §8）。
-5. **存储预算**：每条广告长期保留约 300 B 的派生字段；首发类目每年约 10–20 万条 → < 60 MB，远低于 500 MB。
-6. **可替换**：`AdsSource` 接口不含任何 ATS 厂商特有字段；以后谈成的授权来源只需实现接口并注册 `data_sources`。付费的整包数据（Adzuna、Indeed 等聚合商，或 ATS 厂商的合作数据）等有客户后由用户去谈；Employment Hero 是补中小企业缺口的首选。
+1. **Day one**: daily production collection after M1, before UI launch, yielding weeks of skill history.
+2. **Roles before skills**: IVI monthly role history at launch; skills show tracking_since/`change_4w`; registry `available_after_days` enables growth later.
+3. **Cold start**: initial active jobs form baseline; closed ATS history is unavailable, so skill history starts at collection.
+4. **Cadence**: daily metric settlement; two ingestion layers, employer-based rather than skill-based because one employer request returns all jobs:
+   - **Light polling** hourly IDs/title/update; fetch details only for new IDs. Greenhouse supports no-body lists; verify Lever/Ashby in M1, otherwise fetch full payload but process new IDs only.
+   - **Adaptive cadence**: estimate employer Poisson λ over eight weeks in post_rate. Busy employers (dozens/week) hourly, quiet ones (one/month) daily. New employers hourly for two weeks, then adapt. Most hourly changes come from a few large employers, reducing requests.
+   - **Politeness**: stagger, no top-of-hour burst; robots.txt, 429 backoff, identifiable `ATS_USER_AGENT` such as `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <contact email>)`. Bot page explains collection/contact/opt-out.
+   - **Intraday layer** answers what happened today: real ticker events ("Atlassian posted 3 Data Engineer jobs · 2 h ago") and instrument new-today counts. No intraday metric recomputation. Update times everywhere (DESIGN §8).
+5. **Storage**: ~300 B derived fields/ad; 100–200K annual launch-category ads < 60 MB, below 500 MB.
+6. **Replaceability**: no vendor-specific fields in `AdsSource`. Future licensed sources implement/register adapters. User negotiates paid Adzuna/Indeed/ATS partnerships after customers; Employment Hero preferred for SMEs.
 
-### 6.8 覆盖率与重新加权（政府口径校准）
+### 6.8 Coverage/reweighting (official calibration)
 
-ATS 只覆盖用招聘系统的中大雇主，会系统性低估中小企业密集的行业（建筑、零售、护理等）。第一版用 JSA IVI 当总量标尺：
+ATS sources favour medium/large employers and undercount construction, retail, care, and other SME-heavy industries. Initial IVI benchmark:
 
-- **雇主登记表** `employers(name, abn?, ats, board_token, anzsic, size_band, post_rate, next_poll_at, verified_at)`：种子从 ASX 200、四大、银行、大学、各级政府、澳洲科技公司人工整理，每家记录它用的 ATS 和公开接口地址。
-- **去重**：同一职位可能在多个 ATS 或渠道出现，按 `(employer, normalized_title, location, 描述 hash)` 去重。
-- **`coverage_ratio(anzsco4, state, month)`** = 我们在该格子里去重后的新增广告数 ÷ IVI 在该格子的新增广告数。IVI 本身只统计三个招聘平台，所以这是近似的相对覆盖率，不是抽样率。skill 的覆盖率取其主要职业覆盖率的加权值。
-- **重新加权**：skill 的 `share_of_ads` 按职业 × 州用 IVI 占比做事后分层加权，纠正大企业和科技行业过度代表。同一职业内部中小企业与大企业的技能差异（如 Xero 对 SAP）观察不到，在定义弹窗里说明。
-- **展示**（阈值待用真实数据标定）：≥ 40% 正常显示；15–40% 数字旁加覆盖说明；< 15% 或样本不足不显示信号和变化，只显示 "Not enough coverage yet"。
-- `coverage_ratio` 进入指标注册表（§6.4），说明与来源放进 ⓘ。
+- Registry `employers(name, abn?, ats, board_token, anzsic, size_band, post_rate, next_poll_at, verified_at)` manually seeded from ASX200, Big Four, banks, universities, government, Australian technology firms; record ATS/public endpoints.
+- Deduplicate `(employer, normalized_title, location, description hash)` across channels.
+- Coverage = deduplicated new ads / IVI new ads per ANZSCO4/state/month. IVI covers only three boards, so approximate relative coverage, not sampling rate. Skill coverage weights its main occupations.
+- Post-stratify skill share by IVI occupation/state weights, correcting large-employer/tech bias. Cannot observe within-occupation SME/large-firm differences (Xero/SAP); disclose in definitions.
+- Calibrate real thresholds: ≥ 40% normal, 15–40% note beside value, < 15% or thin sample suppress changes/signals, "Not enough coverage yet".
+- Registry coverage metric (§6.4), definitions/sources behind ⓘ.
 
 ---
+## 7. Matching and coffee chats
 
-## 7. 匹配与咖啡聊流程
+### 7.1 Deterministic, explainable matching
 
-### 7.1 匹配算法（确定性、可解释）
+Inputs: `instrument_id`, `FilterSpec`, optional `signal_id`, student `user_id`.
 
-输入：`instrument_id`、`FilterSpec`、可选 `signal_id`、学生 `user_id`。
+1. **Hard filters**: verified/unpaused `practitioner_cards`; neither party blocks the other; accepted monthly count below cap; ≥ 1 open slot at least 48h away; no reliability suspension.
+2. **Skills**: holds skill; for roles, holds ≥ 2 top-weight components or currently works in that role.
+3. **Scoring**, each factor maps to a reason:
 
-1. **硬过滤**：`practitioner_cards` 中 `verified`、未暂停、未被该学生屏蔽且未屏蔽该学生、本月已接受数 < `monthly_cap`、有 ≥ 1 个未来 48h 后的 `open` slot、未处于可靠度暂停期。
-2. **技能匹配**：持有该 skill；若 instrument 是 role，则持有该岗位 ≥ 2 项权重最高成分技能或当前岗位即该 role。
-3. **打分（每项因子都能变成一句匹配理由）**：
-
-| 因子 | 分值 | 理由文案模板 |
+| Factor | Points | Reason template |
 |---|---|---|
-| 精确持有该技能 | +40 | "Uses {skill} in their current role" |
-| 入行年份距今 1–3 年 | +25（4–6 年 +10） | "Entered the industry {n} years ago" |
-| 当前岗位属于该技能的 top 岗位 | +15 | "Works as a {role}, one of the roles that most often asks for {skill}" |
-| 话题与学生决策问题关键词重合 | +10 | "Happy to talk about {topic}" |
-| 地点与学生筛选的地点相同（州级） | +10 | "Based in {city}" |
-| 本月已接受请求数（负载均衡） | −5 × n | 不展示 |
+| Exact skill | +40 | Uses {skill} in their current role |
+| Entered 1–3 years ago | +25; 4–6 years +10 | Entered the industry {n} years ago |
+| Current role is a top role for skill | +15 | Works as a {role}, one of the roles that most often asks for {skill} |
+| Topic overlaps question keywords | +10 | Happy to talk about {topic} |
+| Same filtered state | +10 | Based in {city} |
+| Accepted monthly requests, load balancing | −5 × n | Not displayed |
 
-4. 取前 3；不足 3 人时降级：`skill_adjacent` 关系（共现权重 ≥ 0.3）→ 标注 "Related skill: {adjacent}"；仍为空 → 展示等待队列（`waitlist_entries`）与从业者招募入口。学生永远看不到"0 个结果"页。
-5. Conversation starters：`generateStarters(signal, instrument, decisionQuestion, practitioner)` 从模板库（`src/lib/starters/templates.ts`，约 15 条）按上下文填槽，输出 3 条；学生可编辑。无 LLM。
+4. Top three; if fewer, use `skill_adjacent` co-occurrence ≥ 0.3 and label Related skill. If still empty, show `waitlist_entries`/recruitment; never a zero-results dead end.
+5. `generateStarters(signal, instrument, decisionQuestion, practitioner)` fills ~15 `src/lib/starters/templates.ts` templates, returns three editable starters. No LLM.
 
-### 7.2 请求状态机
+### 7.2 Request state machine
 
 ```mermaid
 stateDiagram-v2
@@ -770,145 +769,145 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-所有转移经 SQL 函数 `transition_chat_request(request_id, event, actor)` 执行：校验 actor 角色、当前状态、写 `chat_request_events`、更新 slot（`held → booked / open`）、入 `notifications_outbox`。`declined` / `expired` 对学生统一呈现为 "still looking"，界面文案不区分，且立即提供下一批候选人（FR-C7/C8）；回复率不计算、不存储为可展示字段。
+All transitions use SQL `transition_chat_request(request_id, event, actor)` to validate actor/state, write events, update held → booked/open slots, and enqueue outbox. Declined/expired both appear as still looking with immediate alternatives (FR-C7/C8). Do not calculate/store displayable reply rates.
 
-可靠度（内部）：`reliability_records` 中 30 天内 no-show ≥ 2 → 该用户 30 天内不参与匹配（从业者）或不能发起请求（学生）；规则公开在 `/legal/reliability`，界面对学生不显示任何分数。
+Internal reliability: ≥ 2 no-shows within 30 days suspends matching (practitioners) or requests (students) for 30 days. Publish rules at legal/reliability, never student scores.
 
-### 7.3 时序图
+### 7.3 Sequence diagrams
 
-**Tier 0 onboarding（免登录 → 个性化盘面）**
+**Tier 0 onboarding: anonymous → personalised board**
 
 ```mermaid
 sequenceDiagram
-    actor S as 学生
+    actor S as Student
     participant W as Next.js RSC / Action
     participant DB as Supabase (RLS)
     S->>W: GET /onboarding
-    W-->>S: 3 个字段：大学、学位、年级（可跳过）
+    W-->>S: University, degree, year; skippable
     S->>W: completeTier0(university, degree, year)
     W->>DB: select course_unit_skills / degree_skill_priors
-    DB-->>W: 推断技能 + 置信度
-    W-->>S: 写 cookie onboarding_draft；302 → /market?personalised=1
-    Note over S,W: 盘面按推断技能排序，每项标 "Suggested"，一键确认或删除
-    S->>W: 可选：登录（magic link / Google）
-    W->>DB: 合并 cookie 草稿 → student_profiles, student_skills(source=inferred)
-    S->>W: 可选：completeTier1(unitCodes)
+    DB-->>W: Inferred skills + confidence
+    W-->>S: Cookie onboarding_draft; 302 to /market?personalised=1
+    Note over S,W: Sort by inferred skills, Suggested labels, one-click confirm/remove
+    S->>W: Optional magic link / Google sign-in
+    W->>DB: Merge cookie into student_profiles/student_skills(source=inferred)
+    S->>W: Optional completeTier1(unitCodes)
     W->>DB: upsert student_skills(source=inferred, evidence=unit)
 ```
 
-**信号 → 匹配 → 请求 → 超时 / 婉拒**
+**Signal → matching → request → timeout/decline**
 
 ```mermaid
 sequenceDiagram
-    actor S as 学生
+    actor S as Student
     participant W as Next.js
     participant DB as Supabase
     participant CR as pg_cron
     participant O as outbox → Resend
-    actor P as 从业者
-    CR->>DB: detect_signals() 每日
-    DB-->>S: /me watchlist 高亮 "Rust · Sydney entry-level · +38% (120 → 166)"
-    S->>W: 点击 "Talk to someone who uses Rust"
+    actor P as Practitioner
+    CR->>DB: detect_signals() daily
+    DB-->>S: /me highlights Rust · Sydney entry-level · +38% (120 → 166)
+    S->>W: Talk to someone who uses Rust
     W->>DB: findCandidates(instrument, filter, signal)
-    DB-->>W: ≤ 3 候选人 + 因子
-    W-->>S: CandidateCard × 3（匹配理由、话题、时段）+ 3 条 starters
+    DB-->>W: At most three candidates + factors
+    W-->>S: Three cards with reasons/topics/slots and three starters
     S->>W: createRequest(practitioner, slot, decisionQuestion, starters, visibleFields)
-    W->>DB: transition(pending)；slot held；outbox(request_received → P)
-    O-->>P: 邮件：谁、为什么（信号）、问题、20 分钟、接受/改期/婉拒按钮
-    alt 接受
+    W->>DB: transition(pending); slot held; outbox(request_received → P)
+    O-->>P: Who, signal, question, 20 minutes, accept/reschedule/decline
+    alt Accept
         P->>W: acceptRequest
-        W->>DB: transition(accepted)；slot booked；outbox(accepted → S, ics 双方)
-        CR->>DB: schedule_reminders() 会前 24h
-        O-->>S: 提醒 + 准备模板 + 从业者会议链接
-        O-->>P: 提醒
-    else 婉拒
+        W->>DB: transition(accepted); slot booked; accepted email to S, ics to both
+        CR->>DB: schedule_reminders() 24h before
+        O-->>S: Reminder, preparation, meeting link
+        O-->>P: Reminder
+    else Decline
         P->>W: declineRequest
-        W->>DB: transition(declined)；slot open；outbox(still_looking → S)
-        W-->>S: 页面立即显示下一批候选人，文案中性
-    else 72h 无响应
+        W->>DB: transition(declined); slot open; still_looking to S
+        W-->>S: Immediate alternatives, neutral copy
+    else No reply for 72h
         CR->>DB: expire_chat_requests()
-        DB->>DB: transition(expired)；slot open；outbox(still_looking → S)
-        O-->>S: "We're finding someone else for you" + 新候选人链接
+        DB->>DB: transition(expired); slot open; still_looking to S
+        O-->>S: We're finding someone else for you + candidate link
     end
 ```
 
-**复盘投票与出席确认**
+**Debrief/attendance**
 
 ```mermaid
 sequenceDiagram
     participant CR as pg_cron
     participant DB as Supabase
     participant O as outbox → Resend
-    actor S as 学生
-    actor P as 从业者
+    actor S as Student
+    actor P as Practitioner
     participant W as Next.js
-    CR->>DB: schedule_reminders(): slot 结束 +1h
-    DB->>O: outbox(debrief_l0 → S), outbox(attendance_l2 → P)
-    O-->>S: "Did the chat change how you feel about Rust?" 三个按钮
-    O-->>P: "Did the chat happen?" 两个按钮
+    CR->>DB: schedule_reminders() slot end +1h
+    DB->>O: debrief_l0 to S, attendance_l2 to P
+    O-->>S: Did the chat change how you feel about Rust? Three buttons
+    O-->>P: Did the chat happen? Two buttons
     S->>W: submitDebrief(vote, note?)
-    W->>DB: insert debrief_votes；attendance_confirmations(student)
+    W->>DB: insert debrief_votes; student attendance
     P->>W: confirmAttendance(happened | no_show)
-    W->>DB: attendance_confirmations(practitioner)；transition(completed | no_show_*)
-    DB->>DB: reliability_records（内部）
-    W-->>S: /s/rust 个人记录："You talked to a practitioner on {date} · more interested"
+    W->>DB: practitioner attendance; transition(completed | no_show_*)
+    DB->>DB: Internal reliability_records
+    W-->>S: /s/rust personal record, date and more interested
 ```
 
 ---
 
-## 8. 安全、隐私与可观测性
+## 8. Security, privacy, observability
 
-### 8.1 安全
+### 8.1 Security
 
-| 面 | 措施 |
+| Surface | Measures |
 |---|---|
-| 认证 | Supabase Auth；magic link 一次性、15 分钟有效；Google OAuth 只要 `openid email profile` |
-| 授权 | RLS 为最终防线（§5.3）；应用层守卫只是 UX；状态转移在 SQL 函数里强制 |
-| 输入 | 所有 Server Action / job payload 用 Zod；富文本不允许（决策问题、备注为纯文本，渲染时转义） |
-| 密钥 | `src/env.ts` 分组校验；service role 只在 jobs / CI；`x-jobs-secret` 常量时间比较；Vault 存 pg_net 用密钥；gitleaks CI |
-| 速率限制 | `check_rate_limit(key, limit, window)`：发起请求 5/天/学生；验证码 3/小时/用户；举报 10/天；导出 1/天；匿名搜索按 IP 哈希 120/分钟 |
-| HTTP 头 | CSP（`default-src 'self'`，图表内联样式用 nonce）、HSTS、`X-Frame-Options: DENY`、`Referrer-Policy: strict-origin-when-cross-origin` |
-| 依赖 | Dependabot 每周；`pnpm audit --prod` 在 CI（high 以上失败） |
-| 滥用 | 从业者必须工作邮箱验证（免费邮箱域名黑名单 + 一次性邮箱黑名单）；未验证不出现在 `practitioner_cards`；举报后 admin 可暂停 |
-| 备份 | Supabase 免费档无 PITR；`backup.yml` 每日 `pg_dump` 到 GitHub Actions artifact（保留 30 天，仅 schema + 非个人数据表）+ 每周全量加密 dump 上传到 Supabase Storage 私有 bucket（AU 内）。待拍板：是否接受此备份强度 |
+| Authentication | Supabase; single-use 15 min magic links; Google openid/email/profile only |
+| Authorisation | RLS final boundary (§5.3); app guards UX only; SQL transitions |
+| Input | Zod for every action/job; no rich text; escaped plain questions/notes |
+| Secrets | Grouped env validation; service role jobs/CI only; constant-time job secret; Vault pg_net secrets; gitleaks |
+| Rate limits | `check_rate_limit`: student requests 5/day, codes 3/hour/user, reports 10/day, exports 1/day, anonymous hashed-IP search 120/min |
+| Headers | CSP default-src self, nonce chart inline styles; HSTS; X-Frame-Options DENY; strict-origin-when-cross-origin referrer |
+| Dependencies | Weekly Dependabot; CI `pnpm audit --prod` fails high+ |
+| Abuse | Work-email verification, free/disposable domain denylists; unverified cards excluded; admin suspension after reports |
+| Backups | Free Supabase has no PITR; daily schema/non-personal `pg_dump` Actions artifact, 30d retention; weekly encrypted full dump to private AU Storage. Strength pending approval |
 
-### 8.2 隐私（Privacy Act 1988 / APPs 映射）
+### 8.2 Privacy Act 1988 / APPs
 
-| APP | 要求 | 实现 |
+| APP | Requirement | Implementation |
 |---|---|---|
-| APP 1 | 公开、透明的隐私政策 | `/legal/privacy`：收集项、目的、跨境接收方（Vercel、Resend、Google、Sentry）、保留期、投诉途径 |
-| APP 3 | 只收集必要信息；敏感信息需同意 | 必填仅邮箱 + 18+ 声明；签证状态等为可选并在字段旁说明用途；同意记录在 `consents` |
-| APP 5 | 收集时告知 | 每个表单字段的 helper text 说明用途与谁能看到 |
-| APP 6 | 目的限定的使用与披露 | 从业者只看到 `student_visible_fields` 快照；不向雇主提供任何数据（产品约束） |
-| APP 8 | 跨境披露 | 数据库与 Storage 在 Sydney；Vercel 函数区域 `syd1`，CDN 边缘为过境；Resend / Google / Sentry 在政策中列明 |
-| APP 11 | 安全与销毁 | RLS、TLS、静态加密（Supabase 默认）；删除流程 30 天物理删除；`raw_snippet` 30 天 |
-| APP 12 / 13 | 访问与更正 | `/me/settings` 导出 JSON；所有画像字段可编辑 |
-| NDB scheme | 可通报数据泄露 | `docs/runbooks/breach.md`（M8）：判定、30 天评估、通知 OAIC 与用户 |
+| APP 1 | Transparent public policy | privacy page lists collection/purposes/recipients Vercel, Resend, Google, Sentry/retention/complaints |
+| APP 3 | Necessity, sensitive-data consent | Required email/18+ only; optional visa fields explain purpose; consents table |
+| APP 5 | Collection notice | Field helper text explains purpose/visibility |
+| APP 6 | Purpose-limited disclosure | Practitioner visibility snapshot only; no employer data access |
+| APP 8 | Cross-border disclosure | DB/Storage Sydney, functions `syd1`, edge CDN transit; disclose Resend/Google/Sentry |
+| APP 11 | Security/destruction | RLS/TLS/default encryption; 30d deletion/raw snippets |
+| APP 12 / 13 | Access/correction | Settings JSON export; editable profile fields |
+| NDB | Notifiable breaches | M8 runbooks/breach.md: determine, assess within 30d, notify OAIC/users |
 
-数据最小化的具体规则：不采集出生日期；不存 IP 原文（速率限制用哈希）；`analytics_events` 不含自由文本与邮箱；日志 scrub `email`、`decision_question`、`note`。
+Minimisation: no birth dates, no raw IP (hash for limits), no free text/email in analytics; scrub email/`decision_question`/note from logs.
 
-### 8.3 可观测性
+### 8.3 Observability
 
-- **错误**：Sentry（待拍板）；否则至少 `pino` 错误日志 + `/admin/pipeline` 的 `job_runs` 失败列表。
-- **任务**：`job_runs`（每次 tick 的开始、结束、统计、错误）；`ingestion_runs`（每个源每次运行的记录数、去重数、调用数、覆盖率）；失败连续 2 次 → outbox 给 admin 邮件（FR-X3）。
-- **产品事件**：`track(name, props)` 服务端写 `analytics_events`；核心事件：`market_viewed`、`instrument_viewed`、`metric_switched`、`filter_changed`、`definition_opened`、`onboarding_tier0_completed`、`onboarding_tier1_completed`、`skill_confirmed`、`skill_removed`、`watchlist_added`、`find_people_clicked`、`request_sent`、`request_accepted`、`chat_completed`、`debrief_voted`。`/admin/metrics` 用 SQL 视图算激活、匹配率、出席率、North Star（FR-X4）。
-- **健康**：`/api/health` 返回 DB 可达、最近一次 `compute-metrics` 时间、outbox 积压数；外部拨测每 5 分钟。
-- **性能**：Lighthouse CI 在 `ci.yml` 对 preview 的 3 个公开页跑移动端评分，LCP > 2.5s 报警（不阻断，M8 起阻断）。
+- **Errors**: Sentry pending; minimum pino errors + admin failed jobs.
+- **Jobs**: `job_runs` tick start/end/stats/errors; `ingestion_runs` per-source records/deduplication/calls/coverage; two consecutive failures email admin via outbox (FR-X3).
+- **Events**: server `track(name, props)` to `analytics_events`: `market_viewed`, `instrument_viewed`, `metric_switched`, `filter_changed`, `definition_opened`, `onboarding_tier0_completed`, `onboarding_tier1_completed`, `skill_confirmed`, `skill_removed`, `watchlist_added`, `find_people_clicked`, `request_sent`, `request_accepted`, `chat_completed`, `debrief_voted`. Admin SQL activation/matching/attendance/North Star (FR-X4).
+- **Health**: DB reachability, last metric run, outbox backlog; external five-minute checks.
+- **Performance**: mobile Lighthouse on three preview pages; LCP > 2.5s warning, blocking from M8.
 
 ---
 
-## 9. 测试策略
+## 9. Testing
 
-| 层 | 工具 | 覆盖 | 命令 |
+| Layer | Tool | Coverage | Command |
 |---|---|---|---|
-| 单元 | Vitest | `expandFilterToCells`、`aggregateForFilter`、`describeFilter`、metric registry 有效性矩阵、抽取规则（含标注样本回归）、匹配打分与降级、starters 模板、请求状态机（纯函数版）、`ChangeBadge` 格式化、env 校验 | `pnpm test:unit` |
-| 数据库 | pgTAP via `supabase test db` | 每张表 RLS 正反例；`compute_metric_points` 用 fixture 广告集校验数值；`expire_chat_requests`、`transition_chat_request` 的非法转移被拒；`check_rate_limit`；`purge` 的删除范围 | `pnpm test:db` |
-| 集成 | Vitest + 本地 Supabase | job tick 幂等（同一输入跑两次结果不变）；outbox 发送使用 Resend mock；fixture 数据源全管道跑通 | `pnpm test:integration` |
-| 端到端 | Playwright（Chromium，375px 与 1280px） | 匿名浏览 → 标的页 → 指标切换 → 筛选回读；Tier 0 → 登录（Inbucket 取 magic link）→ watchlist；从业者注册验证 → 时段；学生请求 → 从业者接受 → 复盘投票；admin 处理举报 | `pnpm test:e2e` |
-| 无障碍 | `@axe-core/playwright` | `/`、`/market`、`/s/[slug]`、`/compare`、`/onboarding`、`/chat/new` 零 serious/critical | 含在 `test:e2e` |
-| 一键 | `pnpm verify` = lint + typecheck + `test:unit` + `test:db` + build | 每个里程碑的验收基线 | `pnpm verify` |
+| Unit | Vitest | Filter expansion/aggregation/readback, registry validity, extraction/labelled regressions, matching/scoring/fallback, starters, pure state machine, changes, env | `pnpm test:unit` |
+| DB | pgTAP via Supabase | Positive/negative RLS, fixture metric values, illegal expiry/transitions, rate limits, purge scope | `pnpm test:db` |
+| Integration | Vitest + local Supabase | Idempotent ticks, mocked Resend, complete fixture pipeline | `pnpm test:integration` |
+| E2E | Chromium Playwright, 375/1280px | Anonymous board/detail/metric/filter; onboarding/login/Inbucket/watchlist; practitioner verification/slots; request/accept/debrief; admin reports | `pnpm test:e2e` |
+| Accessibility | axe | Zero serious/critical on /, `/market`, `/s/[slug]`, `/compare`, `/onboarding`, `/chat/new` | Within E2E |
+| One-command | lint/typecheck/unit/db/build | Milestone baseline | `pnpm verify` |
 
-测试数据：`supabase/seed/*.sql` + `fixtures/ads/*.json`（约 500 条合成广告，覆盖各 cell 与规则边界）。E2E 用独立 seed 用户（`student@test.local`、`pract@test.local`、`admin@test.local`）。
+Seeds `supabase/seed/*.sql` and ~500 synthetic `fixtures/ads/*.json` cover cells/rule boundaries. Dedicated E2E users `student@test.local`, `pract@test.local`, `admin@test.local`.
 
 ---
 
@@ -916,112 +915,112 @@ sequenceDiagram
 
 ```
 .github/workflows/
-  ci.yml        PR 与 push(main, m*-*)：pnpm install → gitleaks → lint → typecheck → test:unit → supabase start → db reset → test:db → test:integration → build → test:e2e（对 next start）→ 上传 Playwright 报告
-  migrate.yml   workflow_dispatch：任意分支 → supabase db push（项目 2）；main → environment "production"（需人工审批）→ db push（项目 1）→ 调用 /api/jobs/health
-  deploy-cloudflare.yml  push v* tag → lint → typecheck → test:unit → OpenNext build → 检查 tag 属于 main → 发布 brewdex.app；workflow_dispatch 仅验证（见 docs/CLOUDFLARE_DEPLOYMENT.md）
-  ingest.yml    workflow_dispatch：手动触发任意 job（兜底）
-  backup.yml    每日 schedule：schema + 公共数据 dump 作为 artifact
+  ci.yml        PR and push(main, m*-*): install → gitleaks → lint → typecheck → unit → supabase start → db reset → db → integration → build → e2e against next start → upload Playwright report
+  migrate.yml   manual: any branch → project2 db push; main → approved production environment → project1 push → /api/jobs/health
+  deploy-cloudflare.yml  v* push → lint → typecheck → unit → OpenNext build → verify main ancestry → brewdex.app; manual validates only, see CLOUDFLARE_DEPLOYMENT
+  ingest.yml    manual fallback for any job
+  backup.yml    daily schema/public-data dump artifact
 ```
 
-- 只有一条长期分支 `main`：短分支 → PR → `main` 仅集成；经用户授权推送 `v*` tag 才上线。Vercel Git 集成只用来给 PR 出预览（它也会把 `main` 部署到 `*.vercel.app`，不作生产用）；Vercel 构建只跑 `next build`，测试全部在 GitHub Actions。
-- 分支保护：`main` 需 CI 通过 + 1 个审批（用户）。
-- 版本与变更：conventional commits；`CHANGELOG.md` 在上线前由 M8 生成。
-- 环境变量：`.env.example` 由用户 / Codex 维护；本文 §12 附录列出需要新增的变量，由主会话写入 PROGRESS.md 提出。
+- Only main long-lived; short branches/PR/integration, authorised v* push releases. Vercel Git provides PR previews; main `*.vercel.app` is not production. Vercel builds `next build` only; tests in Actions.
+- Main protection: CI plus one user approval.
+- Conventional commits; M8 generates CHANGELOG before launch.
+- User/Codex maintain env.example; main session proposes §12 additions in PROGRESS.
 
 ---
 
-## 11. 免费档限制分析
+## 11. Free-tier limits
 
-| 服务 | 免费额度（需以官网为准） | 首先触顶的指标 | 预计触顶规模 | 到时路径 |
+| Service | Allowance, verify officially | First limit | Estimated scale | Next step |
 |---|---|---|---|---|
-| Supabase | 500 MB DB、1 GB Storage、50K MAU、5 GB egress/月、2 项目、7 天闲置暂停、无 PITR | DB 大小（广告派生数据 + metric_points） | 首发类目下约 3–4 年，或扩展到 5 个类目后约 1 年；MAU 远早于此不会到 | Pro USD 25/月（8 GB DB、PITR 可加购）；或缩短 `job_ads` 保留期到 12 个月 |
-| Vercel Hobby | 100 GB 带宽、函数按 GB-hours 计、单区域、**禁止商用** | 商用条款（非数字上限） | 上线即触发条款问题 | 上线前决定：Pro USD 20/月，或 OpenNext → Cloudflare Workers（免费 10 万请求/日）/ Docker standalone → Fly.io、Railway；代码零改动是本架构的设计目标 |
-| Resend | 3,000 封/月、100 封/日、1 个域名 | 每日 100 封 | 每完成一次咖啡聊约 7 封 → 每日约 14 次请求闭环，或约 300 位活跃用户 | Pro USD 20/月（50K）；outbox 已按日配额排队，不会丢信 |
-| GitHub Actions | 私有仓库 2,000 分钟/月 | CI 时长（含 Supabase 容器启动约 3 分钟） | 每月约 150 次 CI 运行 | 合并 e2e 到 nightly；或仓库转公开（无限分钟） |
-| Google OAuth | Testing 模式 100 个测试用户 | 用户数 | 上线前 | 有域名 + 隐私政策后切 Production，免费 |
-| ATS 公开职位接口 | 官方未公布读取限速 | 雇主登记表规模 × 频率 | 2,000 家全部每小时一次约 4.8 万次 / 天（平均每秒不到 1 次）；按活跃度调频后远少于此 | 轻量检查 + 按活跃度调频（§6.7）；遇 429 退避 |
-| Sentry（若采用） | 5K 错误/月 | 错误事件 | 一次前端错误风暴即可打满 | 采样率 + 忽略规则；Team USD 26/月 |
-| pg_cron / pg_net | 随 Supabase 免费 | 无 | — | — |
-| UptimeRobot 类拨测 | 50 个监控、5 分钟间隔 | 无 | — | — |
+| Supabase | 500MB DB, 1GB Storage, 50K MAU, 5GB monthly egress, two projects, seven-day idle pause, no PITR | DB derived ads/points | 3–4 years launch category; ~1 year with five; MAU unlikely first | Pro USD25/month 8GB, optional PITR; or retain ads 12 months |
+| Vercel Hobby | 100GB bandwidth, GB-hour functions, one region, **no commercial use** | Terms | At launch | Pro USD20/month or OpenNext Cloudflare free 100K requests/day, standalone Fly/Railway; zero business-code change target |
+| Resend | 3K/month, 100/day, one domain | Daily | ~7 emails/chat, ~14 daily loops or 300 active users | USD20/month 50K; quota queue prevents loss |
+| Actions | Private 2K min/month | CI, ~3 min Supabase startup | ~150 runs/month | Nightly e2e or public repo unlimited minutes |
+| Google | Testing 100 users | Users | Before launch | Domain/privacy policy → free Production |
+| ATS APIs | No published read limit | Employers × cadence | 2K hourly = 48K/day, <1/s; adaptive much lower | Lightweight/adaptive, 429 backoff |
+| Sentry optional | 5K errors/month | Error storm | One frontend storm | Sampling/ignores; Team USD26/month |
+| pg_cron / pg_net | Included free | None | — | — |
+| UptimeRobot-like | 50 monitors, five-minute interval | None | — | — |
 
-**迁移路径总结**：应用层只依赖 Next.js 标准能力与 Postgres；Storage 通过一个 `storage.ts` 适配（Supabase Storage → S3 兼容）；邮件通过 `mailer.ts` 适配。任何一项付费都不需要改业务代码。
+**Migration**: standard Next/`Postgres` only; `storage.ts` adapts Supabase to S3; `mailer.ts` isolates email. Paid upgrades need no business changes.
 
 ---
 
-## 12. 假设与待拍板清单
+## 12. Assumptions and pending decisions
 
-**A = 假设（已按此实现，用户可随时否决）；D = 需要用户拍板（阻塞点标注了里程碑）**
+**A = assumed/applied, user may veto; D = user decision, blocking milestone indicated**
 
-| # | 类型 | 问题 | 本文采用的默认 | 阻塞 |
+| # | Type | Question | Default | Blocks |
 |---|---|---|---|---|
-| 1 | D | 产品名（PRD Q1） | **已定（2026-10-23）**：Brewdex；`APP_NAME` 常量默认 `skill-market`；仅 `brewdex.app` 发布配置设为 `Brewdex`；域名 `brewdex.app` 已买 | M8 |
-| 2 | A | 会议链接（PRD Q2） | 从业者自带；系统只存链接并在确认邮件中发送 | — |
-| 3 | A | 界面语言（PRD Q3） | 英文；`next-intl` 单 locale | — |
-| 4 | A | 首发范围（PRD Q4） | 悉尼大学 工程与 IT 学院 × 软件 / 数据（ATS 覆盖最好的领域）；技能约 150、岗位约 25 | — |
-| 5 | A | 从业者验证（PRD Q5） | 工作邮箱验证码 + 免费邮箱域名黑名单；失败进 admin 审核队列 | — |
-| 6 | A | 数据来源（PRD Q6） | 2026-10-23 用户决定：第一版 = Greenhouse / Lever / Ashby 公开职位接口（技能级）+ JSA IVI（岗位级与覆盖率校准）；Adzuna、Workday 不接。按"可存派生字段、原文 30 天"实现，某家条款更严则该来源 0 天；各家条款上线前人工核实（`docs/SETUP.md`） | M8 前核实条款 |
-| 7 | A | 无隐喻模式（PRD Q7） | 做成 `ui_mode` 设置项 | — |
-| 8 | A | 超时时长（PRD Q8） | 72 小时，`feature_flags.request_timeout_hours` 可配 | — |
-| 9 | A | 技能级 `growth_12m` 上线时不可用 | 以 `change_4w` 为 MVP 信号指标；`growth_12m` 自动开放 | — |
-| 10 | A | `no_pr_required_share` 的定义 | "未明示要求"占比，并注明局限 | — |
-| 11 | A | 未识别工作模式的广告 | 计入 `onsite` | — |
-| 12 | A | 从业者时段模型 | 每周模板 + 系统生成 28 天 20 分钟 slot；请求需在开始 ≥ 48h 前发出 | — |
-| 13 | A | 从业者每月上限默认 | 2 次，可改 1–8 | — |
-| 14 | A | No-show 规则 | 30 天内 2 次 → 30 天暂停匹配 / 发起；对双方同规则；公开页 | — |
-| 15 | A | 供给阈值门 | `booking_enabled` 开关；admin 手动开启（PRD 目标 ≥ 30 位从业者） | — |
-| 16 | A | 18+ | 勾选声明 + 时间戳，不采集出生日期 | — |
-| 17 | A | 密码登录 | 不提供；magic link + Google | — |
-| 18 | A | MVP 不接 LLM | 匹配理由与 starters 全模板化 | — |
-| 19 | D | 错误监控是否接 Sentry（EU） | 建议接，`sendDefaultPii=false` + scrub，隐私政策披露 | M8 |
-| 20 | D | 备份强度 | 每日 schema + 公共数据 artifact，每周全量加密 dump 到 Storage | M8 |
-| 21 | A | 产品分析不接第三方 | 自有事件表 + admin 看板 | — |
-| 22 | A | 课程目录来源 | 人工整理约 60–80 门 USYD Eng&IT 单元（code + 名称 + 技能映射），不抓取 handbook | — |
-| 23 | D | Vercel Hobby 商用条款 | 上线前二选一：升 Pro（USD 20/月）或迁 Cloudflare Workers（免费） | M8 |
-| 24 | A | 学生对从业者默认可见字段 | 大学、学位、年级；其余默认仅自己可见 | — |
-| 25 | A | 岗位 `share_of_ads` 的岗位归属 | 广告 title 通过 ANZSCO 标题别名匹配到 role；未匹配的只计入分母 | — |
+| 1 | D | Product name Q1 | Decided 2026-10-23: `Brewdex`; `APP_NAME` defaults `skill-market`, `Brewdex` only in domain release config; domain purchased | M8 |
+| 2 | A | Meeting link Q2 | Practitioner supplies; store/send only | — |
+| 3 | A | Language Q3 | English, single-locale `next-intl` | — |
+| 4 | A | Launch Q4 | USYD Eng&IT software/data, best ATS coverage, ~150 skills/25 roles | — |
+| 5 | A | Verification Q5 | Work code/free-domain denylist/manual fallback | — |
+| 6 | A | Sources Q6 | 2026-10-23 user: Greenhouse/Lever/Ashby skills + IVI roles/coverage; no Adzuna/Workday; derived fields, raw 30d or zero for stricter sources; verify terms in SETUP | Before M8 |
+| 7 | A | Plain mode Q7 | `ui_mode` setting | — |
+| 8 | A | Timeout Q8 | 72h, configurable request_timeout_hours | — |
+| 9 | A | No skill growth history | `change_4w` MVP, enable growth automatically | — |
+| 10 | A | No-PR definition | Not explicitly stated, disclose limitations | — |
+| 11 | A | Unknown work mode | onsite | — |
+| 12 | A | Availability | Weekly templates, 28-day 20 min slots, request ≥ 48h ahead | — |
+| 13 | A | Monthly cap | Default two; adjustable 1–8 | — |
+| 14 | A | No-show | Two in 30d → 30d suspension, both parties, public rules | — |
+| 15 | A | Supply gate | Admin enables `booking_enabled` at target ≥ 30 practitioners | — |
+| 16 | A | 18+ | Declaration/timestamp, no DOB | — |
+| 17 | A | Passwords | None, magic link/Google | — |
+| 18 | A | No MVP LLM | Templated reasons/starters | — |
+| 19 | D | Sentry EU? | Recommend, no default PII, scrub/disclose | M8 |
+| 20 | D | Backups | Daily schema/public artifacts; weekly encrypted full Storage dump | M8 |
+| 21 | A | Analytics | Owned events/admin dashboard | — |
+| 22 | A | Units | Manually compile 60–80 USYD Eng&IT code/name/skill mappings, no handbook scraping | — |
+| 23 | D | Vercel commercial | Pro USD20/month or free Cloudflare before launch | M8 |
+| 24 | A | Default student visibility | University/degree/year; other fields self-only | — |
+| 25 | A | Role share mapping | ANZSCO title aliases; unmatched ads denominator only | — |
 
-### 附录 A：目录结构
+### Appendix A: Directory structure
 
 ```
 src/
-  app/                     路由（route groups: (public) (student) (practitioner) (admin) api/)
-  actions/                 Server Actions（每领域一个文件）
-  components/              UI（ticker/ filters/ metrics/ profile/ chat/ admin/ ui/ = shadcn）
+  app/                     Routes: (public) (student) (practitioner) (admin) api/
+  actions/                 One domain per Server Actions file
+  components/              ticker/ filters/ metrics/ profile/ chat/ admin/ ui/ (shadcn)
   lib/
-    metrics/registry.ts    指标注册表（唯一来源）
-    filters/               FilterSpec、expandFilterToCells、describeFilter、hash
-    extraction/            seniority / work_mode / work_rights / skills 规则（带 version）
-    matching/              findCandidates、score、reasons、fallback
-    starters/              模板与生成
-    chat/                  状态机纯函数版（与 SQL 函数同一张转移表，测试互校）
-    email/                 React Email 模板、mailer 适配
+    metrics/registry.ts    Single metric source
+    filters/               FilterSpec, expandFilterToCells, describeFilter, hash
+    extraction/            Versioned seniority/work_mode/work_rights/skills
+    matching/              findCandidates, score, reasons, fallback
+    starters/              Templates/generation
+    chat/                  Pure state machine; cross-check shared SQL transition table
+    email/                 React Email templates/mailer adapter
     analytics/track.ts
-    supabase/              server / client / admin 客户端工厂，生成的 types
-  jobs/                    每个后台任务一个文件 + registry
-  data-sources/            ats/（greenhouse lever ashby …）jsa/ asc/ fixture/ + 接口
-  config/app.ts            APP_NAME 等
-  env.ts                   Zod 环境变量
-messages/en.json           全部文案（market / plain 两个术语命名空间）
+    supabase/              server/client/admin factories, generated types
+  jobs/                    One file per job plus registry
+  data-sources/            ats/ (greenhouse lever ashby …) jsa/ asc/ fixture/ interfaces
+  config/app.ts            APP_NAME etc.
+  env.ts                   Zod environment validation
+messages/en.json           All copy, market/plain terminology namespaces
 supabase/
-  migrations/              纯 SQL（含 RLS、函数、pg_cron schedule）
-  seed/                    skills.yaml、roles.yaml、locations.yaml、units.yaml、*.sql
+  migrations/              SQL including RLS/functions/cron
+  seed/                    skills.yaml, roles.yaml, locations.yaml, units.yaml, *.sql
   tests/                   pgTAP
 fixtures/ads/*.json
 e2e/                       Playwright
-scripts/                   seed、metrics:sync、job 手动运行
-docs/                      本目录
+scripts/                   seed, metrics:sync, manual jobs
+docs/                      This directory
 ```
 
-### 附录 B：需要新增的环境变量（提请用户 / Codex 写入 `.env.example`）
+### Appendix B: Proposed environment additions (user/Codex to update env.example)
 
-| 变量 | 用途 | 环境 |
+| Variable | Purpose | Environment |
 |---|---|---|
-| `APP_NAME` | 产品名（`APP_NAME` 常量来源；缺省 `skill-market`；`brewdex.app` 发布配置为 `Brewdex`） | 全部 |
-| `NEXT_PUBLIC_APP_URL` | 绝对链接（邮件、ics） | 全部 |
-| `JOBS_SECRET` | `/api/jobs/*` 鉴权；同一值写入 Supabase Vault | server |
-| `ATS_USER_AGENT` | 采集请求的可识别 User-Agent，形如 `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <联系邮箱>)` | server |
-| `MIN_SAMPLE_N` | 样本阈值默认（默认 30；也可在 registry 覆盖） | server |
-| `SENTRY_DSN`（待拍板） | 错误监控 | server + client |
-| `E2E_*`（仅 CI） | 测试账号 | CI |
+| `APP_NAME` | Product constant; default `skill-market`, domain release `Brewdex` | All |
+| `NEXT_PUBLIC_APP_URL` | Absolute email/ics links | All |
+| `JOBS_SECRET` | Job authentication; same value in Vault | Server |
+| `ATS_USER_AGENT` | Identifiable `<APP_NAME>-bot/0.1 (+https://brewdex.app/bot; <contact email>)` | Server |
+| `MIN_SAMPLE_N` | Default 30, registry override | Server |
+| `SENTRY_DSN` pending | Error monitoring | Server/client |
+| `E2E_*` CI only | Test accounts | CI |
 
-已有变量（`.env.example`）：`APP_NAME`（server-only，通过 AppProvider 传给客户端）、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`SUPABASE_DB_PASSWORD`、`RESEND_API_KEY`、`EMAIL_FROM`（`ADZUNA_APP_ID`、`ADZUNA_APP_KEY` 不再需要）。
+Existing env.example variables: `APP_NAME` (server-only, AppProvider to client), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_PASSWORD`, `RESEND_API_KEY`, `EMAIL_FROM`. `ADZUNA_APP_ID`/KEY no longer needed.

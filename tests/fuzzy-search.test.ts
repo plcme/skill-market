@@ -49,7 +49,7 @@ describe('shared fuzzy matcher', () => {
     expect(slugs('pyhton')).not.toContain('pytorch');
   });
 
-  it.each(['', '   ', 'zzzzzzzzzz', '数据分析', 'x'.repeat(MAX_SEARCH_LENGTH + 1)])('returns no invented results for %j', q => {
+  it.each(['', '   ', 'zzzzzzzzzz', '\u6570\u636e\u5206\u6790', 'x'.repeat(MAX_SEARCH_LENGTH + 1)])('returns no invented results for %j', q => {
     expect(slugs(q)).toEqual([]);
   });
 
