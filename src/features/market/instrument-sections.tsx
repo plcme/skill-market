@@ -23,11 +23,11 @@ import { InstrumentMark } from '@/components/market/instrument-mark';
 // on /compare so both views explain numbers the same way.
 
 /** A reading as an editorial figure: serif value, with change metrics keeping their glyph + counts. */
-export function Figure({ reading, className }: { reading: MetricReading; className?: string }) {
+export function Figure({ reading, decodeDelay, className }: { reading: MetricReading; decodeDelay?: number; className?: string }) {
   if (METRICS[reading.metric].unit === 'change' && reading.status === 'ok') {
-    return <ChangeBadge reading={reading} size="lg" className={cn('[&>span:first-child]:font-serif [&>span:first-child]:text-[30px] [&>span:first-child]:font-normal [&>span:first-child]:leading-none', className)} />;
+    return <ChangeBadge reading={reading} size="lg" decodeDelay={decodeDelay} className={cn('[&>span:first-child]:font-serif [&>span:first-child]:text-[30px] [&>span:first-child]:font-normal [&>span:first-child]:leading-none', className)} />;
   }
-  return <MetricValue reading={reading} size="lg" className={cn('[&>span:last-child]:whitespace-normal', className)} />;
+  return <MetricValue reading={reading} size="lg" decodeDelay={decodeDelay} className={cn('[&>span:last-child]:whitespace-normal', className)} />;
 }
 
 /**
@@ -42,7 +42,7 @@ export function Statistics({ detail, filter, metricHref }: {
   const t = useTranslations('InstrumentPage');
   const tm = useTranslations('Metrics');
   const type = detail.snapshot.instrument.type;
-  const cell = (m: MetricKey) => {
+  const cell = (m: MetricKey, index: number) => {
     const r = detail.readings[m];
     if (!r) return null;
     const current = m === detail.metric;
@@ -50,7 +50,7 @@ export function Statistics({ detail, filter, metricHref }: {
       <li key={m} className={cn('relative flex min-w-0 flex-col gap-3.5 border-b border-r border-rule p-4 transition-colors sm:p-6', current ? 'bg-picked shadow-[inset_0_0_0_2px_var(--ink)]' : 'bg-surface hover:bg-sunken/50')}>
         <MeasureCellLink href={metricHref(m)} current={current} label={t('showMeasureLabel', { metric: tm(`${m}.label`) })} />
         <MetricLabel metric={m} type={type} reading={r} filter={filter} subject={detail.snapshot.instrument.name} infoClassName="relative z-10" />
-        <Figure reading={r} className="[&>span:first-child]:text-[32px] sm:[&>span:first-child]:text-[40px]" />
+        <Figure reading={r} decodeDelay={(index % 4) * 40} className="[&>span:first-child]:text-[32px] sm:[&>span:first-child]:text-[40px]" />
         <div className="mt-auto pt-1">
           <SourceBadge kind={r.source} short />
         </div>

@@ -299,7 +299,7 @@ test.describe('landing', () => {
     await page.goto('/people');
     const market = info.project.name === 'mobile'
       ? page.getByRole('navigation', { name: 'Main' }).filter({ visible: true }).getByRole('link', { name: 'Market' })
-      : page.getByRole('banner').getByRole('link', { name: 'Market' });
+      : page.getByRole('banner').getByRole('link', { name: 'Market', exact: true });
     await market.click();
     await expect(page).toHaveURL(/\/market#board$/);
     await expect(page.getByRole('heading', { level: 2, name: INTRO })).toHaveCount(1);

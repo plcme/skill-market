@@ -2,16 +2,18 @@ import { useTranslations } from 'next-intl';
 import { direction, formatChange, formatCount } from '@/lib/market/format';
 import type { MetricReading } from '@/lib/market/types';
 import { cn } from '@/lib/utils';
+import { DecodeText } from '@/components/motion/decode-text';
 import { DirectionGlyph } from './direction-glyph';
 
 /**
  * A change is always shown with its absolute counts (FR-D3) and with glyph +
  * words + colour, never colour alone (NFR-3).
  */
-export function ChangeBadge({ reading, size = 'md', showAbsolute = true, className }: {
+export function ChangeBadge({ reading, size = 'md', showAbsolute = true, decodeDelay, className }: {
   reading: MetricReading;
   size?: 'sm' | 'md' | 'lg';
   showAbsolute?: boolean;
+  decodeDelay?: number;
   className?: string;
 }) {
   const t = useTranslations('Format');
@@ -34,7 +36,7 @@ export function ChangeBadge({ reading, size = 'md', showAbsolute = true, classNa
         )}
       >
         <DirectionGlyph dir={dir} />
-        {formatChange(reading.value)}
+        {decodeDelay !== undefined ? <DecodeText value={formatChange(reading.value)} delay={decodeDelay} /> : formatChange(reading.value)}
       </span>
       {showAbsolute && abs ? <span className="num max-w-full truncate text-[12px] text-muted" title={abs}>{abs}</span> : null}
     </span>

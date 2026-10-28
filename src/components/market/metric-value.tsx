@@ -3,6 +3,7 @@ import { METRICS } from '@/lib/metrics/registry';
 import { formatCount, formatShare, primaryValue } from '@/lib/market/format';
 import type { MetricReading } from '@/lib/market/types';
 import { cn } from '@/lib/utils';
+import { DecodeText } from '@/components/motion/decode-text';
 import { ChangeBadge } from './change-badge';
 
 /** Secondary line that says what the number is out of (FR-D2: no bare percentages). */
@@ -33,17 +34,18 @@ export function useMetricDetail() {
   };
 }
 
-export function MetricValue({ reading, size = 'md', showDetail = true, className }: {
+export function MetricValue({ reading, size = 'md', showDetail = true, decodeDelay, className }: {
   reading: MetricReading;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showDetail?: boolean;
+  decodeDelay?: number;
   className?: string;
 }) {
   const t = useTranslations('Format');
   const detail = useMetricDetail();
   const unit = METRICS[reading.metric].unit;
   if (unit === 'change' && reading.status === 'ok') {
-    return <ChangeBadge reading={reading} size={size === 'sm' ? 'sm' : size === 'md' ? 'md' : 'lg'} showAbsolute={showDetail} className={className} />;
+    return <ChangeBadge reading={reading} size={size === 'sm' ? 'sm' : size === 'md' ? 'md' : 'lg'} showAbsolute={showDetail} decodeDelay={decodeDelay} className={className} />;
   }
   const value = primaryValue(reading);
   const line = showDetail ? detail(reading) : null;
@@ -58,7 +60,7 @@ export function MetricValue({ reading, size = 'md', showDetail = true, className
             size === 'xl' && 'serif-num text-[56px] leading-[0.95] sm:text-[72px]',
           )}
         >
-          {value}
+          {decodeDelay !== undefined ? <DecodeText value={value} delay={decodeDelay} /> : value}
         </span>
       ) : (
         <span className={cn('text-muted', size === 'lg' || size === 'xl' ? 'font-serif text-2xl' : 'text-[13px]')}>
