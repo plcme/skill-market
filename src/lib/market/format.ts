@@ -6,8 +6,12 @@ import type { MetricReading } from './types';
 const LOCALE = 'en-AU';
 const MINUS = '−';
 
+// Built once: constructing an Intl formatter is costly and these run hundreds of times per page.
+const COUNT_FORMAT = new Intl.NumberFormat(LOCALE);
+const AUD_FORMAT = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
+
 export function formatCount(n: number): string {
-  return new Intl.NumberFormat(LOCALE).format(Math.round(n));
+  return COUNT_FORMAT.format(Math.round(n));
 }
 
 export function formatShare(v: number): string {
@@ -36,7 +40,7 @@ export function formatPp(v: number): string {
 
 export function formatAud(n: number, compact = true): string {
   if (compact) return `$${Math.round(n / 1000)}k`;
-  return new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(n);
+  return AUD_FORMAT.format(n);
 }
 
 export type Direction = 'up' | 'down' | 'flat';

@@ -24,7 +24,15 @@ type PaletteItem =
   | { kind: 'instrument'; id: string; hit: SearchHit }
   | { kind: 'competency'; id: string; hit: CompetencyHit };
 
-const SUGGESTED = ['rust', 'dbt', 'data-analyst', 'terraform', 'cybersecurity', 'software-engineer'];
+export const SUGGESTED = ['rust', 'dbt', 'data-analyst', 'terraform', 'cybersecurity', 'software-engineer'];
+const NO_ITEMS: PaletteItem[] = [];
+let suggestedItems: PaletteItem[] | undefined;
+
+/** Empty-query suggestions. Fixed, so searched once on first open rather than on every (closed) render. */
+export function paletteSuggestions(): PaletteItem[] {
+  suggestedItems ??= SUGGESTED.flatMap(s => searchInstruments(s, 1)).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit }));
+  return suggestedItems;
+}
 
 /** ⌘K / "/" search with alias normalisation (FR-D6). */
 export function CommandPalette() {
@@ -68,8 +76,7 @@ export function CommandPalette() {
     const instruments = searchInstruments(q, 8, { aliases }).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit }));
     return [...exact, ...instruments, ...rest].slice(0, 8);
   }, [q, aliases]);
-  const suggestions = useMemo<PaletteItem[]>(() => SUGGESTED.flatMap(s => searchInstruments(s, 1)).map(hit => ({ kind: 'instrument' as const, id: hit.instrument.slug, hit })), []);
-  const list = q.trim() ? hits : suggestions;
+  const list = q.trim() ? hits : open ? paletteSuggestions() : NO_ITEMS;
 
   const go = (i: number) => {
     const item = list[i];
