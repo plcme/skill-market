@@ -19,12 +19,14 @@
 - Lint/types357 units/six mobile-tablet onboarding checks passed; isolated build exit0, same3019 updated/visually checked. Previous50 responsive passes belong to previous commit; this round reran six related cases only.
 - Uncommitted/unpushed/unmerged; earlier copy reduction committed869621a.
 
-## Current state (2026-10-24)
+## Current state (2026-10-28)
 
-- Fuzzy integration synchronised menus/Watch all/trunk rules; await green PR CI before merge, unreleased. Original verification in `docs/FUZZY_SEARCH_IMPLEMENTATION.md`.
-- M0 locally complete, cloud pending SETUP. FE-R1–R7 integrated main and released on `brewdex.app`/Cloudflare.
-- **Git since 2026-10-23**: only main long-lived; branch→PR→authorised integration merge→separate authorised v* release push. dev discontinued, fully included in main.
-- FE-R8 branch/PR20 unmerged: remove homepage, root→market, entry-decided opening/wordmark return, instant page flip; follow-up passed after two returns.
+- **`v0.1.9` released on `brewdex.app`** from main `8df8bdd` (PR #24): Brewdex name, `/`→`/market`, FE-R8, FE-R9, fuzzy search, Watch all, contract-v1, English docs, statistics scroll decode. Previous production was PR #13 (2026-10-23); `v0.1.7`/`v0.1.8` tags never deployed because they predate the tag trigger.
+- `www.brewdex.app` has no DNS record; user to add a proxied `www` record plus a 301 redirect rule to the apex in Cloudflare.
+- Vercel Production also builds every main merge (latest `8df8bdd`); it is not the public site.
+- All merged branches/worktrees cleaned 2026-10-28; nine Dependabot PRs targeting retired `dev` closed. Open: Dependabot #22 (main).
+- M0 locally complete, cloud pending SETUP.
+- **Git since 2026-10-23**: only main long-lived; branch→PR→authorised integration merge→separate authorised v* release push. dev discontinued and deleted.
 - Interactive prototype, synthetic numbers, browser localStorage users, **no Supabase**.
 - **Sources decided2026-10-23**: skills Greenhouse/Lever/Ashby public APIs, roles/coverage JSA IVI; no Adzuna/Workday. No explicit licences from three APIs/IVI; written responses/legal review before commercialisation, SETUP6.
 - Daily metric settlement, hourly light polling/adaptive Poisson employer λ; intraday ticker/new-today; Updated today,2:14am surfaces, architecture6.7/DESIGN8.
@@ -69,7 +71,7 @@ Decided, removed from open list: root→market; always-present opening/no seen-c
 
 - [ ] Sync/full E2E `frontend.spec.ts`:90/103–121/196, round 2:35–58, detail-chart, responsive; changed E2E sinceR4 not run.
 - [ ] Add `.claude/worktrees/**` `globalIgnores` to `eslint.config.mjs`, avoid scanning nested worktrees.
-- [ ] Cleanup merged branches/worktrees after user confirms list.
+- [x] Cleanup merged branches/worktrees (2026-10-28).
 - [x] SETUP Git updated main+PR previews; Supabase dev retained.
 - [ ] FE-R8 opening/flip/nav and responsive opening E2E not locally run; iOS real-device overflow-hidden inertia unverified.
 - [ ] User approval before main merge.
@@ -93,6 +95,8 @@ Known non-blocking leftovers: all-thin copy/plot mismatch breakdown-section92; d
 See `docs/reviews/FE-R*.md` and git log.
 
 ## Log (newest first)
+
+- 2026-10-28: Released `v0.1.9` (main `8df8bdd`) to `brewdex.app`; deploy succeeded but the page check ran one second later, still saw the old 200 at `/` and failed the run. Live site verified by hand (307→`/market`, title Brewdex, no console errors on `/market`); the check now polls up to two minutes. Removed 15 worktrees, 17 local and 11 remote merged branches (including `dev`); closed Dependabot #2–#11 that targeted `dev`. PRs #20, #23, #24 merged earlier.
 
 - 2026-10-25: R8 follow-up passed after two returns (zoom/noncancelable wheel/query removal; streamed late opening/clear-query insertion). New `force-dynamic` market layout owns opening; Tailwind excludes docs. Lint/types382 units/build passed, no E2E.
 - 2026-10-25: R8 passed after two returns; merged latest main fuzzy/watch-all/contract-v1; root release check307→market. Lint/types362 units passed, no E2E by preference.

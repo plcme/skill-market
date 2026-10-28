@@ -70,7 +70,12 @@ jobs:
         if: steps.release.outputs.deploy == 'true'
         run: |
           # `/` is a redirect to the board (no -L: the redirect itself is what's checked); the board must load.
-          root=$(curl --silent --show-error --retry 5 --retry-delay 5 --output /dev/null --write-out '%{http_code} %{redirect_url}' "https://brewdex.app/")
+          # The edge can serve the previous version for a short while after deploy, so poll before failing.
+          for attempt in $(seq 1 12); do
+            root=$(curl --silent --show-error --retry 5 --retry-delay 5 --output /dev/null --write-out '%{http_code} %{redirect_url}' "https://brewdex.app/")
+            [ "$root" = "307 https://brewdex.app/market" ] && break
+            sleep 10
+          done
           if [ "$root" != "307 https://brewdex.app/market" ]; then
             echo "::error::/ should be a 307 to /market, got: $root"
             exit 1
