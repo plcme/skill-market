@@ -40,12 +40,27 @@ export function formatDate(iso: string, opts: Intl.DateTimeFormatOptions = { day
   return new Intl.DateTimeFormat('en-AU', { ...opts, timeZone: tz }).format(new Date(iso));
 }
 
+// Formatters with fixed options, cached per time zone. An invalid zone throws in the
+// constructor and is never cached; the size cap guards against case variants of valid ones.
+const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
+const timeFormats = new Map<string, Intl.DateTimeFormat>();
+
+function cachedFormat(cache: Map<string, Intl.DateTimeFormat>, tz: string, make: () => Intl.DateTimeFormat): Intl.DateTimeFormat {
+  let format = cache.get(tz);
+  if (!format) {
+    format = make();
+    if (cache.size >= 64) cache.delete(cache.keys().next().value!);
+    cache.set(tz, format);
+  }
+  return format;
+}
+
 export function formatDateTime(iso: string, tz: string = DEFAULT_TZ): string {
-  return new Intl.DateTimeFormat('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short' }).format(new Date(iso));
+  return cachedFormat(dateTimeFormats, tz, () => new Intl.DateTimeFormat('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short' })).format(new Date(iso));
 }
 
 export function formatTime(iso: string, tz: string = DEFAULT_TZ): string {
-  return new Intl.DateTimeFormat('en-AU', { hour: 'numeric', minute: '2-digit', timeZone: tz }).format(new Date(iso));
+  return cachedFormat(timeFormats, tz, () => new Intl.DateTimeFormat('en-AU', { hour: 'numeric', minute: '2-digit', timeZone: tz })).format(new Date(iso));
 }
 
 /** "in 3 hours", "2 days ago" relative to `now`. */
