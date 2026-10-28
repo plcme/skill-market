@@ -49,11 +49,47 @@ export function resolveBoardMetric(type: BoardType, metric?: string): MetricKey 
   return metric && isValidMetric(type, metric) && METRICS[metric].selectable ? metric : defaultMetric(type);
 }
 
+// Fixture boards are deterministic for this build (DATA_AS_OF is fixed), so reuse
+// them instead of re-snapshotting every instrument per request. Bound memory
+// because queries originate in request URLs: an All board is roughly 170 KB, and
+// 128 entries hold every unsearched board (126 type/measure/sort/layer combinations).
+export const BOARD_CACHE_LIMIT = 128;
+const boardCache = new Map<string, Board>();
+const aliasKeys = new WeakMap<readonly SearchAlias[], number>();
+let aliasKeyCount = 0;
+
+/** Aliases change search results, so boards built with a different alias list are cached apart. */
+function aliasKey(aliases: readonly SearchAlias[]): number {
+  let key = aliasKeys.get(aliases);
+  if (key === undefined) {
+    key = ++aliasKeyCount;
+    aliasKeys.set(aliases, key);
+  }
+  return key;
+}
+
+/** Entries currently held by the board cache (for tests). */
+export function boardCacheSize(): number {
+  return boardCache.size;
+}
+
 export function getBoard(query: BoardQuery, aliases?: readonly SearchAlias[]): Board {
   const metric = resolveBoardMetric(query.type, query.metric);
   const sort = query.sort ?? 'value';
   const needle = query.q?.trim().toLowerCase() ?? '';
   const layer = query.type === 'skill' ? query.layer ?? null : null;
+  const key = JSON.stringify([query.type, metric, sort, layer, needle, query.filter, needle && aliases?.length ? aliasKey(aliases) : 0]);
+  let board = boardCache.get(key);
+  if (!board) {
+    board = buildBoard(query, metric, sort, needle, layer, aliases);
+    if (boardCache.size >= BOARD_CACHE_LIMIT) boardCache.delete(boardCache.keys().next().value!);
+    boardCache.set(key, board);
+  }
+  // Callers get their own rows array; the cached board itself never escapes.
+  return { ...board, rows: board.rows.slice() };
+}
+
+function buildBoard(query: BoardQuery, metric: MetricKey, sort: BoardSort, needle: string, layer: SkillLayer | null, aliases?: readonly SearchAlias[]): Board {
   const pool = INSTRUMENTS.filter(i => (query.type === 'all' || i.type === query.type) && (!layer || i.skill_layer === layer));
   const matches = needle ? new Set(searchInstruments(needle, INSTRUMENTS.length, { type: query.type === 'all' ? undefined : query.type, layer: layer ?? undefined, aliases }).map(h => h.instrument.slug)) : null;
   const rows = pool
