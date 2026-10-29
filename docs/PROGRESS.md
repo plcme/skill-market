@@ -19,14 +19,15 @@
 - Lint/types357 units/six mobile-tablet onboarding checks passed; isolated build exit0, same3019 updated/visually checked. Previous50 responsive passes belong to previous commit; this round reran six related cases only.
 - Uncommitted/unpushed/unmerged; earlier copy reduction committed869621a.
 
-## Current state (2026-10-28)
+## Current state (2026-10-30)
 
+- **main `b36a6b7` (2026-10-29), not released**: PRs #27 (docs), #22 (Dependabot `download-artifact` v8, deploy workflow only, untested until the next `v*` tag), #28 (FE-R10) and #29 (FE-R11) merged. `brewdex.app` still serves `v0.1.10`.
 - **`v0.1.10` live on `brewdex.app`** (main `71d263c`, PR #26): v0.1.9 content plus per-request CPU cuts. Workshop demo on `brewdex.app` on 2026-10-30; freeze deploys the day before.
 - **Cloudflare Error 1102 (Worker CPU limit)**: Workers Free allows ~10 ms CPU per request; SSR of every public page exceeds it (local warm: `/market` ~31 ms, details ~18 ms after PR #26). Live 8-request sample after v0.1.10: list view 0/8 failures (was 4/6), draftsperson 0/8 (was 6/6), card view 4/8, `/s/python` 3/8. Root causes: synthetic engine runs per request, `force-dynamic`/no ISR contrary to architecture §4.3, all 133 KB of messages sent to every page, 834 KB `/market` HTML. User to upgrade Workers Paid (decision 19).
 - **Contract not wired**: `src/lib/contract` defines `Backend`, but no page uses it; 70 UI files (54 client) import demo/engine modules directly. Planned contract-first frontend refactor after the workshop (decision 20).
 - `www.brewdex.app` 301-redirects to the apex (Cloudflare DNS record + redirect rule, 2026-10-28).
 - Vercel Production also builds every main merge (latest `8df8bdd`); it is not the public site.
-- All merged branches/worktrees cleaned 2026-10-28; nine Dependabot PRs targeting retired `dev` closed. Open: Dependabot #22 (main).
+- All merged branches/worktrees cleaned 2026-10-28; nine Dependabot PRs targeting retired `dev` closed.
 - M0 locally complete, cloud pending SETUP.
 - **Git since 2026-10-23**: only main long-lived; branch→PR→authorised integration merge→separate authorised v* release push. dev discontinued and deleted.
 - Interactive prototype, synthetic numbers, browser localStorage users, **no Supabase**.
@@ -95,10 +96,14 @@ Known non-blocking leftovers: all-thin copy/plot mismatch breakdown-section92; d
 | R7 |10-22| `fe-r7` | No board Filter/f/MEASURE label | One breadcrumb/search f return then pass |
 | R8 |10-25| `fe-r8` | No homepage, opening tagline/heatmap, entry-based deep-link omission, wordmark, instant flip, `APP_NAME` docs | Two returns then pass; user-trial follow-up also two returns then pass |
 | R9 |10-25| `fe-r9` | Saved card one button, dev `copy-review-v2`/43 onboarding-login entries, removable/Undo/local removed skills, next/role Watch | Pending |
+| R10 |10-29| `fe-r10` | Searchable university/degree pickers, paged market board (24 + Show more), pinned board tabs, trimmed landing band | Two returns then pass; pre-merge e2e fix (pinned tabs no longer shift the board) not re-reviewed |
+| R11 |10-29| `fe-r11` | Shared `Stepper` (coffee chat, onboarding, practitioner join): page-gutter width, no rules, pinned under the header, progressive draw/pop motion, "(done)" names | Two returns then pass |
 
 See `docs/reviews/FE-R*.md` and git log.
 
 ## Log (newest first)
+
+- 2026-10-29: Merged #27, #22, #28 (FE-R10) and #29 (FE-R11) into main; no tag. CI on #28 had 9 e2e failures: pinned board tabs grew 9–12px when stuck and pushed the board (hidden in Chrome by scroll anchoring) — fixed by keeping flow height constant and dropping the bar with a transform; three stale tests (typing before hydration, JavaScript beyond the first board page, onboarding market link moved below the board, listbox now named University). Full e2e green on both PRs.
 
 - 2026-10-28: Diagnosed Error 1102 with a CPU profile of an unminified production build. PR #26 (review PASS) reuses Intl formatters, builds palette suggestions lazily and memoises boards (128 entries); local warm `/market` 58→31 ms, details ~25→18 ms. Released `v0.1.10`; release page check passed. `www` redirect configured by the user.
 
