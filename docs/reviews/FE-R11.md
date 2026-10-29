@@ -58,3 +58,31 @@ Verified:
 ### Suggestions (non-blocking)
 
 - None new.
+
+## Round 3 — Pass
+
+Scope `ee2a79a..48a1458`, one commit (48a1458). It changes only `e2e/responsive.spec.ts`. No E2E or browser run. Acceptance command results: lint and typecheck were clean in Round 2, and this commit touches only one e2e line pair, so they were not re-run.
+
+I walked the onboarding test (lines 135–178) step by step. "Current" is the step the test is on at each line:
+
+| Line | Current step | Button | Expected name | Matches |
+|---|---|---|---|---|
+| 140 | `start` | Skills, current | "2 Skills" | yes |
+| 158 | `start` | Basics, done, enabled | "1 Basics (done)" | yes |
+| 159 | `basics` | Basics, current | "1 Basics" | yes |
+| 160 | `basics` | Skills, not done | "2 Skills" | yes |
+| 163 | `done` | Your board, current | "3 Your board" | yes |
+| 175 | `done` | Skills, done | "2 Skills (done)" | yes |
+
+- Line 160: Skills is enabled because the sample student has basics.
+- Line 175: Skills is enabled. The test then expects `step=start`.
+
+Round 2 fix 1 is fixed. No other step-button names are matched by exact name in `e2e/`.
+
+### Required fixes (blocking)
+
+None.
+
+### Suggestions (non-blocking)
+
+- None new.
