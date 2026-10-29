@@ -116,10 +116,12 @@ test('onboarding basics: one question per bottom sheet on phones, inline fields 
   const sheet = page.getByRole('dialog');
   await expect(sheet.getByRole('heading', { name: 'University' })).toBeVisible();
   await noSeriousAxe(page);
-  await sheet.getByRole('combobox').selectOption({ index: 1 });
+  await sheet.getByRole('combobox').click();
+  await sheet.getByRole('option').first().click();
   await sheet.getByRole('button', { name: /Next question/ }).click();
   await expect(sheet.getByRole('heading', { name: 'Degree' })).toBeVisible();
-  await sheet.getByRole('combobox').selectOption({ index: 1 });
+  await sheet.getByRole('combobox').click();
+  await sheet.getByRole('option').first().click();
   await sheet.getByRole('button', { name: /Next question/ }).click();
   await expect(sheet.getByRole('heading', { name: 'Year of study' })).toBeVisible();
   await sheet.getByRole('combobox').selectOption({ index: 1 });
