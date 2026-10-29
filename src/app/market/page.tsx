@@ -17,7 +17,8 @@ import { BOARD_ANCHOR_ID } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
 
 // Board type tabs, Watching included.
-// Pinned under the header (`data-stuck` on the bar) the tabs shrink and breathe.
+// Pinned under the header (`data-stuck` on the bar) the tabs shrink and breathe; the nav keeps
+// their unpinned height (19/26px text + pb-2.5 + 2px rule) so pinning never moves the board.
 const TAB = 'shrink-0 border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-[color,font-size] sm:text-[26px] group-data-[stuck=true]:text-[18px] sm:group-data-[stuck=true]:text-[22px]';
 const TAB_CURRENT = 'border-ink text-ink';
 const TAB_OTHER = 'border-transparent text-muted hover:text-ink';
@@ -57,7 +58,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
         <BoardTabsBar>
           {/* Scrolls sideways at narrow widths; the nav (not the tabs) overlaps the rule so nothing overflows vertically. */}
-          <nav aria-label={t('typeTabsLabel')} className="-mb-px flex min-w-0 items-end gap-x-3 overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:gap-x-6 [&::-webkit-scrollbar]:hidden">
+          <nav aria-label={t('typeTabsLabel')} className="-mb-px flex h-[31px] min-w-0 items-end sm:h-[38px] gap-x-3 overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:gap-x-6 [&::-webkit-scrollbar]:hidden">
             <Link
               scroll={false}
               href={typeHref('watching')}

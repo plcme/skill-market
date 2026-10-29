@@ -108,7 +108,7 @@ for (const role of ['Practitioner', 'Admin'] as const) {
 test('onboarding basics: one question per bottom sheet on phones, inline fields otherwise', async ({ page }, info) => {
   await signInForOnboarding(page);
   if (info.project.name !== 'mobile') {
-    await expect(page.getByLabel('University')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'University' })).toBeVisible();
     return;
   }
   await expect(page.getByRole('combobox')).toHaveCount(0);
@@ -168,7 +168,7 @@ test('onboarding review: degree heading, skill actions and clickable steps', asy
     await group.getByRole('button', { name: 'Watch all', exact: true }).click();
     await expect(group.getByRole('button', { name: 'All watched', exact: true })).toBeDisabled();
   }
-  await expect(page.locator('main header').getByRole('link', { name: 'Explore the market', exact: true })).toHaveAttribute('href', '/market');
+  await expect(page.getByRole('main').getByRole('link', { name: 'Explore the market', exact: true })).toHaveAttribute('href', '/market');
   await noHorizontalOverflow(page);
   await noSeriousAxe(page);
 
