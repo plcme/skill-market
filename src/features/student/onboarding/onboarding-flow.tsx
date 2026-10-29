@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { Stepper } from '@/components/ui/stepper';
 import { useDB } from '@/lib/demo/store';
 import { useAction } from '@/lib/api/client';
 import { completeTier0, selectOnboarding, skipOnboarding, type OnboardingState } from '@/lib/api/onboarding';
@@ -25,35 +26,7 @@ import { ReviewText } from '@/features/dev/copy-review';
 
 type Step = 'basics' | 'start' | 'done';
 const STEPS: Step[] = ['basics', 'start', 'done'];
-
-function Progress({ step, hasBasics, onStep }: { step: Step; hasBasics: boolean; onStep: (step: Step) => void }) {
-  const t = useTranslations('Onboarding');
-  const current = STEPS.indexOf(step);
-  const labels = [t('progress.basics'), t('progress.skills'), t('progress.board')];
-  return (
-    <nav aria-label={t('progress.label')}>
-      <ol className="flex items-center gap-2 text-[12.5px]">
-        {STEPS.map((target, i) => {
-          const done = i < current;
-          const active = target === step;
-          return (
-            <li key={target} className="flex min-w-0 items-center gap-2">
-              <button type="button" onClick={() => onStep(target)} disabled={target === 'start' && !hasBasics} aria-current={active ? 'step' : undefined} aria-label={`${i + 1} ${labels[i]}`} className="flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1 text-left hover:bg-sunken disabled:cursor-not-allowed disabled:opacity-45">
-                <span aria-hidden className={cn('grid size-6 shrink-0 place-items-center rounded-full border font-mono text-[11px]', done ? 'border-ink bg-ink text-paper' : active ? 'border-ink text-ink' : 'border-rule text-faint')}>
-                  {done ? <Check className="size-3.5" /> : i + 1}
-                </span>
-                <span className={cn('truncate', active ? 'font-medium text-ink' : 'text-muted')}>{labels[i]}</span>
-                {done ? <span className="sr-only">{t('progress.complete')}</span> : null}
-              </button>
-              {i < labels.length - 1 ? <span aria-hidden className="h-px w-3 bg-rule sm:w-10" /> : null}
-            </li>
-          );
-        })}
-      </ol>
-      <p className="kicker mt-3">{t('progress.count', { n: current + 1, total: STEPS.length })}</p>
-    </nav>
-  );
-}
+const PROGRESS_LABEL = { basics: 'basics', start: 'skills', done: 'board' } as const;
 
 type BasicsKey = 'university_id' | 'degree_id' | 'year';
 const BASICS: BasicsKey[] = ['university_id', 'degree_id', 'year'];
@@ -230,49 +203,59 @@ export function OnboardingFlow() {
   const head = titles[step];
 
   return (
-    <Container className="pb-20">
-      <div className="flex flex-col gap-6 pt-8 sm:pt-12">
-        <Progress step={step} hasBasics={hasBasics} onStep={go} />
-        <header>
-          <p className="kicker mb-3">{head.kicker}</p>
-          <h1 className="display max-w-3xl text-[40px] sm:text-[56px]">{head.title}</h1>
-          {head.lede ? <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{head.lede}</p> : null}
-        </header>
-      </div>
+    <div className="pb-20">
+      <Stepper
+        label={t('progress.label')}
+        steps={STEPS.map(id => ({ id, label: t(`progress.${PROGRESS_LABEL[id]}`) }))}
+        current={STEPS.indexOf(step)}
+        canSelect={i => STEPS[i] !== 'start' || hasBasics}
+        onSelect={i => go(STEPS[i])}
+        completeLabel={t('progress.complete')}
+        className="mt-6 sm:mt-8"
+      />
+      <Container>
+        <div className="flex flex-col gap-6 pt-8 sm:pt-12">
+          <header>
+            <p className="kicker mb-3">{head.kicker}</p>
+            <h1 className="display max-w-3xl text-[40px] sm:text-[56px]">{head.title}</h1>
+            {head.lede ? <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{head.lede}</p> : null}
+          </header>
+        </div>
 
-      <div className="mt-8">
-        {step === 'basics' ? (
-          <BasicsForm key={`${state.university_id}-${state.degree_id}-${state.year}`} state={state} onDone={() => go('start')} onSkip={() => doSkip('tier0')} skipping={skipState.pending} />
-        ) : null}
+        <div className="mt-8">
+          {step === 'basics' ? (
+            <BasicsForm key={`${state.university_id}-${state.degree_id}-${state.year}`} state={state} onDone={() => go('start')} onSkip={() => doSkip('tier0')} skipping={skipState.pending} />
+          ) : null}
 
-        {step === 'start' ? (
-          <div className="flex flex-col gap-10">
-            <MiniBoard skills={board} view="skills" />
-            <Button size="lg" className="self-start" onClick={() => go('done')}>{t('seeBoard')}<ArrowRight aria-hidden /></Button>
-            <Button variant="link" className="self-start" onClick={() => go('basics')}><ArrowLeft aria-hidden />{t('editBasics')}</Button>
-          </div>
-        ) : null}
-
-        {step === 'done' ? (
-          <div className="flex flex-col gap-10">
-            {hasBasics ? <MiniBoard skills={board} view="recommendations" /> : (
-              // Skipped: pair the generic first steps with the way back to a personal board.
-              <div className="grid items-start gap-10 lg:grid-cols-2">
-                <MiniBoard skills={board} view="recommendations" />
-                <section aria-labelledby="done-personalise" className="border-t-2 border-rule-strong pt-3">
-                  <p className="kicker">{t('basicsKicker')}</p>
-                  <h2 id="done-personalise" className="font-serif text-[24px] leading-tight">{t('basicsTitle')}</h2>
-                  <Button variant="outline" size="lg" className="mt-6" onClick={() => go('basics')}>{t('startOver')}<ArrowRight aria-hidden /></Button>
-                </section>
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button asChild size="lg"><Link href="/market">{t('toMarket')}<ArrowRight aria-hidden /></Link></Button>
-              {hasBasics ? <Button variant="link" onClick={() => go('start')}><ArrowLeft aria-hidden />{t('reviewSkills')}</Button> : null}
+          {step === 'start' ? (
+            <div className="flex flex-col gap-10">
+              <MiniBoard skills={board} view="skills" />
+              <Button size="lg" className="self-start" onClick={() => go('done')}>{t('seeBoard')}<ArrowRight aria-hidden /></Button>
+              <Button variant="link" className="self-start" onClick={() => go('basics')}><ArrowLeft aria-hidden />{t('editBasics')}</Button>
             </div>
-          </div>
-        ) : null}
-      </div>
-    </Container>
+          ) : null}
+
+          {step === 'done' ? (
+            <div className="flex flex-col gap-10">
+              {hasBasics ? <MiniBoard skills={board} view="recommendations" /> : (
+                // Skipped: pair the generic first steps with the way back to a personal board.
+                <div className="grid items-start gap-10 lg:grid-cols-2">
+                  <MiniBoard skills={board} view="recommendations" />
+                  <section aria-labelledby="done-personalise" className="border-t-2 border-rule-strong pt-3">
+                    <p className="kicker">{t('basicsKicker')}</p>
+                    <h2 id="done-personalise" className="font-serif text-[24px] leading-tight">{t('basicsTitle')}</h2>
+                    <Button variant="outline" size="lg" className="mt-6" onClick={() => go('basics')}>{t('startOver')}<ArrowRight aria-hidden /></Button>
+                  </section>
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-3">
+                <Button asChild size="lg"><Link href="/market">{t('toMarket')}<ArrowRight aria-hidden /></Link></Button>
+                {hasBasics ? <Button variant="link" onClick={() => go('start')}><ArrowLeft aria-hidden />{t('reviewSkills')}</Button> : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </Container>
+    </div>
   );
 }
