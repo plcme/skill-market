@@ -176,7 +176,7 @@
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @keyframes step-pop { from { transform: scale(0); } to { transform: none; } }
-@keyframes step-draw { from { transform: scaleX(0); } }
+@keyframes step-draw { from { width: 0; } }
 @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 
 @layer base {
