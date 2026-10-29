@@ -17,7 +17,8 @@ import { BOARD_ANCHOR_ID } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
 
 // Board type tabs, Watching included.
-const TAB = 'shrink-0 border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-colors sm:text-[26px]';
+// Pinned under the header (`data-stuck` on the bar) the tabs shrink and breathe.
+const TAB = 'shrink-0 border-b-2 pb-2.5 font-serif text-[19px] leading-none transition-[color,font-size] sm:text-[26px] group-data-[stuck=true]:text-[18px] sm:group-data-[stuck=true]:text-[22px]';
 const TAB_CURRENT = 'border-ink text-ink';
 const TAB_OTHER = 'border-transparent text-muted hover:text-ink';
 
@@ -63,11 +64,11 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
               aria-current={tab === 'watching' ? 'page' : undefined}
               className={cn(TAB, 'inline-flex items-baseline gap-1.5 sm:gap-2', tab === 'watching' ? TAB_CURRENT : TAB_OTHER)}
             >
-              <Bookmark className="size-[15px] sm:size-5" strokeWidth={1.75} aria-hidden />
+              <Bookmark className="size-[15px] sm:size-5 sm:group-data-[stuck=true]:size-[18px]" strokeWidth={1.75} aria-hidden />
               {t('types.watching')}
               <Suspense fallback={null}><WatchingTabCount /></Suspense>
             </Link>
-            <span aria-hidden className="mb-2.5 h-5 w-px shrink-0 bg-rule-strong sm:h-6" />
+            <span aria-hidden className="mb-2.5 h-5 w-px shrink-0 bg-rule-strong sm:h-6 group-data-[stuck=true]:h-4 sm:group-data-[stuck=true]:h-5" />
             {BOARD_TYPES.map(k => (
               <Link
                 key={k}
