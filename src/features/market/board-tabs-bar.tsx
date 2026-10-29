@@ -8,7 +8,7 @@ const HEADER = 65;
 
 /**
  * Keeps the board's type tabs pinned under the site header while the list scrolls,
- * looser and smaller while pinned. Picking a tab (the current one included) glides
+ * looser and smaller while pinned, at a constant height in the flow. Picking a tab (the current one included) glides
  * back to the top of the board.
  */
 export function BoardTabsBar({ children }: { children: React.ReactNode }) {
@@ -34,10 +34,11 @@ export function BoardTabsBar({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div ref={sentinel} aria-hidden className="h-0" />
+      {/* Pinned, the bar drops a little (a paper strip fills the gap) instead of growing, so the board under it never shifts. */}
       <div
         onClick={onClick}
         data-stuck={stuck}
-        className="group sticky top-[65px] z-30 -mx-4 border-b border-rule bg-paper px-4 pt-2 transition-[padding] data-[stuck=true]:pt-5 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10"
+        className="group sticky top-[65px] z-30 -mx-4 border-b border-rule bg-paper px-4 pt-2 transition-transform before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:hidden before:h-3 before:bg-paper data-[stuck=true]:translate-y-3 data-[stuck=true]:before:block sm:-mx-6 sm:px-6 sm:data-[stuck=true]:translate-y-2 sm:before:h-2 lg:-mx-10 lg:px-10"
       >
         {children}
       </div>
