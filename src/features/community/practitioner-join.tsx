@@ -16,8 +16,8 @@ import { RequireSession } from '@/components/shell/require-session';
 import { Button } from '@/components/ui/button';
 import { Checkbox, Field, Input, Textarea } from '@/components/ui/form';
 import { Card, Container, Notice, PageHeader } from '@/components/ui/primitives';
+import { Stepper } from '@/components/ui/stepper';
 import { useToast } from '@/components/ui/toast';
-import { cn } from '@/lib/utils';
 import { AvailabilityEditor } from './availability-editor';
 import { ProfileForm } from './profile-form';
 import { useErrorText } from './shared';
@@ -42,37 +42,35 @@ function Flow({ db, role }: { db: DemoDB; role?: string }) {
   const goNext = () => setOverride(null);
 
   return (
-    <Container className="pb-24">
-      <PageHeader kicker={t('kicker')} title={t('title')} lede={t('lede')} />
-      <ol className="mb-8 grid grid-cols-5 gap-2 border-y border-rule py-3" aria-label={t('stepOf', { n: index + 1, total: STEPS.length })}>
-        {STEPS.map((s, i) => (
-          <li key={s} aria-current={s === step ? 'step' : undefined} className="flex min-w-0 flex-col gap-1.5">
-            <span className={cn('h-1 rounded-full', i < index ? 'bg-ink' : i === index ? 'bg-accent' : 'bg-rule')} aria-hidden />
-            <button
-              type="button"
-              disabled={i > STEPS.indexOf(derived) || s === 'done' || s === 'agree'}
-              onClick={() => setOverride(s)}
-              className={cn('truncate text-left text-[12.5px]', i <= index ? 'text-ink' : 'text-muted', s === step && 'font-medium')}
-            >
-              {i < index ? <Check className="mr-1 inline size-3" aria-hidden /> : null}{t(`steps.${s}`)}
-            </button>
-          </li>
-        ))}
-      </ol>
-      <div className="max-w-3xl" aria-live="polite">
-        {step === 'agree' ? <AgreeStep /> : null}
-        {step === 'email' && mine ? <EmailStep db={db} onDone={goNext} /> : null}
-        {step === 'profile' && mine ? (
-          <section>
-            <h2 className="font-serif text-[28px] leading-tight">{t('profileTitle')}</h2>
-            <p className="mb-6 mt-2 text-ink-2">{t('profileBody')}</p>
-            <ProfileForm practitioner={mine} now={clockNow(db)} submitLabel={t('profileSave')} onSaved={goNext} defaultRole={role} />
-          </section>
-        ) : null}
-        {step === 'availability' && mine ? <AvailabilityStep db={db} /> : null}
-        {step === 'done' && mine ? <DoneStep pending={mine.verification !== 'verified'} /> : null}
-      </div>
-    </Container>
+    <>
+      <Container>
+        <PageHeader kicker={t('kicker')} title={t('title')} lede={t('lede')} />
+      </Container>
+      <Stepper
+        label={t('stepOf', { n: index + 1, total: STEPS.length })}
+        steps={STEPS.map(id => ({ id, label: t(`steps.${id}`) }))}
+        current={index}
+        canSelect={i => i <= STEPS.indexOf(derived) && STEPS[i] !== 'done' && STEPS[i] !== 'agree'}
+        onSelect={i => setOverride(STEPS[i])}
+        completeLabel={t('stepDone')}
+        className="mb-8"
+      />
+      <Container className="pb-24">
+        <div className="max-w-3xl" aria-live="polite">
+          {step === 'agree' ? <AgreeStep /> : null}
+          {step === 'email' && mine ? <EmailStep db={db} onDone={goNext} /> : null}
+          {step === 'profile' && mine ? (
+            <section>
+              <h2 className="font-serif text-[28px] leading-tight">{t('profileTitle')}</h2>
+              <p className="mb-6 mt-2 text-ink-2">{t('profileBody')}</p>
+              <ProfileForm practitioner={mine} now={clockNow(db)} submitLabel={t('profileSave')} onSaved={goNext} defaultRole={role} />
+            </section>
+          ) : null}
+          {step === 'availability' && mine ? <AvailabilityStep db={db} /> : null}
+          {step === 'done' && mine ? <DoneStep pending={mine.verification !== 'verified'} /> : null}
+        </div>
+      </Container>
+    </>
   );
 }
 
