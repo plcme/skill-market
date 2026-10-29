@@ -8,7 +8,7 @@ import { BOARD_ANCHOR_ID } from './intro';
  */
 export function BoardTabsBar({ children }: { children: React.ReactNode }) {
   const onClick = (e: React.MouseEvent) => {
-    if (!(e.target as HTMLElement).closest('a')) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !(e.target as HTMLElement).closest('a')) return;
     const board = document.getElementById(BOARD_ANCHOR_ID);
     if (!board) return;
     const header = document.querySelector<HTMLElement>('[data-site-header]')?.offsetHeight ?? 0;

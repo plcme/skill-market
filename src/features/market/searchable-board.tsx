@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, SearchX } from 'lucide-react';
@@ -26,6 +26,15 @@ export function SearchableBoard({ initial, total, query, watching, view, resetHr
   const [page, setPage] = useState({ key: queryKey, shown: BOARD_PAGE });
   if (page.key !== queryKey) setPage({ key: queryKey, shown: BOARD_PAGE });
   const shown = page.key === queryKey ? page.shown : BOARD_PAGE;
+  // After "Show more", focus moves to the first new row (the button may be gone).
+  const listRef = useRef<HTMLDivElement>(null);
+  const focusFrom = useRef<number | null>(null);
+  useEffect(() => {
+    if (focusFrom.current === null) return;
+    const first = listRef.current?.querySelectorAll('ul > li')[focusFrom.current];
+    focusFrom.current = null;
+    first?.querySelector<HTMLElement>('a[href]')?.focus();
+  }, [shown]);
   const searching = Boolean(query.q?.trim() && aliases.length);
   const full = useMemo(
     () => searching || shown > initial.rows.length && total > initial.rows.length ? getBoard(query, aliases) : null,
@@ -60,7 +69,7 @@ export function SearchableBoard({ initial, total, query, watching, view, resetHr
               ) : (
                 <>
                   {/* Past the first pages the list fades out; more rows render only on request. */}
-                  <div className="relative">
+                  <div ref={listRef} className="relative">
                     {view === 'cards' ? (
                       <BoardCards rows={rows} filter={filter} metric={board.metric} selectable />
                     ) : (
@@ -72,8 +81,8 @@ export function SearchableBoard({ initial, total, query, watching, view, resetHr
                     {more ? <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-56 bg-gradient-to-b from-transparent via-paper/80 to-paper" /> : null}
                   </div>
                   {more ? (
-                    <div className="relative z-10 -mt-6 flex justify-center">
-                      <Button variant="outline" size="lg" onClick={() => setPage({ key: queryKey, shown: shown + BOARD_PAGE })}>{t('showMore')}<ChevronDown aria-hidden /></Button>
+                    <div className="pointer-events-none relative z-10 -mt-6 flex justify-center">
+                      <Button variant="outline" size="lg" className="pointer-events-auto" onClick={() => { focusFrom.current = rows.length; setPage({ key: queryKey, shown: shown + BOARD_PAGE }); }}>{t('showMore')}<ChevronDown aria-hidden /></Button>
                     </div>
                   ) : null}
                 </>
