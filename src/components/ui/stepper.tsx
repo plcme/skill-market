@@ -8,6 +8,8 @@ export type StepperStep = { id: string; label: string };
 
 // Node diameter; the first and last nodes sit flush with the page gutters.
 const NODE = 27;
+/** Bottom edge of the pinned stepper: 65px header + 84px stepper. Sticky siblings sit below it. */
+export const STEPPER_STICKY_BOTTOM = 149;
 const at = (p: number) => `calc(${NODE / 2}px + (100% - ${NODE}px) * ${p})`;
 
 /**

@@ -18,7 +18,7 @@ import { RequireSession } from '@/components/shell/require-session';
 import { Button } from '@/components/ui/button';
 import { Field, Textarea } from '@/components/ui/form';
 import { Card, Container, Notice, PageHeader } from '@/components/ui/primitives';
-import { Stepper } from '@/components/ui/stepper';
+import { Stepper, STEPPER_STICKY_BOTTOM } from '@/components/ui/stepper';
 import { cn } from '@/lib/utils';
 import { CandidateCard, ContextPanel, SlotPicker } from './chat-parts';
 import { useJobsTick, useViewerTz } from './shared';
@@ -111,6 +111,7 @@ function Flow({ db, slug, filterCode, signal: serverSignal, signalKind, change }
         steps={STEPS.map(id => ({ id, label: t(`steps.${id}`) }))}
         current={stepIndex}
         onSelect={i => setStep(STEPS[i])}
+        completeLabel={t('stepDone')}
         className="mb-8"
       />
       <Container className="pb-24">
@@ -227,7 +228,7 @@ function Flow({ db, slug, filterCode, signal: serverSignal, signalKind, change }
           </div>
 
           <aside className={cn('hidden', !wide && 'lg:block')}>
-            <Card className="sticky top-24 p-5">
+            <Card className="sticky p-5" style={{ top: STEPPER_STICKY_BOTTOM + 16 }}>
               <p className="kicker mb-4 border-b border-rule pb-3">{t('contextTitle')}</p>
               {context}
             </Card>

@@ -117,6 +117,7 @@
       "review": "Review & send"
     },
     "stepOf": "Step {n} of {total}",
+    "stepDone": "(done)",
     "questionTitle": "What are you deciding?",
     "questionHint": "One or two sentences. The person you ask will see it, so be specific — it’s what makes 20 minutes useful.",
     "questionLabel": "The decision you’re stuck on",
@@ -438,6 +439,7 @@
       "done": "Done"
     },
     "stepOf": "Step {n} of {total}",
+    "stepDone": "(done)",
     "agreeTitle": "Two things first",
     "agree18": "I’m 18 or older.",
     "agreeConduct": "I’ve read and will follow the code of conduct — no recruiting, selling or asking students for anything.",

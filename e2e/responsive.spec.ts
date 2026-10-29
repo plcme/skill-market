@@ -157,7 +157,7 @@ test('onboarding review: degree heading, skill actions and clickable steps', asy
   await expect(skills.getByRole('button', { name: 'All watched', exact: true })).toBeDisabled();
   await progress.getByRole('button', { name: '1 Basics (done)', exact: true }).click();
   await expect(progress.getByRole('button', { name: '1 Basics', exact: true })).toHaveAttribute('aria-current', 'step');
-  await progress.getByRole('button', { name: '2 Skills', exact: true }).click();
+  await progress.getByRole('button', { name: '2 Skills (done)', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Bachelor of Advanced Computing', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'See my board', exact: true }).click();
   await expect(progress.getByRole('button', { name: '3 Your board', exact: true })).toHaveAttribute('aria-current', 'step');

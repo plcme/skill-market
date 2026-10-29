@@ -52,6 +52,7 @@ function Flow({ db, role }: { db: DemoDB; role?: string }) {
         current={index}
         canSelect={i => i <= STEPS.indexOf(derived) && STEPS[i] !== 'done' && STEPS[i] !== 'agree'}
         onSelect={i => setOverride(STEPS[i])}
+        completeLabel={t('stepDone')}
         className="mb-8"
       />
       <Container className="pb-24">
