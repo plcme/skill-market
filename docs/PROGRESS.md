@@ -21,8 +21,10 @@
 
 ## Current state (2026-10-28)
 
-- **`v0.1.9` released on `brewdex.app`** from main `8df8bdd` (PR #24): Brewdex name, `/`→`/market`, FE-R8, FE-R9, fuzzy search, Watch all, contract-v1, English docs, statistics scroll decode. Previous production was PR #13 (2026-10-23); `v0.1.7`/`v0.1.8` tags never deployed because they predate the tag trigger.
-- `www.brewdex.app` has no DNS record; user to add a proxied `www` record plus a 301 redirect rule to the apex in Cloudflare.
+- **`v0.1.10` live on `brewdex.app`** (main `71d263c`, PR #26): v0.1.9 content plus per-request CPU cuts. Workshop demo on `brewdex.app` on 2026-10-30; freeze deploys the day before.
+- **Cloudflare Error 1102 (Worker CPU limit)**: Workers Free allows ~10 ms CPU per request; SSR of every public page exceeds it (local warm: `/market` ~31 ms, details ~18 ms after PR #26). Live 8-request sample after v0.1.10: list view 0/8 failures (was 4/6), draftsperson 0/8 (was 6/6), card view 4/8, `/s/python` 3/8. Root causes: synthetic engine runs per request, `force-dynamic`/no ISR contrary to architecture §4.3, all 133 KB of messages sent to every page, 834 KB `/market` HTML. User to upgrade Workers Paid (decision 19).
+- **Contract not wired**: `src/lib/contract` defines `Backend`, but no page uses it; 70 UI files (54 client) import demo/engine modules directly. Planned contract-first frontend refactor after the workshop (decision 20).
+- `www.brewdex.app` 301-redirects to the apex (Cloudflare DNS record + redirect rule, 2026-10-28).
 - Vercel Production also builds every main merge (latest `8df8bdd`); it is not the public site.
 - All merged branches/worktrees cleaned 2026-10-28; nine Dependabot PRs targeting retired `dev` closed. Open: Dependabot #22 (main).
 - M0 locally complete, cloud pending SETUP.
@@ -64,6 +66,8 @@
 | 16 | FR-M4: user removes board selector, fixed Demand, detail-only switch; metric legacy links valid | Amend PRD to detail selector | User PRD edit |
 | 17 | Bare market Maximum update depth exceeded, dehydrated Suspense, preexisting `bec4f18`, not follow-up; `codex/fix-r8-watch-hydration` may fix | Await Codex, verify before merge | Before PR20 merge |
 | 18 | Signed-in dismissed inference returns after degree/unit reinference: `removeSkill` hard-deletes, no rejection record | Accept page-session scope, or add slug-only `student_skill_dismissals`, clearable in settings/skipped reinference. Anonymous `removed_skills` already excluded at merge | Before M3 backend |
+| 19 | Workers Paid (USD 5/month) overturns the free-tier constraint | User agreed to upgrade to stop 1102; revisit after the refactor whether Free fits the 10 ms budget | Before workshop |
+| 20 | Contract-first frontend refactor: separate frontend architecture doc, UI depends only on `Backend`, demo backend precomputed, rendering/caching rules, CPU and payload budgets, lint import guard; per-area PRs starting with market | Main session presents current/target Mermaid diagrams and contract coverage for user approval before any doc or code change. Fold in PR #26 review follow-ups (LRU, read-only snapshots, cache invalidation, stronger test) | After workshop |
 
 Decided, removed from open list: root→market; always-present opening/no seen-cookie/login gate, wordmark top, Market#board; instant directional flip/intercept only opening-board (DESIGN7); no board metric/count line FE-R8,2026-10-25; `Brewdex`/domain, `APP_NAME` default `skill-market`/domain release `Brewdex`; sources ATS+IVI, paid negotiations after customers; polling/update format; future Poisson signals; architecture PRD defaults approved; master level10+ called Expert; skill salary PRD updated; unsplit detail default; npr disables rights split; Watching first; ticker pause button removed.
 
@@ -95,6 +99,8 @@ Known non-blocking leftovers: all-thin copy/plot mismatch breakdown-section92; d
 See `docs/reviews/FE-R*.md` and git log.
 
 ## Log (newest first)
+
+- 2026-10-28: Diagnosed Error 1102 with a CPU profile of an unminified production build. PR #26 (review PASS) reuses Intl formatters, builds palette suggestions lazily and memoises boards (128 entries); local warm `/market` 58→31 ms, details ~25→18 ms. Released `v0.1.10`; release page check passed. `www` redirect configured by the user.
 
 - 2026-10-28: Released `v0.1.9` (main `8df8bdd`) to `brewdex.app`; deploy succeeded but the page check ran one second later, still saw the old 200 at `/` and failed the run. Live site verified by hand (307→`/market`, title Brewdex, no console errors on `/market`); the check now polls up to two minutes. Removed 15 worktrees, 17 local and 11 remote merged branches (including `dev`); closed Dependabot #2–#11 that targeted `dev`. PRs #20, #23, #24 merged earlier.
 
