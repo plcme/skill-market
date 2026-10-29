@@ -80,7 +80,7 @@ function BasicsSelect({ name, value, onChange, describedBy, invalid, id, autoFoc
   const t = useTranslations('Onboarding');
   const q = useBasicsQuestions()[name];
   if (q.searchable) {
-    return <Combobox id={id} value={value} onChange={onChange} options={q.options} placeholder={t('search')} emptyText={t('noMatches')} inline={inline} aria-describedby={describedBy} aria-invalid={invalid} autoFocus={autoFocus} />;
+    return <Combobox id={id} label={q.label} value={value} onChange={onChange} options={q.options} placeholder={t('search')} emptyText={t('noMatches')} inline={inline} aria-describedby={describedBy} aria-invalid={invalid} autoFocus={autoFocus} />;
   }
   return (
     <Select id={id} value={value} onChange={e => onChange(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} autoFocus={autoFocus}>
