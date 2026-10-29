@@ -196,7 +196,6 @@ test.describe('landing', () => {
     await expect(page).toHaveURL(/\/market$/);
     await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Explore the market' })).toHaveAttribute('href', '#board');
-    await expect(page.getByRole('link', { name: 'Personalise' })).toHaveAttribute('href', '/onboarding');
     await expect(page.getByRole('navigation', { name: 'Instrument type' })).toBeInViewport();
     await page.reload();
     await expect(page.getByRole('heading', { level: 2, name: INTRO })).toBeVisible();
@@ -330,7 +329,7 @@ test.describe('landing', () => {
   test('keyboard focus and arrow keys are never snapped away', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/market');
-    await page.getByRole('link', { name: 'Personalise' }).focus();
+    await page.getByRole('link', { name: 'All industries' }).focus();
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(800);

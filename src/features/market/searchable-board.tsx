@@ -1,38 +1,64 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { SearchX } from 'lucide-react';
+import { ChevronDown, SearchX } from 'lucide-react';
 import { getBoard, type Board, type BoardQuery } from '@/lib/queries/market';
-import type { BoardView } from './logic';
+import { BOARD_PAGE, type BoardView } from './logic';
 import { BoardCards, BoardColumnHeader, BoardRows } from './board';
 import { WatchingBoard } from './watching-board';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/primitives';
 import { useSearchAliases } from '@/lib/search/use-search-aliases';
 
-export function SearchableBoard({ initial, query, watching, view, resetHref, allHref }: {
-  initial: Board; query: BoardQuery; watching: boolean; view: BoardView; resetHref: string; allHref: string;
+/**
+ * `initial` may carry only the first page of rows (the server trims it to keep the
+ * payload small); `total` is the full count. Further pages are built here on "Show more".
+ */
+export function SearchableBoard({ initial, total, query, watching, view, resetHref, allHref }: {
+  initial: Board; total: number; query: BoardQuery; watching: boolean; view: BoardView; resetHref: string; allHref: string;
 }) {
   const t = useTranslations('MarketPage');
   const aliases = useSearchAliases();
-  const board = useMemo(() => query.q?.trim() && aliases.length ? getBoard(query, aliases) : initial, [query, aliases, initial]);
+  // A new query (tab, sort, search) starts again from the first page.
+  const queryKey = JSON.stringify(query);
+  const [page, setPage] = useState({ key: queryKey, shown: BOARD_PAGE });
+  if (page.key !== queryKey) setPage({ key: queryKey, shown: BOARD_PAGE });
+  const shown = page.key === queryKey ? page.shown : BOARD_PAGE;
+  // After "Show more", focus moves to the first new row (the button may be gone).
+  const listRef = useRef<HTMLDivElement>(null);
+  const focusFrom = useRef<number | null>(null);
+  useEffect(() => {
+    if (focusFrom.current === null) return;
+    const first = listRef.current?.querySelectorAll('ul > li')[focusFrom.current];
+    focusFrom.current = null;
+    first?.querySelector<HTMLElement>('a[href]')?.focus();
+  }, [shown]);
+  const searching = Boolean(query.q?.trim() && aliases.length);
+  const full = useMemo(
+    () => searching || shown > initial.rows.length && total > initial.rows.length ? getBoard(query, aliases) : null,
+    [searching, shown, initial, total, query, aliases],
+  );
+  const board = full ?? initial;
+  const count = full ? full.rows.length : total;
+  const rows = watching ? board.rows : board.rows.slice(0, shown);
+  const more = !watching && count > rows.length;
   const { type, filter, q = '' } = query;
-  const firstOk = board.rows.find(r => r.metric.status === 'ok') ?? board.rows[0];
-  const firstChangeOk = board.rows.find(r => r.change.status === 'ok') ?? board.rows[0];
+  const firstOk = rows.find(r => r.metric.status === 'ok') ?? rows[0];
+  const firstChangeOk = rows.find(r => r.change.status === 'ok') ?? rows[0];
   return <>
         {watching ? (
           <WatchingBoard rows={board.rows} filter={filter} metric={board.metric} view={view} q={q} allHref={allHref} resetHref={resetHref} />
         ) : (
           <>
             <p className="sr-only" aria-live="polite">
-              {t(`count.${type}`, { n: board.rows.length })}
+              {t(`count.${type}`, { n: count })}
               {q ? <>{' · '}{t('matching', { q })}</> : null}
             </p>
 
             <div className="mt-5">
-              {board.rows.length === 0 ? (
+              {rows.length === 0 ? (
                 <EmptyState
                   icon={SearchX}
                   title={t('emptyTitle')}
@@ -40,12 +66,25 @@ export function SearchableBoard({ initial, query, watching, view, resetHref, all
                 >
                   {q ? t('emptyBodyQuery', { q }) : t('emptyBody')}
                 </EmptyState>
-              ) : view === 'cards' ? (
-                <BoardCards rows={board.rows} filter={filter} metric={board.metric} selectable />
               ) : (
                 <>
-                  <BoardColumnHeader type={type} metric={board.metric} filter={filter} sample={firstOk} changeSample={firstChangeOk} />
-                  <BoardRows rows={board.rows} filter={filter} metric={board.metric} showType={type === 'all'} selectable />
+                  {/* Past the first pages the list fades out; more rows render only on request. */}
+                  <div ref={listRef} className="relative">
+                    {view === 'cards' ? (
+                      <BoardCards rows={rows} filter={filter} metric={board.metric} selectable />
+                    ) : (
+                      <>
+                        <BoardColumnHeader type={type} metric={board.metric} filter={filter} sample={firstOk} changeSample={firstChangeOk} />
+                        <BoardRows rows={rows} filter={filter} metric={board.metric} showType={type === 'all'} selectable />
+                      </>
+                    )}
+                    {more ? <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-56 bg-gradient-to-b from-transparent via-paper/80 to-paper" /> : null}
+                  </div>
+                  {more ? (
+                    <div className="pointer-events-none relative z-10 -mt-6 flex justify-center">
+                      <Button variant="outline" size="lg" className="pointer-events-auto" onClick={() => { focusFrom.current = rows.length; setPage({ key: queryKey, shown: shown + BOARD_PAGE }); }}>{t('showMore')}<ChevronDown aria-hidden /></Button>
+                    </div>
+                  ) : null}
                 </>
               )}
             </div>

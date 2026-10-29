@@ -45,6 +45,7 @@ test('full search handles typos and core competencies without runtime or accessi
 
 test('board debounces fuzzy input, respects IME and clears results through the URL', async ({ page }) => {
   await page.goto('/market?type=skill&sort=change');
+  await page.waitForLoadState('networkidle');
   const input = page.getByLabel('Filter this board by name');
   await input.dispatchEvent('compositionstart');
   await input.fill('pyhton');
@@ -55,9 +56,11 @@ test('board debounces fuzzy input, respects IME and clears results through the U
   await expect(page).toHaveURL(/sort=change/);
   await expect(page.getByRole('link', { name: 'Python', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'JavaScript', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Show more', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: /Clear.*filter|Clear.*search/i }).click();
   await expect(page).not.toHaveURL(/q=/);
-  await expect(page.getByRole('link', { name: 'JavaScript', exact: true }).first()).toBeVisible();
+  // The whole board is back: it is paged again, so its later rows wait behind "Show more".
+  await expect(page.getByRole('button', { name: 'Show more', exact: true })).toBeVisible();
 });
 
 test('comparison searches only eligible candidates and selects a typo match', async ({ page }) => {

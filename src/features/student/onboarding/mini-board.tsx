@@ -12,6 +12,7 @@ import { hideAnonymousSuggestion, unhideAnonymousSuggestion } from '@/lib/api/on
 import { useAction } from '@/lib/api/client';
 import { instrumentPath } from '@/lib/links';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast';
 import { WatchAllButton } from '@/components/market/watch-all-button';
 import { WatchButton } from '@/components/market/watch-button';
@@ -137,7 +138,7 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, view, li
       ) : null}
 
       {view === 'recommendations' ? (
-      <div className="grid items-start gap-10 lg:grid-cols-2">
+      <div className={cn('grid items-start gap-10', roles.length && 'lg:grid-cols-2')}>
         {roles.length ? (
           <section aria-labelledby="mb-roles">
             <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
@@ -164,7 +165,7 @@ export function MiniBoard({ skills: { answered, suggestions, anchors }, view, li
           <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-rule-strong pb-3 pt-3">
             <div>
               <p className="kicker">{t('board.nextKicker')}</p>
-              <h2 id="mb-next" ref={nextHeadingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{t('board.nextTitle')}</h2>
+              <h2 id="mb-next" ref={nextHeadingRef} tabIndex={-1} className="font-serif text-[24px] leading-tight outline-none">{steps.some(step => step.because) ? t('board.nextTitle') : t('board.firstTitle')}</h2>
             </div>
             <WatchAllButton slugs={steps.map(step => step.skill.slug)} filter={DEFAULT_FILTER} />
           </div>

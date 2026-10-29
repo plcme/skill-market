@@ -61,6 +61,8 @@
     "degree": "Degree",
     "year": "Year of study",
     "choose": "Choose…",
+    "search": "Search…",
+    "noMatches": "No matches",
     "sheet": {
       "count": "Question {n} of {total}",
       "answer": "Answer",

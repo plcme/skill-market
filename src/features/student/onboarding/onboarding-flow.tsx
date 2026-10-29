@@ -12,7 +12,7 @@ import type { StudyYear } from '@/lib/api/types';
 import { DEGREES, getDegree, getUniversity, STUDY_YEARS, UNIVERSITIES } from '@/lib/demo/education';
 import { loginHref } from '@/lib/links';
 import { Button } from '@/components/ui/button';
-import { Field, Select } from '@/components/ui/form';
+import { Combobox, Field, Select, type ComboboxOption } from '@/components/ui/form';
 import { Container, PageSkeleton } from '@/components/ui/primitives';
 import { Dialog, SheetContent } from '@/components/ui/overlay';
 import { PHONE_QUERY, useMediaQuery } from '@/lib/hooks/use-media-query';
@@ -61,13 +61,13 @@ const BASICS: BasicsKey[] = ['university_id', 'degree_id', 'year'];
 function useBasicsQuestions() {
   const t = useTranslations('Onboarding');
   return {
-    university_id: { label: t('university'), options: UNIVERSITIES.map(u => ({ value: u.id, label: u.name })) },
-    degree_id: { label: t('degree'), options: DEGREES.map(d => ({ value: d.id, label: d.name })) },
-    year: { label: t('year'), options: STUDY_YEARS.map(y => ({ value: y, label: t(`years.${y}`) })) },
-  } satisfies Record<BasicsKey, { label: string; options: { value: string; label: string }[] }>;
+    university_id: { label: t('university'), searchable: true, options: UNIVERSITIES.map(u => ({ value: u.id, label: u.name, keywords: [u.short] })) },
+    degree_id: { label: t('degree'), searchable: true, options: DEGREES.map(d => ({ value: d.id, label: d.name })) },
+    year: { label: t('year'), searchable: false, options: STUDY_YEARS.map(y => ({ value: y, label: t(`years.${y}`) })) },
+  } satisfies Record<BasicsKey, { label: string; searchable: boolean; options: ComboboxOption[] }>;
 }
 
-function BasicsSelect({ name, value, onChange, describedBy, invalid, id, autoFocus }: {
+function BasicsSelect({ name, value, onChange, describedBy, invalid, id, autoFocus, inline }: {
   name: BasicsKey;
   value: string;
   onChange: (v: string) => void;
@@ -75,9 +75,13 @@ function BasicsSelect({ name, value, onChange, describedBy, invalid, id, autoFoc
   invalid?: boolean;
   id: string;
   autoFocus?: boolean;
+  inline?: boolean;
 }) {
   const t = useTranslations('Onboarding');
   const q = useBasicsQuestions()[name];
+  if (q.searchable) {
+    return <Combobox id={id} label={q.label} value={value} onChange={onChange} options={q.options} placeholder={t('search')} emptyText={t('noMatches')} inline={inline} aria-describedby={describedBy} aria-invalid={invalid} autoFocus={autoFocus} />;
+  }
   return (
     <Select id={id} value={value} onChange={e => onChange(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} autoFocus={autoFocus}>
       <option value="">{t('choose')}</option>
@@ -128,7 +132,7 @@ function BasicsSheets({ values, setValue, fields }: {
             footer={<Button onClick={() => setOpen(next)} disabled={!values[open]}>{next ? <>{t('sheet.next')}<ArrowRight aria-hidden /></> : t('sheet.done')}</Button>}
           >
             <Field label={questions[open].label}>
-              {({ id, describedBy }) => <BasicsSelect id={id} name={open} value={values[open]} onChange={v => setValue(open, v)} describedBy={describedBy} autoFocus />}
+              {({ id, describedBy }) => <BasicsSelect id={id} name={open} value={values[open]} onChange={v => setValue(open, v)} describedBy={describedBy} autoFocus inline />}
             </Field>
           </SheetContent>
         ) : null}
@@ -231,10 +235,7 @@ export function OnboardingFlow() {
         <Progress step={step} hasBasics={hasBasics} onStep={go} />
         <header>
           <p className="kicker mb-3">{head.kicker}</p>
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <h1 className="display max-w-3xl text-[40px] sm:text-[56px]">{head.title}</h1>
-            {step === 'done' ? <Button asChild size="lg"><Link href="/market">{t('toMarket')}<ArrowRight aria-hidden /></Link></Button> : null}
-          </div>
+          <h1 className="display max-w-3xl text-[40px] sm:text-[56px]">{head.title}</h1>
           {head.lede ? <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-2">{head.lede}</p> : null}
         </header>
       </div>
@@ -254,9 +255,20 @@ export function OnboardingFlow() {
 
         {step === 'done' ? (
           <div className="flex flex-col gap-10">
-            <MiniBoard skills={board} view="recommendations" />
-            <div className="flex flex-wrap gap-4">
-              {hasBasics ? <Button variant="link" onClick={() => go('start')}><ArrowLeft aria-hidden />{t('reviewSkills')}</Button> : <Button variant="link" onClick={() => go('basics')}><ArrowLeft aria-hidden />{t('startOver')}</Button>}
+            {hasBasics ? <MiniBoard skills={board} view="recommendations" /> : (
+              // Skipped: pair the generic first steps with the way back to a personal board.
+              <div className="grid items-start gap-10 lg:grid-cols-2">
+                <MiniBoard skills={board} view="recommendations" />
+                <section aria-labelledby="done-personalise" className="border-t-2 border-rule-strong pt-3">
+                  <p className="kicker">{t('basicsKicker')}</p>
+                  <h2 id="done-personalise" className="font-serif text-[24px] leading-tight">{t('basicsTitle')}</h2>
+                  <Button variant="outline" size="lg" className="mt-6" onClick={() => go('basics')}>{t('startOver')}<ArrowRight aria-hidden /></Button>
+                </section>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <Button asChild size="lg"><Link href="/market">{t('toMarket')}<ArrowRight aria-hidden /></Link></Button>
+              {hasBasics ? <Button variant="link" onClick={() => go('start')}><ArrowLeft aria-hidden />{t('reviewSkills')}</Button> : null}
             </div>
           </div>
         ) : null}
