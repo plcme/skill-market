@@ -1,9 +1,7 @@
 {
   "Home": {
     "headline": "A stock market for skills.",
-    "lede": "Built from Australian job ads, updated every week.",
     "ctaMarket": "Explore the market",
-    "ctaStart": "Personalise",
     "heatKicker": "Industries this month",
     "heatAll": "All industries",
     "heatLabel": "Industries by job ads (tile size) and 4-week change (tile colour)"

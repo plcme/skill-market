@@ -10,8 +10,9 @@ import { Container } from '@/components/ui/primitives';
 import { SearchableBoard } from '@/features/market/searchable-board';
 import { BoardTextFilter, BoardViewControls, SkillLayerSwitch } from '@/features/market/board-controls';
 import { CompareBar, CompareModeToggle, CompareSelectionProvider } from '@/features/market/compare-select';
-import { BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
+import { BOARD_PAGE, BOARD_TYPES, boardForTab, boardTypeParam, canonicalMarketQuery, firstParam, hrefWith, layerParam, parseBoardType, parseLayer, parseSort, parseView, type MarketTab } from '@/features/market/logic';
 import { WatchingTabCount } from '@/features/market/watching-board';
+import { BoardTabsBar } from '@/features/market/board-tabs-bar';
 import { BOARD_ANCHOR_ID } from '@/features/market/intro';
 import { cn } from '@/lib/utils';
 
@@ -51,12 +52,13 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
       {/* Keyed by type: switching board tabs starts a fresh selection. */}
       <CompareSelectionProvider key={tab}>
       {/* Scroll margin = sticky header (h-16 + 1px rule), so #board lands just under it; focusable so the band's link can move focus here. */}
-      <section id={BOARD_ANCHOR_ID} tabIndex={-1} aria-labelledby="board-h" className="scroll-mt-[65px] pt-8 outline-none sm:pt-12">
+      <section id={BOARD_ANCHOR_ID} tabIndex={-1} aria-labelledby="board-h" className="scroll-mt-[65px] pt-6 outline-none sm:pt-10">
         <h2 id="board-h" className="sr-only">{t('boardHeading')}</h2>
-        <div className="border-b border-rule">
+        <BoardTabsBar>
           {/* Scrolls sideways at narrow widths; the nav (not the tabs) overlaps the rule so nothing overflows vertically. */}
           <nav aria-label={t('typeTabsLabel')} className="-mb-px flex min-w-0 items-end gap-x-3 overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:gap-x-6 [&::-webkit-scrollbar]:hidden">
             <Link
+              scroll={false}
               href={typeHref('watching')}
               aria-current={tab === 'watching' ? 'page' : undefined}
               className={cn(TAB, 'inline-flex items-baseline gap-1.5 sm:gap-2', tab === 'watching' ? TAB_CURRENT : TAB_OTHER)}
@@ -69,6 +71,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
             {BOARD_TYPES.map(k => (
               <Link
                 key={k}
+                scroll={false}
                 href={typeHref(k)}
                 aria-current={k === tab ? 'page' : undefined}
                 className={cn(TAB, k === tab ? TAB_CURRENT : TAB_OTHER)}
@@ -77,7 +80,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
               </Link>
             ))}
           </nav>
-        </div>
+        </BoardTabsBar>
 
         {type === 'skill' ? (
           <Suspense fallback={<div className="mt-3 h-8" />}>
@@ -93,7 +96,7 @@ export default async function MarketPage({ searchParams }: PageProps<'/market'>)
           </div>
         </Suspense>
 
-        <SearchableBoard initial={board} query={{ type, metric: metricParam, filter, sort, q, layer }} watching={tab === 'watching'} view={view} resetHref={resetHref} allHref={typeHref('all')} />
+        <SearchableBoard initial={tab === 'watching' ? board : { ...board, rows: board.rows.slice(0, BOARD_PAGE) }} total={board.rows.length} query={{ type, metric: metricParam, filter, sort, q, layer }} watching={tab === 'watching'} view={view} resetHref={resetHref} allHref={typeHref('all')} />
 
         <div className="mt-6 grid gap-3 text-[13px] leading-relaxed text-muted md:grid-cols-2 md:gap-8">
           <p>{t('orderNote')}</p>

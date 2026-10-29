@@ -25,6 +25,9 @@ export type MarketTab = BoardType | 'watching';
 /** The board opens on All; `?type=skill|role|industry|watching` picks another tab. */
 export const DEFAULT_BOARD_TYPE: BoardType = 'all';
 
+/** Rows the board renders at first and adds per "Show more" (about two screens of list rows). */
+export const BOARD_PAGE = 24;
+
 export function parseBoardType(v: string | string[] | undefined): MarketTab {
   const s = firstParam(v);
   return s === 'skill' || s === 'role' || s === 'industry' || s === 'watching' ? s : DEFAULT_BOARD_TYPE;

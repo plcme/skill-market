@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowDown } from 'lucide-react';
 import { DEFAULT_FILTER } from '@/lib/filters/spec';
 import { getIndustryHeatmap } from '@/lib/queries/market';
 import { HeatmapSource, HeatmapTable, HeatmapTiles, TREEMAP_ASPECT } from '@/components/market/heatmap';
@@ -40,10 +39,8 @@ export function IntroBand() {
       <Container className="flex flex-1 flex-col gap-8 py-8 lg:grid lg:grid-cols-[1.25fr_1fr] lg:gap-16 lg:py-10">
         <div className="flex flex-col justify-center animate-rise max-sm:flex-1">
           <h2 id="intro-h" className="display text-[46px] sm:text-[64px] lg:text-[76px]">{t('headline')}</h2>
-          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-ink-2 sm:text-lg">{t('lede')}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg"><FlipToBoardLink>{t('ctaMarket')}<ArrowDown aria-hidden /></FlipToBoardLink></Button>
-            <Button asChild size="lg" variant="outline"><Link href="/onboarding">{t('ctaStart')}</Link></Button>
+            <Button asChild size="lg"><FlipToBoardLink>{t('ctaMarket')}</FlipToBoardLink></Button>
           </div>
         </div>
 
