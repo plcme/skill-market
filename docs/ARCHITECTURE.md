@@ -915,7 +915,7 @@ Seeds `supabase/seed/*.sql` and ~500 synthetic `fixtures/ads/*.json` cover cells
 
 ```
 .github/workflows/
-  ci.yml        PR and push(main, m*-*): install → gitleaks → lint → typecheck → unit → supabase start → db reset → db → integration → build → e2e against next start → upload Playwright report
+  ci.yml        PR and push(main): scope (gitleaks; docs-only changes stop here) → in parallel: checks (audit, lint, typecheck, unit) | database (supabase start, db reset, types diff, pgTAP, build, integration) | e2e ×3 shards (build, Playwright against next start, report on failure)
   migrate.yml   manual: any branch → project2 db push; main → approved production environment → project1 push → /api/jobs/health
   deploy-cloudflare.yml  v* push → lint → typecheck → unit → OpenNext build → verify main ancestry → brewdex.app; manual validates only, see CLOUDFLARE_DEPLOYMENT
   ingest.yml    manual fallback for any job
