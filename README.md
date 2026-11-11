@@ -1,47 +1,59 @@
 # skill-market
 
-M0: the Next.js application, local Supabase database, and quality checks. The product name continues to use `APP_NAME`; it has not been renamed.
+Codename for **Brewdex** (`brewdex.app`): a labour-market board for Australian university students, plus 20-minute coffee chats with practitioners. Code reads the product name from `APP_NAME` (default `skill-market`; the release build sets `Brewdex`).
+
+**Current state**: an interactive prototype with a deterministic synthetic market engine and browser-localStorage demo users. No Supabase, real job data or real email is connected yet. See `docs/PROGRESS.md`.
+
+## Documents
+
+| File | Purpose |
+|---|---|
+| `docs/PRD.md` | Sole source of requirements |
+| `docs/GLOSSARY.md` | Required terminology for UI copy and code |
+| `docs/ARCHITECTURE.md` | Target architecture, data pipeline, decisions |
+| `docs/MILESTONES.md` | M0–M8 plan and acceptance |
+| `docs/DESIGN.md` | Visual and interaction specification |
+| `docs/PROGRESS.md` | Current state, open decisions, log |
+| `docs/SETUP.md` | Accounts, keys and human-only steps |
+| `docs/API_CONTRACT.md` | `src/lib/contract` backend boundary |
+| `docs/CLOUDFLARE_DEPLOYMENT.md` | Production release on Cloudflare |
+| `docs/reviews/` | Review records per milestone and frontend round |
+| `docs/research/` | Research evidence (read-only) |
 
 ## Local development
 
-Use Node.js 22 (`.nvmrc`) and pnpm 10.32.1. Start Docker Desktop first.
+Use Node.js 22 (`.nvmrc`) and pnpm 10.32.1.
 
 ```sh
 corepack enable
 pnpm install --frozen-lockfile
-pnpm db:start
-pnpm db:reset
-pnpm types:gen
 pnpm dev
 ```
 
-Open `http://localhost:3000`. The homepage is available without a cloud account. `/api/health` returns 503 when the database is not configured and 200 once it is configured and connected.
+Open `http://localhost:3000`; `/` redirects to `/market`. The prototype needs no cloud account or database.
 
-Copy `.env.example` to `.env.local`, then fill in the URL and anonymous/publishable key from the local Supabase status. Store real keys only in local files or platform secrets; never commit them or send them in chat. Default Supabase ports: API 54321, database 54322, Studio 54323, and email inbox 54324. `db:reset` **rebuilds only this project's local database** and clears its test data.
+UI checks: `pnpm lint && pnpm typecheck && pnpm test:unit && pnpm build`. End-to-end: `pnpm exec playwright install chromium && pnpm test:e2e` (production build, 375px and 1280px, axe).
+
+### Database (M0 foundation)
+
+The local Supabase stack (Docker) holds the `profiles` table, RLS and pgTAP tests:
 
 ```sh
-pnpm verify
-pnpm exec playwright install chromium
-pnpm test:e2e
+pnpm db:start
+pnpm db:reset   # rebuilds only this project's local database
+pnpm types:gen
+pnpm verify     # lint, types, unit, database permission tests, build
 ```
 
-verify runs lint, type checking, unit tests, database permission tests, and a production build. E2E tests use the production build to check the homepage and accessibility at 375px and 1280px. For UI-only development, start with `pnpm lint && pnpm typecheck && pnpm test:unit && pnpm build`; this does not replace database acceptance checks.
+Copy `.env.example` to `.env.local` and fill in values from `supabase status`. Never commit real keys. `/api/health` returns 503 without a configured database and 200 when connected. Default ports: API 54321, DB 54322, Studio 54323, inbox 54324.
 
-## Cloud setup
+## Branches and releases
 
-- Import the repository into Vercel with build command `pnpm build`, framework Next.js, and Node.js 22. main is Production; other branches are Preview. The homepage can still be previewed without Supabase variables.
-- Preview connects only to the Sydney development project; Production connects only to the Sydney production project.
-- A direct Supabase GitHub connection is optional. Migrations are managed by `.github/workflows/migrate.yml`. Do not enable two automatic migration paths at once.
-- Create GitHub environments named development and production, each with `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`, and `SUPABASE_DB_PASSWORD`. First verify that manual production approvals are actually available. If the current private-repository plan does not support them, keep production deployment manual; manual triggering is not equivalent to approval protection.
-- After configuration, set repository variable `ENABLE_DATABASE_MIGRATIONS=true`. Until then, migration jobs are skipped and do not touch cloud databases. Development migrations run on dev; production migrations may only be triggered manually from main, with user approval before release.
-- Recommended branch protection: prohibit force pushes and deletion on main, and require CI plus human review; require CI on dev. If the platform plan does not support protection, record that limitation accurately rather than claiming it is active.
+- `main` is the only long-lived branch. Work happens on short branches (`m{n}-…`, `fe-r{n}`, `feat/…`, `fix/…`, `chore/…`) merged by PR after CI.
+- Merging into `main` does not deploy. Pushing a `v*` tag on a `main` commit runs `.github/workflows/deploy-cloudflare.yml`, which validates and deploys to Cloudflare Workers (OpenNext) at `brewdex.app`. See `docs/CLOUDFLARE_DEPLOYMENT.md`.
+- Vercel builds PR previews only; it is not production.
+- Database migrations run only through `.github/workflows/migrate.yml` once `ENABLE_DATABASE_MIGRATIONS=true` is set; production migrations are manual from `main` with user approval.
 
 ## Scope and sources
 
-This milestone creates only the profiles business table. Authenticated users can read their own profile and update ordinary fields. Column permissions protect `is_admin`, user IDs, deletion flags, and similar fields. User metadata never grants administrator access. Administrator functions use a fixed empty `search_path`. The privileged server client is marked `server-only`.
-
-Local configuration disables Realtime, Edge Runtime, Analytics, Storage, and Studio, which M0 does not use, to reduce memory usage. Enable Storage/Studio in `supabase/config.toml` and restart local services when needed. Enable `pg_cron` and `pg_net` through SQL migrations, rather than inventing extension settings in `config.toml`. The homepage uses system fonts; builds do not depend on external font downloads.
-
-Supabase clients and session refresh follow the [official SSR guide](https://supabase.com/docs/guides/auth/server-side/creating-a-client?framework=nextjs). UI foundations use local [shadcn/ui](https://ui.shadcn.com/) components, Radix Slot, and Tailwind CSS. M0 includes no business forms or market pages.
-
-M1 will initially use synthetic test data. Real collection and retention policies will be decided after verifying the licences for job-ad sources and JSA/ABS data.
+Skill-level data will come only from the public job APIs of Greenhouse, Lever and Ashby; role-level data and coverage calibration from JSA IVI; classification from ASC and ANZSCO. No scraping of LinkedIn, SEEK or other platforms that prohibit it. Licence checks are tracked in `docs/SETUP.md` §6.

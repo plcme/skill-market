@@ -1,10 +1,10 @@
 # Data and page API contract
 
-This branch uses `CONTRACT`, `InputOf`, `OutputOf`, and `Backend` from `src/lib/contract/index.ts` as its interface entry points. They describe the boundary between the future backend and the current prototype. No real ATS, JSA, Supabase, or email sending is connected in this change. Each operation's delta and the todos at the end of `tests/contract-demo.test.ts` preserve unimplemented differences; passing schema checks does not mean the real data pipeline is complete.
+The repository uses `CONTRACT`, `InputOf`, `OutputOf`, and `Backend` from `src/lib/contract/index.ts` as its interface entry points. They describe the boundary between the future backend and the current prototype. No real ATS, JSA, Supabase, or email sending is connected in this change. Each operation's delta and the todos at the end of `tests/contract-demo.test.ts` preserve unimplemented differences; passing schema checks does not mean the real data pipeline is complete.
 
-## Feature alignment with main
+## Current behaviour
 
-- The branch is synchronised with the latest main. The default name is `skill-market`; only the brewdex.app release configuration uses Brewdex.
+- The contract is defined but **not yet wired**: pages still import the demo store and market engine directly (PROGRESS decision 20). The default name is `skill-market`; only the brewdex.app release configuration uses Brewdex.
 - `watchAllItems({ slugs, filter })` returns `{ added }`. It deduplicates by normalised filters, preserves existing held/watching states and baselines, and uses each instrument's default metric for new items. Exceeding the 30-item capacity fails the whole batch; there are no partial writes.
 - Search results support fuzzy in via; queries are limited to 80 characters. Exact, prefix, and substring matches take precedence over conservative typo tolerance. Short abbreviations, numeric codes, and technical punctuation do not receive spelling expansion. Type, layer, and other restrictions apply before result truncation.
 
@@ -19,4 +19,4 @@ This branch uses `CONTRACT`, `InputOf`, `OutputOf`, and `Backend` from `src/lib/
 
 ## Acceptance and next steps
 
-Run lint, type checking, unit tests, and PR CI. Contract tests also verify actual prototype return values, particularly typo results and bulk-watch operations. Unconnected production fields remain explicitly marked as differences. Push this branch for review without merging main yet; release requires separate explicit authorisation to push a v* tag.
+Run lint, type checking, unit tests, and PR CI. Contract tests also verify actual prototype return values, particularly typo results and bulk-watch operations. Unconnected production fields remain explicitly marked as differences. Releases require separate explicit authorisation to push a `v*` tag.

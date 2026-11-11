@@ -19,7 +19,7 @@ This is not coursework. Build to standards appropriate for a real launch, real u
 ## Agreed constraints (do not overturn without explaining why under "Pending decisions")
 
 - Stack: Next.js (TypeScript), Supabase (Postgres, Auth, Storage; ap-southeast-2 Sydney), Vercel, Resend, and GitHub Actions.
-- **Use free tiers throughout**; the only paid item is the domain (`brewdex.app`, already purchased).
+- **Use free tiers throughout**; paid items are the domain (`brewdex.app`, already purchased) and Cloudflare Workers Paid (USD 5/month, agreed 2026-10-28 to stop Error 1102; PROGRESS decision 19).
 - Vercel Hobby prohibits commercial use. Avoid Vercel-specific dependencies and preserve portability to platforms such as Cloudflare.
 - Use only sources whose licences permit the intended use. Do not scrape platforms that prohibit scraping, such as LinkedIn and SEEK.
 - Initial data sources: skill-level data uses only the public job APIs from Greenhouse, Lever, and Ashby; role-level data and coverage calibration use JSA IVI; classification uses ASC and ANZSCO. Do not integrate Adzuna or Workday (no public API). Add other ATS sources only after checking their terms (architecture §§6.2, 6.7, 6.8). The user will negotiate paid partnerships with Adzuna, Indeed, and others after acquiring customers.
