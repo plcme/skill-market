@@ -1,6 +1,6 @@
 # Brewdex on Cloudflare
 
-The existing Next.js application uses OpenNext on Workers. This configuration needs no VPS, Docker, R2 or paid image service. Fixture series reuse a bounded in-memory cache and the national ticker is reused across requests to avoid repeated calculations. Verify detail pages and filtered navigation on the live free plan after releases; never automatically upgrade plans.
+The existing Next.js application uses OpenNext on Workers. This configuration needs no VPS, Docker, R2 or paid image service. Fixture series reuse a bounded in-memory cache and the national ticker is reused across requests to avoid repeated calculations. Verify detail pages and filtered navigation on the live site after releases. Workers Free allows about 10 ms CPU per request, which current SSR exceeds (Error 1102); the user agreed to Workers Paid (PROGRESS decision 19). Plan changes are made by the user in the dashboard, never by automation.
 
 ## Releases
 

@@ -1,6 +1,6 @@
 # Frontend API report (`frontend-v2`)
 
-> **Snapshot through FE-R2, 2026-10-07.** Later FE-R3–R7 detail single-chart metric/by parameters, board filter removal, Statistics, Watching, and held changes are not reflected; code takes precedence. Refresh fully before M1/M2 backend integration.
+> **Historical snapshot through FE-R2, 2026-10-07; not maintained.** FE-R3–R11 changes (single detail chart with `metric`/`by`, board filter removal, Statistics, Watching, paged board, signup-first onboarding without units, shared Stepper) are not reflected. Current routes: ARCHITECTURE §4.1; current interface: `src/lib/contract` and API_CONTRACT. Code takes precedence. Refresh fully before backend integration.
 
 | Item | Details |
 |---|---|

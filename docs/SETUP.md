@@ -8,9 +8,10 @@
 
 | § | Service | Status | Resource name / identifier | Free allowance and limits | Notes |
 |---|---|---|---|---|---|
-| 1 | GitHub | 🟨 Partially complete (2026-09-22) | `plcme/skill-market` (private) | Approximately 2,000 Actions minutes/month | main is the only long-lived branch; dev is discontinued, awaiting cleanup; main protection pending |
+| 1 | GitHub | 🟨 Partially complete (2026-09-22) | `plcme/skill-market` (private) | Approximately 2,000 Actions minutes/month | main is the only long-lived branch; dev deleted 2026-10-28; main protection pending |
 | 2 | Supabase | 🟨 Local checks passed; cloud integration pending | Cloud `skill-market` (Sydney); local database on the Windows development machine | 2 projects, 500MB DB, 1GB storage, 50,000 MAU; pauses after 7 idle days | A second project, `skill-market-dev`, is still needed; CLI not logged into cloud |
-| 3 | Vercel | 🟨 GitHub connected | `skill-market` / `skill-market-two.vercel.app` | Hobby; **commercial use prohibited** | Next.js / syd1 deployment configuration added |
+| 3 | Vercel | 🟨 GitHub connected | `skill-market` / `skill-market-two.vercel.app` | Hobby; **commercial use prohibited** | PR previews only; not production |
+| 3a | Cloudflare | ✅ Live (2026-10-28) | Worker `brewdex`, domain `brewdex.app`; `www` 301 → apex | Free ~10 ms CPU/request; Paid USD5/month | Workers Paid agreed (decision 19); activation to be confirmed |
 | 4 | Resend | ⬜ Not started | | 3,000 emails/month, 100/day, 1 domain | Before M3 |
 | 5 | Google OAuth | ⬜ Not started | | Free; Testing allows up to 100 test users | Before M3 |
 | 6 | Data source permissions | ⬜ Not started | | | Check JSA before M1 and each ATS before launch |
@@ -23,7 +24,7 @@
 
 ## §1 GitHub
 
-- [x] Repository and main trunk; dev discontinued (confirm a separate deletion list).
+- [x] Repository and main trunk; dev deleted 2026-10-28.
 - [ ] Protect main: prohibit force pushes and deletion.
 
 ## §2 Supabase
@@ -37,6 +38,14 @@
 
 - [x] GitHub connected; PRs generate previews. Git uses only main; production releases use `v*` tags on Cloudflare (merges into main do not release).
 - [ ] Add Supabase variables to Preview and Production environments.
+
+## §3a Cloudflare
+
+- [x] Worker `brewdex` deployed by `.github/workflows/deploy-cloudflare.yml` on `v*` tags (CLOUDFLARE_DEPLOYMENT).
+- [x] Repository secret `CLOUDFLARE_API_TOKEN` (Workers Editor, scoped to `brewdex`).
+- [x] Custom domain `brewdex.app`; DNS record and redirect rule send `www.brewdex.app` to the apex (2026-10-28).
+- [ ] Upgrade to Workers Paid (decision 19) and record the date here.
+- [ ] Add Supabase variables as Worker secrets once M1 connects the database.
 
 ## §4 Resend
 
@@ -74,7 +83,7 @@ For each source record rate limits, attribution requirements, and **whether comm
 - [ ] Contact email (e.g. `data@brewdex.app`) for `ATS_USER_AGENT` and the `/bot` page.
 - [ ] Resend domain DNS (SPF / DKIM); switch Supabase Auth SMTP to Resend.
 - [ ] Switch the Google consent screen from Testing to Production (requires a homepage and privacy policy on an owned domain).
-- [ ] Vercel Hobby prohibits commercial use: upgrade to Pro or migrate to Cloudflare.
+- [x] Vercel Hobby prohibits commercial use: production migrated to Cloudflare (2026-10-28); Vercel stays for previews.
 - [ ] Free uptime monitoring account (such as UptimeRobot), for health checks and preventing Supabase idle pauses.
 - [ ] Sentry, if adopted.
 

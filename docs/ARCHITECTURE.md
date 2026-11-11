@@ -42,7 +42,11 @@
 
 ## 2. Technology choices
 
-Agreed free-tier stack: Next.js TypeScript, Supabase ap-southeast-2, Vercel, Resend, GitHub Actions. Specific choices and rejected alternatives:
+Agreed free-tier stack: Next.js TypeScript, Supabase ap-southeast-2, Vercel, Resend, GitHub Actions.
+
+> **Hosting update (2026-10-28)**: production runs on Cloudflare Workers via OpenNext at `brewdex.app`, deployed only by `v*` tags (CLOUDFLARE_DEPLOYMENT); Vercel serves PR previews only. Diagrams below that show Vercel production describe the original plan; the portability rules in §4.3 made the move code-free. Workers Paid was agreed to stop Error 1102 (PROGRESS decision 19).
+
+Specific choices and rejected alternatives:
 
 | Area | Choice | Rationale | Alternative | Rejection reason |
 |---|---|---|---|---|
@@ -245,6 +249,8 @@ Phase-1 design below; actual names follow `src/components/`, `src/features/`, DE
 | Search | RSC/`searchParams` | 60s ISR | In-memory alias prefixes, DB ilike fallback |
 
 No Vercel KV/Blob/Edge Config/Edge Middleware APIs. ISR/`revalidateTag` are standard Next.js, supported by OpenNext Cloudflare and standalone.
+
+> **Implementation status (2026-11-11)**: the prototype deviates from this table. Public pages are `force-dynamic` with no ISR, the synthetic engine runs per request, every page receives the full message bundle, and UI files import demo/engine modules instead of the `Backend` contract. This causes Cloudflare Error 1102 (CPU limit). Restoring this table is part of the contract-first refactor (PROGRESS decision 20).
 
 ### 4.4 Design system/accessibility
 
@@ -934,7 +940,8 @@ Seeds `supabase/seed/*.sql` and ~500 synthetic `fixtures/ads/*.json` cover cells
 | Service | Allowance, verify officially | First limit | Estimated scale | Next step |
 |---|---|---|---|---|
 | Supabase | 500MB DB, 1GB Storage, 50K MAU, 5GB monthly egress, two projects, seven-day idle pause, no PITR | DB derived ads/points | 3–4 years launch category; ~1 year with five; MAU unlikely first | Pro USD25/month 8GB, optional PITR; or retain ads 12 months |
-| Vercel Hobby | 100GB bandwidth, GB-hour functions, one region, **no commercial use** | Terms | At launch | Pro USD20/month or OpenNext Cloudflare free 100K requests/day, standalone Fly/Railway; zero business-code change target |
+| Vercel Hobby | 100GB bandwidth, GB-hour functions, one region, **no commercial use** | Terms | PR previews only | Production moved to Cloudflare |
+| Cloudflare Workers | Free: 100K requests/day, ~10 ms CPU/request; Paid USD5/month: much higher CPU limit | CPU per request (Error 1102 on current SSR) | Already hit | Workers Paid agreed (decision 19); refactor to ISR/precomputed demo to cut CPU |
 | Resend | 3K/month, 100/day, one domain | Daily | ~7 emails/chat, ~14 daily loops or 300 active users | USD20/month 50K; quota queue prevents loss |
 | Actions | Private 2K min/month | CI, ~3 min Supabase startup | ~150 runs/month | Nightly e2e or public repo unlimited minutes |
 | Google | Testing 100 users | Users | Before launch | Domain/privacy policy → free Production |
@@ -975,7 +982,7 @@ Seeds `supabase/seed/*.sql` and ~500 synthetic `fixtures/ads/*.json` cover cells
 | 20 | D | Backups | Daily schema/public artifacts; weekly encrypted full Storage dump | M8 |
 | 21 | A | Analytics | Owned events/admin dashboard | — |
 | 22 | A | Units | Manually compile 60–80 USYD Eng&IT code/name/skill mappings, no handbook scraping | — |
-| 23 | D | Vercel commercial | Pro USD20/month or free Cloudflare before launch | M8 |
+| 23 | D | Vercel commercial | Decided: production on Cloudflare Workers (OpenNext), Vercel previews only; Workers Paid agreed 2026-10-28 | — |
 | 24 | A | Default student visibility | University/degree/year; other fields self-only | — |
 | 25 | A | Role share mapping | ANZSCO title aliases; unmatched ads denominator only | — |
 

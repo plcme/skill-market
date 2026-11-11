@@ -2,7 +2,7 @@
 
 | Item | Details |
 |---|---|
-| Status | Draft v0.1 — awaiting product owner confirmation |
+| Status | Draft v0.2 (2026-11-11): FR-M4 and onboarding (FR-O1–FR-O3) aligned with the implemented prototype; §14 defaults adopted |
 | Product name | **Brewdex** (confirmed 2026-10-23). Use configuration constant `APP_NAME` throughout code; repository codename `skill-market`; domain `brewdex.app` purchased |
 | Target market | Australia only (user decision, 2026-10-21: defer NZ and other countries because of compliance and data costs); global growth later |
 | Document language | English, including terminology, field names, and variable names |
@@ -198,7 +198,7 @@ Priority: **M** = Must (required for MVP), **S** = Should (aim for MVP; may defe
 | FR-M1 | Anonymous users can browse the board, search instruments, and view full ticker pages | M | Original 2d: value before information | All public data pages accessible without an account |
 | FR-M2 | Three ticker sizes: row (name, current value, change, sparkline); card (adds entry-level share, location, key fundamentals); full page (history, metric selection, co-occurring skills, salary percentiles, chat entry) | M | — | Shared component system across sizes |
 | FR-M3 | Role pages show component skills and weights; skill pages show roles requiring them; co-occurring skills are linked | M | — | Skill ↔ role navigation within two hops |
-| FR-M4 | Metric selector offers only valid combinations (§7.1 matrix) | M | — | Invalid combinations unavailable |
+| FR-M4 | The board shows a fixed Demand (`ad_count`) column with no metric selector; the metric selector lives on full ticker pages and offers only valid combinations (§7.1 matrix). Legacy `metric=` links stay valid (user decision, 2026-10-25) | M | — | Invalid combinations unavailable; old links resolve |
 | FR-M5 | Compare two instruments side by side (e.g. skills linked to electives or roles linked to career paths), including relevance, transferability, and learning effort | M | R3, US1 | Students can explain evidence and tradeoffs |
 | FR-M6 | Support a 30-second watchlist overview and 15-minute exploration (compare, filter, drill down), mobile first | M | Original 2c | Core flows work at 375px |
 
@@ -226,9 +226,9 @@ Priority: **M** = Must (required for MVP), **S** = Should (aim for MVP; may defe
 
 | ID | Requirement | Priority | Research | Acceptance |
 |---|---|---|---|---|
-| FR-O1 | Tier 0 (~10 seconds): university + degree + year → inferred skill profile → immediate personalised board | M | R8 | At most three fields |
-| FR-O2 | Tier 1 (~60 seconds): select completed units from a prefilled list to add skills | M | — | Launch university's unit catalogue available |
-| FR-O3 | Any tier can be skipped or stopped midway | M | R8 | |
+| FR-O1 | Sign up first (email link or Google), then three steps: Basics (university + degree + year) → Skills (inferred, editable) → Your board (suggested roles to watch). Browsing stays anonymous (FR-M1); personalisation requires an account (user decision, 2026-10-25) | M | R8 | At most three Basics fields; steps are clickable and resumable |
+| FR-O2 | ~~Select completed units from a prefilled list to add skills~~ Removed from MVP onboarding (user decision, 2026-10-25); unit data and `unit_codes` retained for later | C | — | — |
+| FR-O3 | Any onboarding step after signup can be skipped or stopped midway | M | R8 | |
 | FR-O4 | Label inferred skills as suggestions with confidence; confirm/remove in one action | M | R8, SR4, US7 | Participants correct an inference in one step |
 | FR-O5 | Frame profiles as confirmed skills / suggested exploration / next steps; no percentiles, rankings, or readiness scores | M | R7, SR4, US2 | No usability participant interprets it as ranking |
 | FR-O6 | New users with few skills see a starting point and feasible next step, not a blank page or gap list | M | Interviews E01/E02 | Dedicated empty states |
@@ -365,7 +365,7 @@ Research takes precedence over visual preferences:
 | JSA — Skills Priority List | Occupational shortage ratings | CC BY 4.0 (recheck) | Role fundamentals, later; excluded initially | Annual updates |
 | ABS | Labour statistics, ANZSCO classification | CC BY 4.0 (recheck) | Classification and macro context | |
 | Public ATS job APIs: initially Greenhouse, Lever, Ashby only | Full active job ads published by employers | Public APIs without explicit licences; obtain written vendor responses before commercialisation | **Skill-level** counts and text-derived entry-level, work-rights, remote metrics | Bias toward medium/large ATS employers, fewer SMEs (disclose coverage); history accumulates from collection start |
-| Launch university unit catalogue | Unit codes and descriptions | Check terms | Tier 1 onboarding and skill inference | |
+| Launch university unit catalogue | Unit codes and descriptions | Check terms | Skill inference (units step deferred, FR-O2) | |
 | Platform-owned data | Debrief votes and matching outcomes | Owned | Sentiment and matching improvement | Requires sufficient samples |
 
 **Key data risk**: public data is predominantly occupational. **Skill-level time series likely require building snapshots from launch onward**, such as daily ad counts by skill keywords. The architecture must:
@@ -418,13 +418,13 @@ Learn from Lunchclub's value collapse in sparse networks:
 | # | Question | Impact | Suggested default |
 |---|---|---|---|
 | Q1 | Product name | Domain, branding | **Decided 2026-10-23**: Brewdex; `brewdex.app` purchased; use `APP_NAME` |
-| Q2 | Practitioner-supplied Zoom/Meet/Teams link or system-generated link such as Jitsi? | FR-C9 | Practitioner supplies the link; no hosted video |
-| Q3 | English only or bilingual Chinese/English? | FR-A8 | Launch in English; support i18n architecturally |
-| Q4 | Launch university, faculty, industry | Data scope, unit catalogue | University of Sydney Engineering and IT × software/data |
-| Q5 | Work-email verification only, or manual review with LinkedIn link? | FR-P1 | Work email, manual fallback |
+| Q2 | Practitioner-supplied Zoom/Meet/Teams link or system-generated link such as Jitsi? | FR-C9 | **Adopted**: practitioner supplies the link; no hosted video |
+| Q3 | English only or bilingual Chinese/English? | FR-A8 | **Adopted**: launch in English; support i18n architecturally |
+| Q4 | Launch university, faculty, industry | Data scope | **Adopted**: University of Sydney Engineering and IT × software/data |
+| Q5 | Work-email verification only, or manual review with LinkedIn link? | FR-P1 | **Adopted**: work email, manual fallback |
 | Q6 | Job-ad sources | §11 | **Decided 2026-10-23**: Greenhouse / Lever / Ashby public APIs + JSA IVI calibration; written responses before commercialisation |
-| Q7 | Metaphor-free mode needed? | §10 | Add a setting first; observe usage |
-| Q8 | Request timeout | FR-C7 | Configurable 72 hours |
+| Q7 | Metaphor-free mode needed? | §10 | **Adopted**: add a setting first; observe usage |
+| Q8 | Request timeout | FR-C7 | **Adopted**: configurable 72 hours |
 
 ## Appendix A: Requirements traceability
 
